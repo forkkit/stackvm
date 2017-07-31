@@ -47,6 +47,11 @@ func genSnakeCubeRows(rng fastRNG, m int) []int {
 // 	  # #
 // 		#
 // 		# #
+//
+// The labels emitted are one of:
+// - rH / rT : the cell is the head or tail of a row freedom
+// - cH / cT : the cell is the head or tail of a column freedom
+// - #       : the cell is not part of a freedom
 func labelrows(rows []int) [][]string {
 	n := 0
 	for _, row := range rows {
@@ -54,21 +59,18 @@ func labelrows(rows []int) [][]string {
 	}
 	r := make([][]string, 0, n)
 
-	var (
-		tail *string
-		last int
-	)
+	var tail *string
 
-	for _, row := range rows {
+	for i, row := range rows {
 		labels := make([]string, row)
 
 		for j := 0; j < row; j++ {
-			labels[j] = "?"
+			labels[j] = "#"
 		}
 
-		if tail != nil && last == 1 && row > 1 {
-			addLabel(tail, "vH")
-			addLabel(&labels[0], "vT")
+		if tail != nil && (row > 1 || i == len(rows)-1) {
+			addLabel(tail, "cH")
+			addLabel(&labels[0], "cT")
 		}
 
 		if row > 1 {
@@ -77,21 +79,38 @@ func labelrows(rows []int) [][]string {
 
 			tail = &labels[row-1]
 		}
-		// XXX misses final vH/vT chains
 
 		r = append(r, labels)
-		last = row
 	}
 
 	return r
 }
 
 func addLabel(s *string, l string) {
-	if *s == "?" {
+	if *s == "#" {
 		*s = l
 		return
 	}
 	*s += ":" + l
+}
+
+// padRowLabels pads initial and final labels within each row label so that
+// they will right-align when stacked vertically (next head under prior tail).
+func padRowLabels(rowlabels [][]string) {
+	var (
+		w    int
+		last []string
+	)
+	for _, rl := range rowlabels {
+		if len(rl[0]) < w {
+			rl[0] = strings.Repeat(" ", w-len(rl[0])) + rl[0]
+		}
+		if w > 0 && w < len(rl[0]) {
+			last[len(last)-1] = strings.Repeat(" ", len(rl[0])-w) + last[len(last)-1]
+		}
+		w = len(rl[len(rl)-1])
+		last = rl
+	}
 }
 
 func Test_genSnakeCubeRows(t *testing.T) {
@@ -103,12 +122,14 @@ func Test_genSnakeCubeRows(t *testing.T) {
 		fmt.Println(rows)
 
 		rowlabels := labelrows(rows)
+		padRowLabels(rowlabels)
 
 		var prefix string
 		for i, row := range rows {
-			label := strings.Join(rowlabels[i], " ")
+			rl := rowlabels[i]
+			label := strings.Join(rl, " ")
 			fmt.Printf("%v: %s%s\n", row, prefix, label)
-			prefix += strings.Repeat(" ", len(label)-1)
+			prefix += strings.Repeat(" ", len(label)-len(rl[len(rl)-1]))
 		}
 
 		fmt.Println()
