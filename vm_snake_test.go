@@ -16,7 +16,7 @@ func genSnakeCubeRows(rng fastRNG, m int) []int {
 	for i < n {
 		var c int
 		for {
-			c = 1 + int(rng.next())%3
+			c = 1 + int(rng.next()%3)
 			if i+c > n {
 				continue
 			}
