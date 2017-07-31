@@ -36,6 +36,49 @@ func genSnakeCubeRows(rng fastRNG, m int) []int {
 	return r
 }
 
+type cellLabel uint8
+type rowLabel []cellLabel
+
+const (
+	fixedCell cellLabel = 0
+	rowHead   cellLabel = 1 << iota
+	rowTail
+	colHead
+	colTail
+)
+
+func (cl cellLabel) String() string {
+	if cl == fixedCell {
+		return "#"
+	}
+
+	parts := make([]string, 0, 6)
+
+	switch cl & (rowHead | rowTail) {
+	case rowHead:
+		parts = append(parts, "rH")
+		cl &= ^rowHead
+	case rowTail:
+		parts = append(parts, "rT")
+		cl &= ^rowTail
+	}
+
+	switch cl & (colHead | colTail) {
+	case colHead:
+		parts = append(parts, "cH")
+		cl &= ^colHead
+	case colTail:
+		parts = append(parts, "cT")
+		cl &= ^colTail
+	}
+
+	if cl != 0 {
+		return fmt.Sprintf("!<%d>!", cl)
+	}
+
+	return strings.Join(parts, ":")
+}
+
 // labelrows generates a list of row labels given a list of row counts.
 //
 // rows is simply a list of cell counts per row that describes a possible snake
@@ -52,46 +95,54 @@ func genSnakeCubeRows(rng fastRNG, m int) []int {
 // - rH / rT : the cell is the head or tail of a row freedom
 // - cH / cT : the cell is the head or tail of a column freedom
 // - #       : the cell is not part of a freedom
-func labelrows(rows []int) [][]string {
+func labelrows(rows []int) []rowLabel {
 	n := 0
 	for _, row := range rows {
 		n += row
 	}
-	r := make([][]string, 0, n)
+	r := make([]rowLabel, 0, n)
 
-	var tail *string
+	var tail *cellLabel
 
 	for i, row := range rows {
-		labels := make([]string, row)
-
-		for j := 0; j < row; j++ {
-			labels[j] = "#"
-		}
+		rl := make(rowLabel, row)
 
 		if tail != nil && (row > 1 || i == len(rows)-1) {
-			addLabel(tail, "cH")
-			addLabel(&labels[0], "cT")
+			addLabel(tail, colHead)
+			addLabel(&rl[0], colTail)
 		}
 
 		if row > 1 {
-			addLabel(&labels[0], "rH")
-			addLabel(&labels[row-1], "rT")
+			addLabel(&rl[0], rowHead)
+			addLabel(&rl[row-1], rowTail)
 
-			tail = &labels[row-1]
+			tail = &rl[row-1]
 		}
 
-		r = append(r, labels)
+		r = append(r, rl)
 	}
 
 	return r
 }
 
-func addLabel(s *string, l string) {
-	if *s == "#" {
-		*s = l
+func addLabel(cl *cellLabel, l cellLabel) {
+	if *cl == fixedCell {
+		*cl = l
 		return
 	}
-	*s += ":" + l
+	*cl |= l
+}
+
+func renderRowLabels(rls []rowLabel) [][]string {
+	r := make([][]string, len(rls))
+	for i, rl := range rls {
+		ri := make([]string, len(rl))
+		for j, cl := range rl {
+			ri[j] = cl.String()
+		}
+		r[i] = ri
+	}
+	return r
 }
 
 // padRowLabels pads initial and final labels within each row label so that
@@ -122,11 +173,12 @@ func Test_genSnakeCubeRows(t *testing.T) {
 		fmt.Println(rows)
 
 		rowlabels := labelrows(rows)
-		padRowLabels(rowlabels)
+		strRowLabels := renderRowLabels(rowlabels)
+		padRowLabels(strRowLabels)
 
 		var prefix string
 		for i, row := range rows {
-			rl := rowlabels[i]
+			rl := strRowLabels[i]
 			label := strings.Join(rl, " ")
 			fmt.Printf("%v: %s%s\n", row, prefix, label)
 			prefix += strings.Repeat(" ", len(label)-len(rl[len(rl)-1]))
