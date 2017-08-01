@@ -19,12 +19,9 @@ func Test_genSnakeCubeRows(t *testing.T) {
 		rowlabels := labelrows(rows)
 		strRowLabels := renderRowLabels(rowlabels)
 
-		var prefix string
 		for i, row := range rows {
-			rl := strRowLabels[i]
-			label := strings.Join(rl, " ")
-			fmt.Printf("%v: %s%s\n", row, prefix, label)
-			prefix += strings.Repeat(" ", len(label)-len(rl[len(rl)-1]))
+			label := strRowLabels[i]
+			fmt.Printf("%v: %s\n", row, label)
 		}
 
 		fmt.Println()
@@ -170,7 +167,7 @@ func genSnakeCubeRows(rng fastRNG, m int) []int {
 	return r
 }
 
-func renderRowLabels(rls []rowLabel) [][]string {
+func renderRowLabels(rls []rowLabel) []string {
 	r := make([][]string, len(rls))
 	for i, rl := range rls {
 		ri := make([]string, len(rl))
@@ -195,7 +192,14 @@ func renderRowLabels(rls []rowLabel) [][]string {
 		last = rl
 	}
 
-	return r
+	r2 := make([]string, len(rls))
+	var prefix string
+	for i, rl := range r {
+		label := strings.Join(rl, " ")
+		r2[i] = prefix + label
+		prefix += strings.Repeat(" ", len(label)-len(rl[len(rl)-1]))
+	}
+	return r2
 }
 
 type fastRNG struct{ state *uint32 }
