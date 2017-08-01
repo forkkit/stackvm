@@ -10,23 +10,88 @@ import (
 
 func Test_genSnakeCubeRows(t *testing.T) {
 	// XXX temp workspace
-	rng := makeFastRNG(15517)
 
+	// snake := []int{2, 2, 2, 1, 2, 2, 2, 1, 3, 3, 1, 2, 1, 2, 1}
+	// rowlabels := labelrows(snake)
+
+	// 2: rH rT:cH
+	// 2:    rH:cT rT:cH
+	// 2:          rH:cT rT:cH
+	// 1:                    #
+	// 2:                rH:cT rT:cH
+	// 2:                      rH:cT rT:cH
+	// 2:                            rH:cT rT:cH
+	// 1:                                      #
+	// 3:                                  rH:cT # rT:cH
+	// 3:                                          rH:cT # rT:cH
+	// 1:                                                      #
+	// 2:                                                  rH:cT rT:cH
+	// 1:                                                            #
+	// 2:                                                        rH:cT rT:cH
+	// 1:                                                                 cT
+
+	rng := makeFastRNG(15517)
 	for i := 0; i < 4; i++ {
 		rows := genSnakeCubeRows(rng, 3)
 		fmt.Println(rows)
-
 		rowlabels := labelrows(rows)
-
 		for i, label := range renderRowLabels(rowlabels) {
 			fmt.Printf("%v: %s\n", rows[i], label)
 		}
-
 		fmt.Println()
 	}
+
 }
 
 /*
+
+=== RUN   Test_genSnakeCubeRows
+
+[1 3 1 3 2 2 2 3 1 2 1 3 3]
+1:  #
+3: rH # rT:cH
+1:          #
+3:      rH:cT # rT:cH
+2:              rH:cT rT:cH
+2:                    rH:cT rT:cH
+2:                          rH:cT rT:cH
+3:                                rH:cT # rT:cH
+1:                                            #
+2:                                        rH:cT rT:cH
+1:                                                  #
+3:                                              rH:cT # rT:cH
+3:                                                      rH:cT # rT
+
+[3 3 3 1 2 1 3 3 2 3 3]
+3: rH # rT:cH
+3:      rH:cT # rT:cH
+3:              rH:cT # rT:cH
+1:                          #
+2:                      rH:cT rT:cH
+1:                                #
+3:                            rH:cT # rT:cH
+3:                                    rH:cT # rT:cH
+2:                                            rH:cT rT:cH
+3:                                                  rH:cT # rT:cH
+3:                                                          rH:cT # rT
+
+[3 2 3 2 2 3 2 3 2 1 3 1]
+3: rH # rT:cH
+2:      rH:cT rT:cH
+3:            rH:cT # rT:cH
+2:                    rH:cT rT:cH
+2:                          rH:cT rT:cH
+3:                                rH:cT # rT:cH
+2:                                        rH:cT rT:cH
+3:                                              rH:cT # rT:cH
+2:                                                      rH:cT rT:cH
+1:                                                                #
+3:                                                            rH:cT # rT:cH
+1:                                                                       cT
+
+--- PASS: Test_genSnakeCubeRows (0.00s)
+PASS
+ok  	github.com/jcorbin/stackvm	0.009s
 
 var snakeSolTest = TestCase{
 	Name: "snake XXX",
@@ -56,46 +121,46 @@ var snakeSolTest = TestCase{
 // - rH / rT : the cell is the head or tail of a row freedom
 // - cH / cT : the cell is the head or tail of a column freedom
 // - #       : the cell is not part of a freedom
-func labelrows(rows []int) []rowLabel {
+func labelrows(rows []int) []cellabel {
 	n := 0
 	for _, row := range rows {
 		n += row
 	}
-	r := make([]rowLabel, 0, n)
+	r := make([]cellabel, n)
 
-	var tail *cellLabel
-
+	head, tail := 0, 0
 	for i, row := range rows {
-		rl := make(rowLabel, row)
-
-		if tail != nil && (row > 1 || i == len(rows)-1) {
-			addLabel(tail, colHead)
-			addLabel(&rl[0], colTail)
+		// if we're in a column, continue seeking its tail
+		if row == 1 {
+			tail++
+			continue
 		}
 
-		if row > 1 {
-			addLabel(&rl[0], rowHead)
-			addLabel(&rl[row-1], rowTail)
-
-			tail = &rl[row-1]
+		// we're in a non-trivial row, it terminates any column gap
+		if head < tail {
+			rl[head] |= colHead
+			rl[tail] |= colTail
 		}
 
-		r = append(r, rl)
+		// mark its head and tail
+		head, tail = tail, tail+row
+		rl[head] |= rowHead
+		rl[tail] |= rowTail
+
+		// its tail becomes the next potential column head
+		head = tail
+	}
+
+	// mark any final column
+	if head < tail {
+		rl[head] |= colHead
+		rl[tail] |= colTail
 	}
 
 	return r
 }
 
-func addLabel(cl *cellLabel, l cellLabel) {
-	if *cl == fixedCell {
-		*cl = l
-		return
-	}
-	*cl |= l
-}
-
 type cellLabel uint8
-type rowLabel []cellLabel
 
 const (
 	fixedCell cellLabel = 0
@@ -165,7 +230,9 @@ func genSnakeCubeRows(rng fastRNG, m int) []int {
 	return r
 }
 
-func renderRowLabels(rls []rowLabel) []string {
+func renderRowLabels(cls []cellabel) []string {
+	// FIXME
+
 	r := make([][]string, len(rls))
 	for i, rl := range rls {
 		ri := make([]string, len(rl))
