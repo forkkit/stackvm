@@ -8,76 +8,43 @@ import (
 
 // . "github.com/jcorbin/stackvm/x"
 
-func genSnakeCubeRows(rng fastRNG, m int) []int {
-	n := m * m * m
-	r := make([]int, 0, n)
-	i := 0
-	run := 0
-	for i < n {
-		var c int
-		for {
-			c = 1 + int(rng.next()%3)
-			if i+c > n {
-				continue
-			}
-			if c == 1 {
-				if run >= 3 {
-					continue
-				}
-				run++
-			} else {
-				run = 2
-			}
-			break
+func Test_genSnakeCubeRows(t *testing.T) {
+	// XXX temp workspace
+	rng := makeFastRNG(15517)
+
+	for i := 0; i < 4; i++ {
+		rows := genSnakeCubeRows(rng, 3)
+		fmt.Println(rows)
+
+		rowlabels := labelrows(rows)
+		strRowLabels := renderRowLabels(rowlabels)
+		padRowLabels(strRowLabels)
+
+		var prefix string
+		for i, row := range rows {
+			rl := strRowLabels[i]
+			label := strings.Join(rl, " ")
+			fmt.Printf("%v: %s%s\n", row, prefix, label)
+			prefix += strings.Repeat(" ", len(label)-len(rl[len(rl)-1]))
 		}
-		i += c
-		r = append(r, c)
+
+		fmt.Println()
 	}
-	return r
 }
 
-type cellLabel uint8
-type rowLabel []cellLabel
+/*
 
-const (
-	fixedCell cellLabel = 0
-	rowHead   cellLabel = 1 << iota
-	rowTail
-	colHead
-	colTail
-)
-
-func (cl cellLabel) String() string {
-	if cl == fixedCell {
-		return "#"
-	}
-
-	parts := make([]string, 0, 6)
-
-	switch cl & (rowHead | rowTail) {
-	case rowHead:
-		parts = append(parts, "rH")
-		cl &= ^rowHead
-	case rowTail:
-		parts = append(parts, "rT")
-		cl &= ^rowTail
-	}
-
-	switch cl & (colHead | colTail) {
-	case colHead:
-		parts = append(parts, "cH")
-		cl &= ^colHead
-	case colTail:
-		parts = append(parts, "cT")
-		cl &= ^colTail
-	}
-
-	if cl != 0 {
-		return fmt.Sprintf("!<%d>!", cl)
-	}
-
-	return strings.Join(parts, ":")
+var snakeSolTest = TestCase{
+	Name: "snake XXX",
+	Prog: MustAssemble(
+		0x40,
+		//// Done
+		0, "halt",
+	),
+	// Result: XXX,
 }
+
+*/
 
 // labelrows generates a list of row labels given a list of row counts.
 //
@@ -133,6 +100,77 @@ func addLabel(cl *cellLabel, l cellLabel) {
 	*cl |= l
 }
 
+type cellLabel uint8
+type rowLabel []cellLabel
+
+const (
+	fixedCell cellLabel = 0
+	rowHead   cellLabel = 1 << iota
+	rowTail
+	colHead
+	colTail
+)
+
+func (cl cellLabel) String() string {
+	if cl == fixedCell {
+		return "#"
+	}
+
+	parts := make([]string, 0, 6)
+
+	switch cl & (rowHead | rowTail) {
+	case rowHead:
+		parts = append(parts, "rH")
+		cl &= ^rowHead
+	case rowTail:
+		parts = append(parts, "rT")
+		cl &= ^rowTail
+	}
+
+	switch cl & (colHead | colTail) {
+	case colHead:
+		parts = append(parts, "cH")
+		cl &= ^colHead
+	case colTail:
+		parts = append(parts, "cT")
+		cl &= ^colTail
+	}
+
+	if cl != 0 {
+		return fmt.Sprintf("!<%d>!", cl)
+	}
+
+	return strings.Join(parts, ":")
+}
+
+func genSnakeCubeRows(rng fastRNG, m int) []int {
+	n := m * m * m
+	r := make([]int, 0, n)
+	i := 0
+	run := 0
+	for i < n {
+		var c int
+		for {
+			c = 1 + int(rng.next()%3)
+			if i+c > n {
+				continue
+			}
+			if c == 1 {
+				if run >= 3 {
+					continue
+				}
+				run++
+			} else {
+				run = 2
+			}
+			break
+		}
+		i += c
+		r = append(r, c)
+	}
+	return r
+}
+
 func renderRowLabels(rls []rowLabel) [][]string {
 	r := make([][]string, len(rls))
 	for i, rl := range rls {
@@ -163,44 +201,6 @@ func padRowLabels(rowlabels [][]string) {
 		last = rl
 	}
 }
-
-func Test_genSnakeCubeRows(t *testing.T) {
-	// XXX temp workspace
-	rng := makeFastRNG(15517)
-
-	for i := 0; i < 4; i++ {
-		rows := genSnakeCubeRows(rng, 3)
-		fmt.Println(rows)
-
-		rowlabels := labelrows(rows)
-		strRowLabels := renderRowLabels(rowlabels)
-		padRowLabels(strRowLabels)
-
-		var prefix string
-		for i, row := range rows {
-			rl := strRowLabels[i]
-			label := strings.Join(rl, " ")
-			fmt.Printf("%v: %s%s\n", row, prefix, label)
-			prefix += strings.Repeat(" ", len(label)-len(rl[len(rl)-1]))
-		}
-
-		fmt.Println()
-	}
-}
-
-/*
-
-var snakeSolTest = TestCase{
-	Name: "snake XXX",
-	Prog: MustAssemble(
-		0x40,
-		//// Done
-		0, "halt",
-	),
-	// Result: XXX,
-}
-
-*/
 
 type fastRNG struct{ state *uint32 }
 
