@@ -18,7 +18,6 @@ func Test_genSnakeCubeRows(t *testing.T) {
 
 		rowlabels := labelrows(rows)
 		strRowLabels := renderRowLabels(rowlabels)
-		padRowLabels(strRowLabels)
 
 		var prefix string
 		for i, row := range rows {
@@ -180,17 +179,12 @@ func renderRowLabels(rls []rowLabel) [][]string {
 		}
 		r[i] = ri
 	}
-	return r
-}
 
-// padRowLabels pads initial and final labels within each row label so that
-// they will right-align when stacked vertically (next head under prior tail).
-func padRowLabels(rowlabels [][]string) {
 	var (
 		w    int
 		last []string
 	)
-	for _, rl := range rowlabels {
+	for _, rl := range r {
 		if len(rl[0]) < w {
 			rl[0] = strings.Repeat(" ", w-len(rl[0])) + rl[0]
 		}
@@ -200,6 +194,8 @@ func padRowLabels(rowlabels [][]string) {
 		w = len(rl[len(rl)-1])
 		last = rl
 	}
+
+	return r
 }
 
 type fastRNG struct{ state *uint32 }
