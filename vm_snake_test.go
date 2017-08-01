@@ -202,6 +202,7 @@ func renderRowLabels(rls []rowLabel) []string {
 	return r2
 }
 
+// fastRNG is just a fixed LCG; TODO: add a PCG twist, choose a better M.
 type fastRNG struct{ state *uint32 }
 
 func makeFastRNG(seed uint32) fastRNG { return fastRNG{state: &seed} }
