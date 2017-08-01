@@ -35,7 +35,7 @@ func Test_genSnakeCubeRows(t *testing.T) {
 		rows := genSnakeCubeRows(rng, 3)
 		fmt.Println(rows)
 		rowlabels := labelrows(rows)
-		for i, label := range renderRowLabels(rowlabels) {
+		for i, label := range renderRowLabels(rows, rowlabels) {
 			fmt.Printf("%v: %s\n", rows[i], label)
 		}
 		fmt.Println()
@@ -121,40 +121,32 @@ var snakeSolTest = TestCase{
 // - rH / rT : the cell is the head or tail of a row freedom
 // - cH / cT : the cell is the head or tail of a column freedom
 // - #       : the cell is not part of a freedom
-func labelrows(rows []int) []cellabel {
+func labelrows(rows []int) []cellLabel {
 	n := 0
 	for _, row := range rows {
 		n += row
 	}
-	r := make([]cellabel, n)
+	r := make([]cellLabel, n)
 
 	head, tail := 0, 0
-	for i, row := range rows {
-		// if we're in a column, continue seeking its tail
-		if row == 1 {
-			tail++
-			continue
+	for _, row := range rows {
+		// pending column terminates if non-trivial row, or final
+		if head < tail && (row > 1 || tail == len(r)-1) {
+			r[head] |= colHead
+			r[tail] |= colTail
+			head = tail
 		}
 
-		// we're in a non-trivial row, it terminates any column gap
-		if head < tail {
-			rl[head] |= colHead
-			rl[tail] |= colTail
+		// mark row head and tail
+		if row > 1 {
+			tail += row - 1
+			r[head] |= rowHead
+			r[tail] |= rowTail
+			head = tail // its tail becomes the next potential column head
 		}
 
-		// mark its head and tail
-		head, tail = tail, tail+row
-		rl[head] |= rowHead
-		rl[tail] |= rowTail
-
-		// its tail becomes the next potential column head
-		head = tail
-	}
-
-	// mark any final column
-	if head < tail {
-		rl[head] |= colHead
-		rl[tail] |= colTail
+		// advance tail to point to next row head
+		tail++
 	}
 
 	return r
@@ -230,23 +222,26 @@ func genSnakeCubeRows(rng fastRNG, m int) []int {
 	return r
 }
 
-func renderRowLabels(cls []cellabel) []string {
-	// FIXME
+func renderRowLabels(rows []int, cls []cellLabel) []string {
+	rls := make([][]string, len(rows))
 
-	r := make([][]string, len(rls))
-	for i, rl := range rls {
-		ri := make([]string, len(rl))
-		for j, cl := range rl {
-			ri[j] = cl.String()
+	// render cell labels grouped by row counts
+	k := 0 // cursor in cls
+	for i, row := range rows {
+		rl := make([]string, row)
+		for j := 0; j < row; j++ {
+			rl[j] = cls[k].String()
+			k++
 		}
-		r[i] = ri
+		rls[i] = rl
 	}
 
+	// pad columns
 	var (
 		w    int
 		last []string
 	)
-	for _, rl := range r {
+	for _, rl := range rls {
 		if len(rl[0]) < w {
 			rl[0] = strings.Repeat(" ", w-len(rl[0])) + rl[0]
 		}
@@ -259,7 +254,7 @@ func renderRowLabels(cls []cellabel) []string {
 
 	r2 := make([]string, len(rls))
 	var prefix string
-	for i, rl := range r {
+	for i, rl := range rls {
 		label := strings.Join(rl, " ")
 		r2[i] = prefix + label
 		prefix += strings.Repeat(" ", len(label)-len(rl[len(rl)-1]))
