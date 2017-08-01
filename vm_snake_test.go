@@ -17,11 +17,9 @@ func Test_genSnakeCubeRows(t *testing.T) {
 		fmt.Println(rows)
 
 		rowlabels := labelrows(rows)
-		strRowLabels := renderRowLabels(rowlabels)
 
-		for i, row := range rows {
-			label := strRowLabels[i]
-			fmt.Printf("%v: %s\n", row, label)
+		for i, label := range renderRowLabels(rowlabels) {
+			fmt.Printf("%v: %s\n", rows[i], label)
 		}
 
 		fmt.Println()
