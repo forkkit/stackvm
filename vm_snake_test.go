@@ -32,16 +32,46 @@ func Test_genSnakeCubeRows(t *testing.T) {
 
 	N := 3
 	rng := makeFastRNG(15517)
+
 	for i := 0; i < 4; i++ {
 		rows := genSnakeCubeRows(rng, N)
 		fmt.Println(rows)
 		labels := labelcells(rows)
+
 		for i, label := range renderRowLabels(rows, labels) {
 			fmt.Printf("%v: %s\n", rows[i], label)
 		}
+
+		// choose starting position
+		fmt.Printf("# heading := {0, 0, 0}\n")
+		fmt.Printf("# loc := {0, 0, 0}\n")
+		fmt.Printf("# for loc in [0-%d]^3\n", N)
+		// TODO: prune using some symmetry (probably we can get away with only
+		// one boundary-inclusive oct of the cube)
+
+		for i := 0; i < len(labels); i++ {
+			cl := labels[i]
+			fmt.Printf("## [%d]: %v\n", i, cl)
+			switch {
+			case cl&(rowHead|colHead) != fixedCell:
+
+				// choose orientation
+				fmt.Printf("# for heading in [0-5]\n")
+				// TODO: surely there's some way to prune this also:
+				// - at the very last, don't choose vectors that point out a
+				//   cube face, since they'll just fail the range check soon to
+				//   come
+				// - more advanced, also use the row counts, and prune ones
+				//   that will fail any range check before the next freedom
+				// - these could actually eliminate the need for range checks
+			}
+
+			fmt.Printf("# loc += heading\n")
+			fmt.Printf("# range check\n")
+		}
+
 		fmt.Println()
 	}
-
 }
 
 /*
