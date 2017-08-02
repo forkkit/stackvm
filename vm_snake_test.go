@@ -30,9 +30,10 @@ func Test_genSnakeCubeRows(t *testing.T) {
 	// 2:                                                        rH:cT rT:cH
 	// 1:                                                                 cT
 
+	N := 3
 	rng := makeFastRNG(15517)
 	for i := 0; i < 4; i++ {
-		rows := genSnakeCubeRows(rng, 3)
+		rows := genSnakeCubeRows(rng, N)
 		fmt.Println(rows)
 		labels := labelcells(rows)
 		for i, label := range renderRowLabels(rows, labels) {
