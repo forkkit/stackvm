@@ -12,7 +12,7 @@ func Test_genSnakeCubeRows(t *testing.T) {
 	// XXX temp workspace
 
 	// snake := []int{2, 2, 2, 1, 2, 2, 2, 1, 3, 3, 1, 2, 1, 2, 1}
-	// rowlabels := labelrows(snake)
+	// labels := labelcells(snake)
 
 	// 2: rH rT:cH
 	// 2:    rH:cT rT:cH
@@ -34,8 +34,8 @@ func Test_genSnakeCubeRows(t *testing.T) {
 	for i := 0; i < 4; i++ {
 		rows := genSnakeCubeRows(rng, 3)
 		fmt.Println(rows)
-		rowlabels := labelrows(rows)
-		for i, label := range renderRowLabels(rows, rowlabels) {
+		labels := labelcells(rows)
+		for i, label := range renderRowLabels(rows, labels) {
 			fmt.Printf("%v: %s\n", rows[i], label)
 		}
 		fmt.Println()
@@ -105,7 +105,7 @@ var snakeSolTest = TestCase{
 
 */
 
-// labelrows generates a list of row labels given a list of row counts.
+// labelcells generates a list of cell labels given a list of row counts.
 //
 // rows is simply a list of cell counts per row that describes a possible snake
 // (its ability to actually form a cube is another matter). For example,
@@ -121,7 +121,7 @@ var snakeSolTest = TestCase{
 // - rH / rT : the cell is the head or tail of a row freedom
 // - cH / cT : the cell is the head or tail of a column freedom
 // - #       : the cell is not part of a freedom
-func labelrows(rows []int) []cellLabel {
+func labelcells(rows []int) []cellLabel {
 	n := 0
 	for _, row := range rows {
 		n += row
