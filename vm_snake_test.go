@@ -43,6 +43,14 @@ func Test_genSnakeCubeRows(t *testing.T) {
 		}
 
 		// definitions and setup
+		fmt.Printf("# const vectors = [\n")
+		fmt.Printf("#   (0, 0, 1),\n")
+		fmt.Printf("#   (0, 1, 0),\n")
+		fmt.Printf("#   (1, 0, 0),\n")
+		fmt.Printf("#   (0, 0, -1),\n")
+		fmt.Printf("#   (0, -1, 0),\n")
+		fmt.Printf("#   (-1, 0, 0),\n")
+		fmt.Printf("# ]\n")
 		fmt.Printf("# alloc [3]start\n")
 		fmt.Printf("# alloc [%d]choices\n", len(labels))
 		fmt.Printf("# heading := {0, 0, 0}\n")
@@ -60,7 +68,8 @@ func Test_genSnakeCubeRows(t *testing.T) {
 			case cl&(rowHead|colHead) != fixedCell:
 
 				// choose orientation
-				fmt.Printf("# for heading in [0-5]\n")
+				fmt.Printf("# for vi := range vectors\n")
+				fmt.Printf("# heading = vectors[vi]\n")
 				fmt.Printf("# choices[%d] = heading\n", i)
 				// TODO: surely there's some way to prune this also:
 				// - at the very last, don't choose vectors that point out a
