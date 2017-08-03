@@ -44,6 +44,9 @@ func Test_genSnakeCubeRows(t *testing.T) {
 
 		// definitions and setup
 		fmt.Printf("# const vectors = [\n")
+		fmt.Printf("#   // laid out such that each direction and its opposite are congruent\n")
+		fmt.Printf("#   // index-mod-3 so that we can quickly check for 'not the same or\n")
+		fmt.Printf("#   // opposite direction' when selecting a turn heading.\n")
 		fmt.Printf("#   (0, 0, 1),\n")
 		fmt.Printf("#   (0, 1, 0),\n")
 		fmt.Printf("#   (1, 0, 0),\n")
