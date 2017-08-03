@@ -56,7 +56,7 @@ func Test_genSnakeCubeRows(t *testing.T) {
 		fmt.Printf("# heading := {0, 0, 0}\n")
 
 		// choose starting position
-		fmt.Printf("# for start in [0-%d]^3\n", N)
+		fmt.Printf("# forall start in [0-%d]^3\n", N)
 		fmt.Printf("# loc := start\n")
 		// TODO: prune using some symmetry (probably we can get away with only
 		// one boundary-inclusive oct of the cube)
@@ -68,7 +68,7 @@ func Test_genSnakeCubeRows(t *testing.T) {
 			case cl&(rowHead|colHead) != fixedCell:
 
 				// choose orientation
-				fmt.Printf("# for vi := range vectors\n")
+				fmt.Printf("# forall vi := range vectors\n")
 				fmt.Printf("# heading = vectors[vi]\n")
 				fmt.Printf("# choices[%d] = heading\n", i)
 				// TODO: surely there's some way to prune this also:
