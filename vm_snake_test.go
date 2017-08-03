@@ -98,7 +98,9 @@ func Test_genSnakeCubeRows(t *testing.T) {
 			}
 
 			fmt.Printf("# loc += heading\n")
-			fmt.Printf("# range check\n")
+			fmt.Printf("# halt ERANGE if loc[0] < 0 || loc[0] >= %d\n", N)
+			fmt.Printf("# halt ERANGE if loc[1] < 0 || loc[1] >= %d\n", N)
+			fmt.Printf("# halt ERANGE if loc[2] < 0 || loc[2] >= %d\n", N)
 		}
 
 		fmt.Println()
