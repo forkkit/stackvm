@@ -56,10 +56,13 @@ func Test_genSnakeCubeRows(t *testing.T) {
 		fmt.Printf("# heading := {0, 0, 0}\n")
 
 		// choose starting position
-		fmt.Printf("# forall start in [0-%d]^3\n", N)
-		fmt.Printf("# loc := start\n")
+		fmt.Printf("# forall xi := 0; xi < %d; xi++\n", N)
+		fmt.Printf("# forall yi := 0; yi < %d; yi++\n", N)
+		fmt.Printf("# forall zi := 0; zi < %d; zi++\n", N)
 		// TODO: prune using some symmetry (probably we can get away with only
 		// one boundary-inclusive oct of the cube)
+		fmt.Printf("# loc := (xi, yi, zi)\n")
+		fmt.Printf("# start = loc\n")
 
 		for i := 0; i < len(labels); i++ {
 			cl := labels[i]
