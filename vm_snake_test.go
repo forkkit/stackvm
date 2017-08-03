@@ -42,10 +42,12 @@ func Test_genSnakeCubeRows(t *testing.T) {
 			fmt.Printf("%v: %s\n", rows[i], label)
 		}
 
-		// choose starting position
+		// definitions and setup
 		fmt.Printf("# alloc [3]start\n")
 		fmt.Printf("# alloc [%d]choices\n", len(labels))
 		fmt.Printf("# heading := {0, 0, 0}\n")
+
+		// choose starting position
 		fmt.Printf("# for start in [0-%d]^3\n", N)
 		fmt.Printf("# loc := start\n")
 		// TODO: prune using some symmetry (probably we can get away with only
