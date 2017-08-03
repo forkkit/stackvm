@@ -53,7 +53,6 @@ func Test_genSnakeCubeRows(t *testing.T) {
 		fmt.Printf("# ]\n")
 		fmt.Printf("# alloc [3]start\n")
 		fmt.Printf("# alloc [%d]choices\n", len(labels))
-		fmt.Printf("# heading := {0, 0, 0}\n")
 
 		// choose starting position
 		fmt.Printf("# forall xi := 0; xi < %d; xi++\n", N)
@@ -64,7 +63,11 @@ func Test_genSnakeCubeRows(t *testing.T) {
 		fmt.Printf("# loc := (xi, yi, zi)\n")
 		fmt.Printf("# start = loc\n")
 
-		for i := 0; i < len(labels); i++ {
+		fmt.Printf("# forall vi := range vectors\n")
+		fmt.Printf("# heading := vectors[vi]\n")
+		fmt.Printf("# choices[%d] = heading\n", i)
+
+		for i := 1; i < len(labels); i++ {
 			cl := labels[i]
 			fmt.Printf("## [%d]: %v\n", i, cl)
 			switch {
