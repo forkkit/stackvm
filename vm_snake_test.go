@@ -67,14 +67,20 @@ func Test_genSnakeCubeRows(t *testing.T) {
 		fmt.Printf("# heading := vectors[vi]\n")
 		fmt.Printf("# choices[%d] = vi\n", i)
 
+		lastChoice := 0
 		for i := 1; i < len(labels); i++ {
 			cl := labels[i]
 			fmt.Printf("## [%d]: %v\n", i, cl)
 			switch {
 			case cl&(rowHead|colHead) != fixedCell:
-
 				// choose orientation
 				fmt.Printf("# forall vi := range vectors\n")
+				fmt.Printf("# halt EENCONCEIVABLE if vi%%3 == choices[%d]%%3\n", lastChoice)
+				// TODO: micro perf faster to avoid forking, rather than
+				// fork-and-guard... really we need to have a filtered-forall,
+				// or forall-such-that in whatever higher level language we
+				// start building Later ™
+
 				fmt.Printf("# heading = vectors[vi]\n")
 				fmt.Printf("# choices[%d] = vi\n", i)
 				// TODO: surely there's some way to prune this also:
@@ -84,6 +90,8 @@ func Test_genSnakeCubeRows(t *testing.T) {
 				// - more advanced, also use the row counts, and prune ones
 				//   that will fail any range check before the next freedom
 				// - these could actually eliminate the need for range checks
+
+				lastChoice = i
 			}
 
 			fmt.Printf("# loc += heading\n")
