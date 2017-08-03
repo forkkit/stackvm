@@ -65,7 +65,7 @@ func Test_genSnakeCubeRows(t *testing.T) {
 
 		fmt.Printf("# forall vi := range vectors\n")
 		fmt.Printf("# heading := vectors[vi]\n")
-		fmt.Printf("# choices[%d] = heading\n", i)
+		fmt.Printf("# choices[%d] = vi\n", i)
 
 		for i := 1; i < len(labels); i++ {
 			cl := labels[i]
@@ -76,7 +76,7 @@ func Test_genSnakeCubeRows(t *testing.T) {
 				// choose orientation
 				fmt.Printf("# forall vi := range vectors\n")
 				fmt.Printf("# heading = vectors[vi]\n")
-				fmt.Printf("# choices[%d] = heading\n", i)
+				fmt.Printf("# choices[%d] = vi\n", i)
 				// TODO: surely there's some way to prune this also:
 				// - at the very last, don't choose vectors that point out a
 				//   cube face, since they'll just fail the range check soon to
