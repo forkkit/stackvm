@@ -111,6 +111,14 @@ func tokenize(in []interface{}) (out []token, err error) {
 	i := 0
 	for ; i < len(in); i++ {
 		if s, ok := in[i].(string); ok {
+			// directive
+			if len(s) > 1 && s[0] == '.' {
+				switch s[1:] {
+				default:
+					return nil, fmt.Errorf("invalid directive %s", s)
+				}
+			}
+
 			// label
 			if j := len(s) - 1; j > 0 && s[j] == ':' {
 				out = append(out, label(s[:j]))
@@ -135,7 +143,7 @@ func tokenize(in []interface{}) (out []token, err error) {
 		}
 
 		return nil, fmt.Errorf(
-			`invalid token %T(%v); expected "label:", ":ref", "opName", or an int`,
+			`invalid token %T(%v); expected ".directive", "label:", ":ref", "opName", or an int`,
 			in[i], in[i])
 
 	op:
