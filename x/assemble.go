@@ -109,11 +109,48 @@ func (t token) String() string {
 
 func tokenize(in []interface{}) (out []token, err error) {
 	i := 0
+
+	goto text
+
+data:
 	for ; i < len(in); i++ {
 		if s, ok := in[i].(string); ok {
 			// directive
 			if len(s) > 1 && s[0] == '.' {
 				switch s[1:] {
+				case "data":
+					continue
+				case "text":
+					goto text
+				default:
+					return nil, fmt.Errorf("invalid directive %s", s)
+				}
+			}
+
+			// label
+			if j := len(s) - 1; j > 0 && s[j] == ':' {
+				out = append(out, label(s[:j]))
+				continue
+			}
+
+			return nil, fmt.Errorf("unexpected string %q", s)
+		}
+
+		return nil, fmt.Errorf(
+			`invalid token %T(%v); expected ".directive", "label:", or an int`,
+			in[i], in[i])
+	}
+
+text:
+	for ; i < len(in); i++ {
+		if s, ok := in[i].(string); ok {
+			// directive
+			if len(s) > 1 && s[0] == '.' {
+				switch s[1:] {
+				case "data":
+					goto data
+				case "text":
+					continue
 				default:
 					return nil, fmt.Errorf("invalid directive %s", s)
 				}
