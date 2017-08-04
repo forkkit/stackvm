@@ -9,6 +9,30 @@ import (
 	"github.com/jcorbin/stackvm"
 )
 
+// copied from generated op_codes.go, which isn't that bad
+// since having "the zero op crash" should perhaps be the
+// most stable part of the ISA.
+const opCodeCrash = 0x00
+
+// dataOp returns an invalid Op that carries a dataToken. These invalid ops are
+// used temporarily within within assemble. The ops are "invalid" because thy
+// are a "crash with immediate", which will never be represented by a valid
+// combination of immToken and opToken.
+func dataOp(d uint32) stackvm.Op {
+	return stackvm.Op{
+		Code: opCodeCrash,
+		Have: true,
+		Arg:  d,
+	}
+}
+
+func opData(op stackvm.Op) (uint32, bool) {
+	if op.Code == opCodeCrash && op.Have {
+		return op.Arg, true
+	}
+	return 0, false
+}
+
 // Assemble builds a byte encoded machine program from a slice of
 // operation names. Operations may be preceded by an immediate
 // argument. An immediate argument may be an integer value, or a label
@@ -64,6 +88,7 @@ const (
 	refToken
 	opToken
 	immToken
+	dataToken
 )
 
 func (tt tokenType) String() string {
@@ -76,6 +101,8 @@ func (tt tokenType) String() string {
 		return "op"
 	case immToken:
 		return "imm"
+	case dataToken:
+		return "data"
 	default:
 		return fmt.Sprintf("InvalidTokenType(%d)", tt)
 	}
@@ -91,6 +118,7 @@ func label(s string) token  { return token{t: labelToken, s: s} }
 func ref(s string) token    { return token{t: refToken, s: s} }
 func opName(s string) token { return token{t: opToken, s: s} }
 func imm(n int) token       { return token{t: immToken, d: uint32(n)} }
+func data(d uint32) token   { return token{t: dataToken, d: d} }
 
 func (t token) String() string {
 	switch t.t {
@@ -134,6 +162,12 @@ data:
 			}
 
 			return nil, fmt.Errorf("unexpected string %q", s)
+		}
+
+		// data word
+		if n, ok := in[i].(int); ok {
+			out = append(out, data(uint32(n)))
+			continue
 		}
 
 		return nil, fmt.Errorf(
@@ -236,6 +270,10 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 			ops = append(ops, op)
 			numJumps++
 
+		case dataToken:
+			maxBytes += 4
+			ops = append(ops, dataOp(tok.d))
+
 		case immToken:
 			// op with immediate arg
 			arg, have = tok.d, true
@@ -313,6 +351,16 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 				jc = jc.next()
 			}
 		}
+
+		if d, ok := opData(ops[i]); ok {
+			// encode a dataToken
+			stackvm.ByteOrder.PutUint32(p[c:], d)
+			c += 4
+			i++
+			offsets[i] = c
+			continue
+		}
+
 		// encode next operation
 		c += uint32(ops[i].EncodeInto(p[c:]))
 		i++
