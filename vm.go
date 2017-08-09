@@ -281,7 +281,7 @@ func (m *Mach) step() {
 		}
 		m.err = err
 
-	case opCodeStoreTo:
+	case opCodeStoreto:
 		addr, err := m.pop()
 		if err == nil {
 			var val uint32
@@ -306,7 +306,7 @@ func (m *Mach) step() {
 		}
 		m.err = err
 
-	case opCodeStoreTo | opCodeWithImm:
+	case opCodeStoreto | opCodeWithImm:
 		val, err := m.pop()
 		if err == nil {
 			err = m.store(oc.arg, val)
@@ -442,13 +442,13 @@ func (m *Mach) step() {
 		m.err = m.cpush(m.ip)
 	case opCodeCpop:
 		_, m.err = m.cpop()
-	case opCodeP2c:
+	case opCodeP2C:
 		val, err := m.pop()
 		if err == nil {
 			err = m.cpush(val)
 		}
 		m.err = err
-	case opCodeC2p:
+	case opCodeC2P:
 		val, err := m.cpop()
 		if err == nil {
 			err = m.push(val)
@@ -460,7 +460,7 @@ func (m *Mach) step() {
 		for i := uint32(0); i < oc.arg && m.err == nil; i++ {
 			_, m.err = m.cpop()
 		}
-	case opCodeP2c | opCodeWithImm:
+	case opCodeP2C | opCodeWithImm:
 		for i := uint32(0); i < oc.arg && m.err == nil; i++ {
 			val, err := m.pop()
 			if err == nil {
@@ -468,7 +468,7 @@ func (m *Mach) step() {
 			}
 			m.err = err
 		}
-	case opCodeC2p | opCodeWithImm:
+	case opCodeC2P | opCodeWithImm:
 		for i := uint32(0); i < oc.arg && m.err == nil; i++ {
 			val, err := m.cpop()
 			if err == nil {
