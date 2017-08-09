@@ -37,9 +37,9 @@ var smmTest = TestCase{
 		// 0 1 2 3 4 5 6 7
 		// d e y n r o s m
 
-		//// d + e = y  (mod 10)
-
 		0x0140, "cpush", 0x0140+4*8, "cpush", // : 0x0140 0x0160
+
+		//// d + e = y  (mod 10)
 
 		0x0140+4*0, "push", ":choose", "call", // $d :
 		0x0140+4*1, "push", ":choose", "call", // $d $e :
@@ -104,7 +104,7 @@ var smmTest = TestCase{
 		"chooseNext:", 1, "add", // &$X i++ : retIp
 		"chooseLoop:",                        // &$X i : retIp
 		"dup", 9, "lt", ":chooseNext", "fnz", // &$X i : retIp   -- fork next if i < 9
-		"dup", 2, "swap", "storeTo", // $X=i: retIp
+		"dup", 2, "swap", "storeTo", // $X=i : retIp
 		"dup", // $X $X : retIP   -- dup as arg for fallsthrough to markUsed
 
 		"markUsed:",                     // $X : retIp
