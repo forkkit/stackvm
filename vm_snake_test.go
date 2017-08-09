@@ -146,6 +146,28 @@ func Test_snakeCube(t *testing.T) {
 			"halt", // : &choices[0] &choices[M+1]
 		)
 
+		// TODO: factor out some sort of x/codedumper
+		cont := false
+		for _, c := range code {
+			if s, ok := c.(string); ok {
+				if strings.HasSuffix(s, ":") {
+					fmt.Printf("\n")
+					cont = false
+				}
+			}
+			if cont {
+				fmt.Printf(" ")
+			}
+			fmt.Printf(fmt.Sprint(c))
+			cont = true
+			if s, ok := c.(string); ok {
+				if s == "ret" {
+					fmt.Printf("\n\n")
+					cont = false
+				}
+			}
+		}
+
 		MustAssemble(code...)
 	}
 }
