@@ -28,18 +28,12 @@ func Test_snakeCube(t *testing.T) {
 		}
 
 		// definitions and setup
-		fmt.Printf("# const vectors = [\n")
-		fmt.Printf("#   // laid out such that each direction and its opposite are congruent\n")
-		fmt.Printf("#   // index-mod-9 so that we can quickly check for 'not the same or\n")
-		fmt.Printf("#   // opposite direction' when selecting a turn heading.\n")
-		fmt.Printf("#   1, 0, 0,\n")
-		fmt.Printf("#   0, 1, 0,\n")
-		fmt.Printf("#   0, 0, 1,\n")
-		fmt.Printf("#   -1, 0, 0,\n")
-		fmt.Printf("#   0, -1, 0,\n")
-		fmt.Printf("#   0, 0, -1,\n")
-		fmt.Printf("# ]\n")
-		fmt.Printf("# alloc [3]start\n")
+		fmt.Printtf("// unit vectors in x,y,z space, mapped to one-dimensional space under the\n")
+		fmt.Printtf("// row-major convention. Strategically laid out such that a direction and its\n")
+		fmt.Printtf("// opposite are congruent index-mod-3. The index-mod-3 property lets us quickly\n")
+		fmt.Printtf("// check for 'not same or opposiite direction' later on.\n")
+		fmt.Printf("# const vectors = [1, 3, 9, -1, -3, -9]\n")
+
 		fmt.Printf("# alloc [%d]choices\n", len(labels))
 
 		// choose starting position
@@ -48,15 +42,10 @@ func Test_snakeCube(t *testing.T) {
 		fmt.Printf("# forall zi := 0; zi < %d; zi++\n", N)
 		// TODO: prune using some symmetry (probably we can get away with only
 		// one boundary-inclusive oct of the cube)
-		fmt.Printf("# start[0] = xi\n")
-		fmt.Printf("# start[1] = yi\n")
-		fmt.Printf("# start[2] = zi\n")
+		fmt.Printf("# i := xi+3*(yi+3*zi)\n")
 
-		fmt.Printf("# forall vi := range vectors\n")
+		fmt.Printf("# forall vi, di := range vectors\n")
 		fmt.Printf("# choices[%d] = vi\n", i)
-		fmt.Printf("# hx := vectors[vi]\n")
-		fmt.Printf("# hy := vectors[vi+1]\n")
-		fmt.Printf("# hz := vectors[vi+2]\n")
 
 		lastChoice := 0
 		for i := 1; i < len(labels); i++ {
@@ -65,17 +54,14 @@ func Test_snakeCube(t *testing.T) {
 			switch {
 			case cl&(rowHead|colHead) != fixedCell:
 				// choose orientation
-				fmt.Printf("# forall vi := 0; vi < len(vectors); vi+=3\n")
-				fmt.Printf("# halt EENCONCEIVABLE if vi%%9 == choices[%d]%%9\n", lastChoice)
+				fmt.Printf("# forall vi, di := range vectors\n")
+				fmt.Printf("# halt EENCONCEIVABLE if vi%%3 == choices[%d]%%3\n", lastChoice)
 				// TODO: micro perf faster to avoid forking, rather than
 				// fork-and-guard... really we need to have a filtered-forall,
 				// or forall-such-that in whatever higher level language we
 				// start building Later ™
 
 				fmt.Printf("# choices[%d] = vi\n", i)
-				fmt.Printf("# hx := vectors[vi]\n")
-				fmt.Printf("# hy := vectors[vi+1]\n")
-				fmt.Printf("# hz := vectors[vi+2]\n")
 				// TODO: surely there's some way to prune this also:
 				// - at the very last, don't choose vectors that point out a
 				//   cube face, since they'll just fail the range check soon to
@@ -87,12 +73,8 @@ func Test_snakeCube(t *testing.T) {
 				lastChoice = i
 			}
 
-			fmt.Printf("# xi += hx\n")
-			fmt.Printf("# halt ERANGE if xi < 0 || xi >= %d\n", N)
-			fmt.Printf("# yi += hy\n")
-			fmt.Printf("# halt ERANGE if yi < 0 || yi >= %d\n", N)
-			fmt.Printf("# zi += hz\n")
-			fmt.Printf("# halt ERANGE if zi < 0 || zi >= %d\n", N)
+			fmt.Printf("# i += di\n")
+			fmt.Printf("# halt ERANGE if i < 0 || i >= %d\n", N*N*N)
 		}
 
 		fmt.Println()
