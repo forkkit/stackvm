@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-)
 
-// . "github.com/jcorbin/stackvm/x"
+	. "github.com/jcorbin/stackvm/x"
+)
 
 func Test_snakeCube(t *testing.T) {
 	N := 3
@@ -19,6 +19,12 @@ func Test_snakeCube(t *testing.T) {
 
 		for i, label := range renderRowLabels(rows, labels) {
 			fmt.Printf("%v: %s\n", rows[i], label)
+		}
+
+		code := []interface{}{
+			0x40, // stack size
+
+			"halt",
 		}
 
 		// definitions and setup
@@ -90,6 +96,8 @@ func Test_snakeCube(t *testing.T) {
 		}
 
 		fmt.Println()
+
+		MustAssemble(code...)
 	}
 }
 
