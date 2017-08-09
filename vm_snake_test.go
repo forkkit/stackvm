@@ -21,47 +21,97 @@ func Test_snakeCube(t *testing.T) {
 			fmt.Printf("%v: %s\n", rows[i], label)
 		}
 
+		M := len(labels)
+
 		code := []interface{}{
 			0x40, // stack size
 
-			"halt",
+			//// definitions and setup
+
+			// forall returns N times for ever lo <= n <= hi
+			"forall:",             // lo hi : retIp
+			"swap",                // hi v=lo : retIp
+			":forallLoop", "jump", // hi v : retIp
+			"forallNext:", // hi v : retIp
+			1, "add",      // hi v++ : retIp
+			"forallLoop:",   // hi v : retIp
+			"dup", 3, "dup", // hi v v hi : retIp
+			"lt",                 // hi v v<hi : retIp
+			":forallNext", "fnz", // hi v : retIp   -- fork next if i < hi
+			"swap", "pop", // v : retIp
+			"ret", // v :
+
+			// unit vectors in x,y,z space, mapped to one-dimensional space under the
+			// row-major convention. Strategically laid out such that a direction and its
+			// opposite are congruent index-mod-3. The index-mod-3 property lets us quickly
+			// check for 'not same or opposiite direction' later on.
+			"initVectors:", // vectors [6]int32 @0x0800
+			0x0800, "push", 1, "store",
+			0x0804, "push", 3, "store",
+			0x0808, "push", 9, "store",
+			0x080c, "push", -1, "store",
+			0x0810, "push", -3, "store",
+			0x0814, "push", -9, "store",
+
+			// choices [M+1]uint32 @0x1000
+			// - choices[0] is the starting index
+			// - choices[1:] are the orientation choice for each fixed-chain head
+
+			//// choose starting position
+			// TODO: prune using some symmetry (probably we can get away with
+			// only one boundary-inclusive oct of the cube)
+
+			"chooseStart:",
+			0, "push", N, "push", ":forall", "call", // xi :
+			0, "push", N, "push", ":forall", "call", // xi yi :
+			0, "push", N, "push", ":forall", "call", // xi yi zi :
+
+			//// compute starting index
+
+			3, "mul", // xi yi 3*zi :
+			"add",    // xi yi+3*zi :
+			3, "mul", // xi 3*(yi+3*zi) :
+			"add", // xi+3*(yi+3*zi) :   -- i=...
+
+			//// choose initial direction: at first all of them are possible
+
+			"choose_0:",
+			0, "push", 5, "push", ":forall", "call", // i vi :
+			"dup",             // i vi vi :
+			0x1000, "storeTo", // i vi :   -- choices[0]=vi
+			"dup",                   // i vi vi :
+			4, "mul", 0x0800, "add", // i vi &vectors[vi] :
+			"fetch", // i vi di=vectors[vi] :
 		}
 
-		// definitions and setup
-		fmt.Printtf("// unit vectors in x,y,z space, mapped to one-dimensional space under the\n")
-		fmt.Printtf("// row-major convention. Strategically laid out such that a direction and its\n")
-		fmt.Printtf("// opposite are congruent index-mod-3. The index-mod-3 property lets us quickly\n")
-		fmt.Printtf("// check for 'not same or opposiite direction' later on.\n")
-		fmt.Printf("# const vectors = [1, 3, 9, -1, -3, -9]\n")
-
-		fmt.Printf("# alloc [%d]choices\n", len(labels))
-
-		// choose starting position
-		fmt.Printf("# forall xi := 0; xi < %d; xi++\n", N)
-		fmt.Printf("# forall yi := 0; yi < %d; yi++\n", N)
-		fmt.Printf("# forall zi := 0; zi < %d; zi++\n", N)
-		// TODO: prune using some symmetry (probably we can get away with only
-		// one boundary-inclusive oct of the cube)
-		fmt.Printf("# i := xi+3*(yi+3*zi)\n")
-
-		fmt.Printf("# forall vi, di := range vectors\n")
-		fmt.Printf("# choices[%d] = vi\n", i)
-
-		lastChoice := 0
-		for i := 1; i < len(labels); i++ {
+		for i := 1; i < M; i++ {
 			cl := labels[i]
-			fmt.Printf("## [%d]: %v\n", i, cl)
 			switch {
 			case cl&(rowHead|colHead) != fixedCell:
-				// choose orientation
-				fmt.Printf("# forall vi, di := range vectors\n")
-				fmt.Printf("# halt EENCONCEIVABLE if vi%%3 == choices[%d]%%3\n", lastChoice)
+				// choose next orientation
+				code = append(code,
+					fmt.Sprintf("choice_%d:", i), // i vi di :
+					"pop",                                   // i lastVi=vi :
+					0, "push", 5, "push", ":forall", "call", // i lastVi vi :
+					"dup",     // i lastVi vi vi :
+					2, "swap", // i vi lastVi vi :
+					3, "mod", // i vi lastVi vi%3 :
+					"swap",   // i vi vi%3 lastVi :
+					3, "mod", // i vi vi%3 lastVi%3 :
+					"eq",     // i vi vi%3==lastVi%3 :
+					1, "hnz", // i vi :  -- halt if ...
+					"dup",                 // i vi vi :
+					0x1000+4*i, "storeTo", // i vi :   -- choices[i]=vi
+					"dup",                   // i vi vi :
+					4, "mul", 0x0800, "add", // i vi &vectors[vi] :
+					"fetch", // i vi di=vectors[vi] :
+				)
+
 				// TODO: micro perf faster to avoid forking, rather than
 				// fork-and-guard... really we need to have a filtered-forall,
 				// or forall-such-that in whatever higher level language we
 				// start building Later ™
 
-				fmt.Printf("# choices[%d] = vi\n", i)
 				// TODO: surely there's some way to prune this also:
 				// - at the very last, don't choose vectors that point out a
 				//   cube face, since they'll just fail the range check soon to
@@ -69,15 +119,28 @@ func Test_snakeCube(t *testing.T) {
 				// - more advanced, also use the row counts, and prune ones
 				//   that will fail any range check before the next freedom
 				// - these could actually eliminate the need for range checks
-
-				lastChoice = i
 			}
 
-			fmt.Printf("# i += di\n")
-			fmt.Printf("# halt ERANGE if i < 0 || i >= %d\n", N*N*N)
+			code = append(code,
+				fmt.Sprintf("advance_%d:", i), // i vi di :
+				"dup",     // i vi di di :
+				3, "swap", // vi di di i :
+				"add",          // vi di i+=di :
+				"dup", 0, "lt", // vi di i i<0 :
+				2, "hnz", // vi di i :   -- halt if ...
+				"dup", N*N*N, "gte", // vi di i i>=N^3 :
+				2, "hnz", // vi di i :   -- halt if ...
+				2, "swap", // i vi di :
+			)
 		}
 
-		fmt.Println()
+		code = append(code,
+			"done:",  // i v di :
+			3, "pop", // :
+			0x1000, "cpush", // : &choices[0]
+			0x1000+4*(M+1), "cpush", // : &choices[0] &choices[M+1]
+			"halt", // : &choices[0] &choices[M+1]
+		)
 
 		MustAssemble(code...)
 	}
