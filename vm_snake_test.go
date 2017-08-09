@@ -41,6 +41,8 @@ func Test_snakeCube(t *testing.T) {
 			"swap", "pop", // v : retIp
 			"ret", // v :
 
+			// TODO: oh right! we need something for collision detection! [N*N*N]occupied should do
+
 			// unit vectors in x,y,z space, mapped to one-dimensional space under the
 			// row-major convention. Strategically laid out such that a direction and its
 			// opposite are congruent index-mod-3. The index-mod-3 property lets us quickly
@@ -132,6 +134,8 @@ func Test_snakeCube(t *testing.T) {
 				2, "hnz", // vi di i :   -- halt if ...
 				2, "swap", // i vi di :
 			)
+
+			// TODO: collision check
 		}
 
 		code = append(code,
