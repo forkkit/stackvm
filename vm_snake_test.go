@@ -195,31 +195,7 @@ func Test_snakeCube(t *testing.T) {
 			"halt", // : &choices[0] &choices[M+1]
 		)
 
-		// TODO: factor out some sort of x/codedumper
-		cont := false
-		for _, c := range code {
-			if s, ok := c.(string); ok {
-				if cont && strings.HasSuffix(s, ":") {
-					fmt.Printf("\n")
-					cont = false
-				}
-			}
-			if cont {
-				fmt.Printf(" ")
-			}
-			fmt.Printf(fmt.Sprint(c))
-			cont = true
-			if s, ok := c.(string); ok {
-				if s == "ret" {
-					fmt.Printf("\n\n")
-					cont = false
-				}
-			}
-		}
-		if cont {
-			fmt.Printf("\n\n")
-			cont = false
-		}
+		dumpCode(code)
 
 		MustAssemble(code...)
 	}
@@ -410,4 +386,32 @@ func (fr fastRNG) next() uint32 {
 	n = M*n + C
 	*fr.state = n
 	return n
+}
+
+// TODO: factor out some sort of x/codedumper
+func dumpCode(code []interface{}) {
+	cont := false
+	for _, c := range code {
+		if s, ok := c.(string); ok {
+			if cont && strings.HasSuffix(s, ":") {
+				fmt.Printf("\n")
+				cont = false
+			}
+		}
+		if cont {
+			fmt.Printf(" ")
+		}
+		fmt.Printf(fmt.Sprint(c))
+		cont = true
+		if s, ok := c.(string); ok {
+			if s == "ret" {
+				fmt.Printf("\n\n")
+				cont = false
+			}
+		}
+	}
+	if cont {
+		fmt.Printf("\n\n")
+		cont = false
+	}
 }
