@@ -251,28 +251,28 @@ func (t testCaseRun) checkError(err error) {
 type NoResult struct{}
 type noResult struct{ testing.TB }
 
-func (r NoResult) start(tb testing.TB, m *stackvm.Mach) finisher { return noResult{tb} }
+func (nr NoResult) start(tb testing.TB, m *stackvm.Mach) finisher { return noResult{tb} }
 
 // WithExpectedHaltCodes creates a TestCaseResult that expects any number of
 // non-zero halt codes in addition to expecting no result values. If a machine
 // exits with an unexpected non-zero halt code, the test still fails.
-func (r NoResult) WithExpectedHaltCodes(codes ...uint32) TestCaseResult {
-	return filteredResults{r, []resultChecker{expectedHaltCodes(codes)}}
+func (nr NoResult) WithExpectedHaltCodes(codes ...uint32) TestCaseResult {
+	return filteredResults{nr, []resultChecker{expectedHaltCodes(codes)}}
 }
 
-func (r noResult) Handle(m *stackvm.Mach) error {
+func (nr noResult) Handle(m *stackvm.Mach) error {
 	res, err := Result{}.take(m)
 	if err != nil {
 		return err
 	}
-	assert.Equal(r, Result{}, res, "expected empty result")
+	assert.Equal(nr, Result{}, res, "expected empty result")
 	return nil
 }
 
-func (r noResult) finish(m *stackvm.Mach) {
+func (nr noResult) finish(m *stackvm.Mach) {
 	res, err := Result{}.take(m)
-	require.NoError(r, err, "unexpected error taking final result")
-	assert.Equal(r, Result{}, res, "expected empty result")
+	require.NoError(nr, err, "unexpected error taking final result")
+	assert.Equal(nr, Result{}, res, "expected empty result")
 }
 
 // Result represents an expected or actual result within a TestCase. It can be
