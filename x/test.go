@@ -233,9 +233,9 @@ func (t testCaseRun) build() *stackvm.Mach {
 
 func (t testCaseRun) checkError(err error) {
 	if t.Err == "" {
-		assert.NoError(t, err, "unexpected run error")
+		require.NoError(t, err, "unexpected run error")
 	} else {
-		assert.EqualError(t, errors.Cause(err), t.Err, "unexpected run error")
+		assert.EqualError(t, errors.Cause(err), t.Err, "expected run error")
 	}
 }
 
@@ -264,7 +264,7 @@ type runResult struct {
 
 func (rr runResult) finish(m *stackvm.Mach) {
 	actual, err := rr.Result.take(m)
-	assert.NoError(rr, err, "unexpected error taking final result")
+	require.NoError(rr, err, "unexpected error taking final result")
 	assert.Equal(rr, rr.Result, actual, "expected result")
 }
 
