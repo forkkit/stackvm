@@ -82,9 +82,7 @@ func Test_snakeCube(t *testing.T) {
 			0, "push", 5, "push", ":forall", "call", // i vi :
 			"dup",             // i vi vi :
 			0x1000, "storeTo", // i vi :   -- choices[0]=vi
-			"dup",                   // i vi vi :
-			4, "mul", 0x0800, "add", // i vi &vectors[vi] :
-			"fetch", // i vi di=vectors[vi] :
+			"swap", // vi i :
 		}
 
 		for i := 1; i < M; i++ {
@@ -93,8 +91,8 @@ func Test_snakeCube(t *testing.T) {
 			case cl&(rowHead|colHead) != fixedCell:
 				// choose next orientation
 				code = append(code,
-					fmt.Sprintf("choice_%d:", i), // i vi di :
-					"pop",                                   // i lastVi=vi :
+					fmt.Sprintf("choice_%d:", i), // vi i :
+					"swap",                                  // i lastVi=vi :
 					0, "push", 5, "push", ":forall", "call", // i lastVi vi :
 					"dup",     // i lastVi vi vi :
 					2, "swap", // i vi lastVi vi :
@@ -105,9 +103,7 @@ func Test_snakeCube(t *testing.T) {
 					1, "hnz", // i vi :  -- halt if ...
 					"dup",                 // i vi vi :
 					0x1000+4*i, "storeTo", // i vi :   -- choices[i]=vi
-					"dup",                   // i vi vi :
-					4, "mul", 0x0800, "add", // i vi &vectors[vi] :
-					"fetch", // i vi di=vectors[vi] :
+					"swap", // vi i :
 				)
 
 				// TODO: micro perf faster to avoid forking, rather than
@@ -125,23 +121,19 @@ func Test_snakeCube(t *testing.T) {
 			}
 
 			code = append(code,
-				fmt.Sprintf("advance_%d:", i), // i vi di :
-				"dup",     // i vi di di :
-				3, "swap", // vi di di i :
-				"add",          // vi di i+=di :
-				"dup", 0, "lt", // vi di i i<0 :
-				2, "hnz", // vi di i :   -- halt if ...
-				"dup", N*N*N, "gte", // vi di i i>=N^3 :
-				2, "hnz", // vi di i :   -- halt if ...
-				2, "swap", // i vi di :
+				fmt.Sprintf("advance_%d:", i), // vi i :
+				// TODO: actually advance along vi heading
+				"dup", 0, "lt", // vi i i<0 :
+				2, "hnz", // vi i :   -- halt if ...
+				"dup", N*N*N, "gte", // vi i i>=N^3 :
+				2, "hnz", // vi i :   -- halt if ...
+				// TODO: collision check
 			)
-
-			// TODO: collision check
 		}
 
 		code = append(code,
-			"done:",  // i v di :
-			3, "pop", // :
+			"done:",  // i v :
+			2, "pop", // :
 			0x1000, "cpush", // : &choices[0]
 			0x1000+4*(M+1), "cpush", // : &choices[0] &choices[M+1]
 			"halt", // : &choices[0] &choices[M+1]
