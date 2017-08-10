@@ -199,7 +199,7 @@ func Test_snakeCube(t *testing.T) {
 		cont := false
 		for _, c := range code {
 			if s, ok := c.(string); ok {
-				if strings.HasSuffix(s, ":") {
+				if cont && strings.HasSuffix(s, ":") {
 					fmt.Printf("\n")
 					cont = false
 				}
@@ -215,6 +215,10 @@ func Test_snakeCube(t *testing.T) {
 					cont = false
 				}
 			}
+		}
+		if cont {
+			fmt.Printf("\n\n")
+			cont = false
 		}
 
 		MustAssemble(code...)
