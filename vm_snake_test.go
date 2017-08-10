@@ -56,6 +56,21 @@ func Test_snakeCube(t *testing.T) {
 			"add", // i=x+3*(3*z+y) : retIp
 			"ret", // i : retIp
 
+			"vec3addptr:", // x y z p=*[3]uint32 : retIp
+			3, "swap",     // p y z x : retIp
+			4, "dup", "fetch", // p y z x dx=*p : retIp
+			"add",     // p y z x+dx : retIp
+			3, "swap", // x+dx y z p : retIp
+			4, "add", // x+dx y z p+=4 : retIp
+			2, "swap", // x+dx p z y : retIp
+			3, "dup", "fetch", // x+dx p z y dy=*p : retIp
+			"add",     // x+dx p z y+dy : retIp
+			2, "swap", // x+dx y+dy z p : retIp
+			4, "add", // x+dx y+dy z p+=4 : retIp
+			"fetch", // x+dx y+dy z dz=*p : retIp
+			"add",   // x+dx y+dy z+dz : retIp
+			"ret",   // x+dx y+dy z+dz :
+
 			// TODO: oh right! we need something for collision detection! [N*N*N]occupied should do
 
 			// unit vectors in x,y,z space. Strategically laid out such that a
@@ -155,7 +170,9 @@ func Test_snakeCube(t *testing.T) {
 			code = append(code,
 				fmt.Sprintf("advance_%d:", i), // vi i :
 				":i2xyz", "call",              // vi x y z :
-				// TODO: actually advance along vi heading
+				4, "dup", 3, "mul", // vi x y z 3*vi :
+				4, "mul", 0x0800, "add", // vi x y z &vectors[3*vi] :
+				":vec3addptr", "call", // vi x y z :   -- x,y,z now incremented by the vector
 				":xyz2i", "call", // vi i :
 				"dup", 0, "lt", // vi i i<0 :
 				2, "hnz", // vi i :   -- halt if ...
