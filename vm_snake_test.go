@@ -14,12 +14,12 @@ func Test_snakeCube(t *testing.T) {
 
 	for i := 0; i < 4; i++ {
 		rows := genSnakeCubeRows(rng, N)
-		fmt.Println(rows)
 		labels := labelcells(rows)
 
-		for i, label := range renderRowLabels(rows, labels) {
-			fmt.Printf("%v: %s\n", rows[i], label)
-		}
+		// fmt.Println(rows)
+		// for i, label := range renderRowLabels(rows, labels) {
+		// 	fmt.Printf("%v: %s\n", rows[i], label)
+		// }
 
 		M := len(labels)
 
@@ -195,25 +195,15 @@ func Test_snakeCube(t *testing.T) {
 			"halt", // : &choices[0] &choices[M+1]
 		)
 
-		dumpCode(code)
+		// dumpCode(code)
 
-		MustAssemble(code...)
+		TestCase{
+			Name: fmt.Sprintf("snake %v", rows),
+			Prog: MustAssemble(code...),
+			// Result: XXX,
+		}.Run(t)
 	}
 }
-
-/*
-
-var snakeSolTest = TestCase{
-	Name: "snake XXX",
-	Prog: MustAssemble(
-		0x40,
-		//// Done
-		0, "halt",
-	),
-	// Result: XXX,
-}
-
-*/
 
 // labelcells generates a list of cell labels given a list of row counts.
 //
