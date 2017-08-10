@@ -332,12 +332,14 @@ type resultChecker interface {
 }
 
 type filteredResults struct {
-	rs Results
+	TestCaseResult
 	cs []resultChecker
 }
 
 func (frs filteredResults) start(tb testing.TB, m *stackvm.Mach) finisher {
-	return filteredRunResults{&runResults{tb, frs.rs, 0}, frs.cs}
+	fin := frs.TestCaseResult.start(tb, m)
+	hndl, _ := fin.(handler)
+	return filteredRunResults{tb, fin, hndl, frs.cs}
 }
 
 type runResults struct {
@@ -381,7 +383,9 @@ func (rrs *runResults) finish(m *stackvm.Mach) {
 }
 
 type filteredRunResults struct {
-	*runResults
+	testing.TB
+	finisher
+	handler
 	cs []resultChecker
 }
 
@@ -391,5 +395,5 @@ func (frrs filteredRunResults) Handle(m *stackvm.Mach) error {
 			return nil
 		}
 	}
-	return frrs.runResults.Handle(m)
+	return frrs.handler.Handle(m)
 }
