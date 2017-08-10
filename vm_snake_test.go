@@ -42,6 +42,20 @@ func Test_snakeCube(t *testing.T) {
 			"swap", "pop", // v : retIp
 			"ret", // v :
 
+			"i2xyz:",        // i : retIp
+			"dup", 3, "mod", // i x=i%3 : retIp
+			"swap", 3, "div", // x i/3 : retIp
+			"dup", 3, "mod", // x i/3 y=i/3%3 : retIp
+			"swap", 3, "div", // x y z=i/3/3 : retIp
+			"ret", // x y z :
+
+			"xyz2i:", // x y z : retIp
+			3, "mul", // x y 3*z : retIp
+			"add",    // x y+3*z : retIp
+			3, "mul", // x 3*(y+3*z) : retIp
+			"add", // i=x+3*(3*z+y) : retIp
+			"ret", // i : retIp
+
 			// TODO: oh right! we need something for collision detection! [N*N*N]occupied should do
 
 			// unit vectors in x,y,z space. Strategically laid out such that a
@@ -140,7 +154,9 @@ func Test_snakeCube(t *testing.T) {
 
 			code = append(code,
 				fmt.Sprintf("advance_%d:", i), // vi i :
+				":i2xyz", "call",              // vi x y z :
 				// TODO: actually advance along vi heading
+				":xyz2i", "call", // vi i :
 				"dup", 0, "lt", // vi i i<0 :
 				2, "hnz", // vi i :   -- halt if ...
 				"dup", N*N*N, "gte", // vi i i>=N^3 :
