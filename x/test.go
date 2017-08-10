@@ -60,6 +60,10 @@ type finisher interface {
 	finish(m *stackvm.Mach)
 }
 
+type handler interface {
+	Handle(m *stackvm.Mach) error
+}
+
 type testCaseRun struct {
 	testing.TB
 	Logf func(string, ...interface{})
@@ -249,6 +253,13 @@ type noResult struct{ testing.TB }
 
 func (r NoResult) start(tb testing.TB, m *stackvm.Mach) finisher { return noResult{tb} }
 
+// WithExpectedHaltCodes creates a TestCaseResult that expects any number of
+// non-zero halt codes in addition to expecting no result values. If a machine
+// exits with an unexpected non-zero halt code, the test still fails.
+func (r NoResult) WithExpectedHaltCodes(codes ...uint32) TestCaseResult {
+	return filteredResults{r, []resultChecker{expectedHaltCodes(codes)}}
+}
+
 func (r noResult) Handle(m *stackvm.Mach) error {
 	res, err := Result{}.take(m)
 	if err != nil {
@@ -304,7 +315,7 @@ func (rs Results) start(tb testing.TB, m *stackvm.Mach) finisher {
 
 // WithExpectedHaltCodes creates a TestCaseResult that expects any number of
 // non-zero halt codes in addition to some normal results. If a machine exits
-// with an unexpected non-zero halt code, the test fails.
+// with an unexpected non-zero halt code, the test still fails.
 func (rs Results) WithExpectedHaltCodes(codes ...uint32) TestCaseResult {
 	return filteredResults{rs, []resultChecker{expectedHaltCodes(codes)}}
 }
