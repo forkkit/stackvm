@@ -165,6 +165,9 @@ func (t *testCaseRun) init() {
 	if t.Logf == nil {
 		t.Logf = t.TB.Logf
 	}
+	if t.Result == nil {
+		t.Result = NoResult{}
+	}
 }
 
 func (t testCaseRun) bench() {
@@ -237,6 +240,28 @@ func (t testCaseRun) checkError(err error) {
 	} else {
 		assert.EqualError(t, errors.Cause(err), t.Err, "expected run error")
 	}
+}
+
+// NoResult is a TestCaseResult that expects no results from any number of
+// machine under a test.
+type NoResult struct{}
+type noResult struct{ testing.TB }
+
+func (r NoResult) start(tb testing.TB, m *stackvm.Mach) finisher { return noResult{tb} }
+
+func (r noResult) Handle(m *stackvm.Mach) error {
+	res, err := Result{}.take(m)
+	if err != nil {
+		return err
+	}
+	assert.Equal(r, Result{}, res, "expected empty result")
+	return nil
+}
+
+func (r noResult) finish(m *stackvm.Mach) {
+	res, err := Result{}.take(m)
+	require.NoError(r, err, "unexpected error taking final result")
+	assert.Equal(r, Result{}, res, "expected empty result")
 }
 
 // Result represents an expected or actual result within a TestCase. It can be
