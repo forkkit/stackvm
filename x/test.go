@@ -408,3 +408,12 @@ func (frrs filteredRunResults) Handle(m *stackvm.Mach) error {
 	}
 	return frrs.handler.Handle(m)
 }
+
+func (frrs filteredRunResults) finish(m *stackvm.Mach) {
+	for _, c := range frrs.cs {
+		if c.check(frrs.TB, m) {
+			return
+		}
+	}
+	frrs.finisher.finish(m)
+}
