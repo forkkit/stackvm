@@ -44,17 +44,35 @@ func Test_snakeCube(t *testing.T) {
 
 			// TODO: oh right! we need something for collision detection! [N*N*N]occupied should do
 
-			// unit vectors in x,y,z space, mapped to one-dimensional space under the
-			// row-major convention. Strategically laid out such that a direction and its
-			// opposite are congruent index-mod-3. The index-mod-3 property lets us quickly
-			// check for 'not same or opposiite direction' later on.
+			// unit vectors in x,y,z space. Strategically laid out such that a
+			// direction and its opposite are congruent index-mod-9. The
+			// index-mod-9 property lets us quickly check for 'not same or
+			// opposiite direction' later on.
 			"initVectors:", // vectors [6]int32 @0x0800
+
 			0x0800, "push", 1, "store",
-			0x0804, "push", 3, "store",
-			0x0808, "push", 9, "store",
-			0x080c, "push", -1, "store",
-			0x0810, "push", -3, "store",
-			0x0814, "push", -9, "store",
+			0x0804, "push", 0, "store",
+			0x0808, "push", 0, "store",
+
+			0x080c, "push", 0, "store",
+			0x0810, "push", 1, "store",
+			0x0814, "push", 0, "store",
+
+			0x0818, "push", 0, "store",
+			0x081c, "push", 0, "store",
+			0x0820, "push", 1, "store",
+
+			0x0824, "push", -1, "store",
+			0x0828, "push", 0, "store",
+			0x082c, "push", 0, "store",
+
+			0x0830, "push", 0, "store",
+			0x0834, "push", -1, "store",
+			0x0838, "push", 0, "store",
+
+			0x083c, "push", 0, "store",
+			0x0840, "push", 0, "store",
+			0x0844, "push", -1, "store",
 
 			// choices [M+1]uint32 @0x1000
 			// - choices[0] is the starting index
