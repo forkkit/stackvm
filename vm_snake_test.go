@@ -198,9 +198,9 @@ func Test_snakeCube(t *testing.T) {
 		// dumpCode(code)
 
 		TestCase{
-			Name: fmt.Sprintf("snake %v", rows),
-			Prog: MustAssemble(code...),
-			// Result: XXX,
+			Name:   fmt.Sprintf("snake %v", rows),
+			Prog:   MustAssemble(code...),
+			Result: NoResult{}.WithExpectedHaltCodes(1, 2, 3),
 		}.Run(t)
 	}
 }
