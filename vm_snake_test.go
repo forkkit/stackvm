@@ -71,8 +71,6 @@ func Test_snakeCube(t *testing.T) {
 			"add",   // x+dx y+dy z+dz : retIp
 			"ret",   // x+dx y+dy z+dz :
 
-			// TODO: oh right! we need something for collision detection! [N*N*N]occupied should do
-
 			// unit vectors in x,y,z space. Strategically laid out such that a
 			// direction and its opposite are congruent index-mod-9. The
 			// index-mod-9 property lets us quickly check for 'not same or
@@ -102,6 +100,8 @@ func Test_snakeCube(t *testing.T) {
 			0x083c, "push", 0, "store",
 			0x0840, "push", 0, "store",
 			0x0844, "push", -1, "store",
+
+			// occupied [N*N*N]uint32 @0x2000 TODO bitvector
 
 			// choices [M+1]uint32 @0x1000
 			// - choices[0] is the starting index
@@ -178,7 +178,12 @@ func Test_snakeCube(t *testing.T) {
 				2, "hnz", // vi i :   -- halt if ...
 				"dup", N*N*N, "gte", // vi i i>=N^3 :
 				2, "hnz", // vi i :   -- halt if ...
-				// TODO: collision check
+				"dup",                   // vi i i :
+				4, "mul", 0x2000, "add", // vi i &occupied[i] :
+				"dup",    // vi i &occupied[i] &occupied[i] :
+				"fetch",  // vi i &occupied[i] occupied[i] :
+				3, "hnz", // vi i &occupied[i] :   -- halt if ...
+				1, "store", // vi i :   -- occupied[i]=1
 			)
 		}
 
