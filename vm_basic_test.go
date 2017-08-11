@@ -42,3 +42,18 @@ func TestMach_basic_math(t *testing.T) {
 		},
 	}.Run(t)
 }
+
+func TestMach_operational_errors(t *testing.T) {
+	TestCases{
+		{
+			Name: "invalid op code",
+			Err:  "invalid op code:0x70",
+			Prog: []byte{
+				0x00,       // version
+				0x00, 0x40, // stack size
+				0x70, // undefined op code
+			},
+			Result: Result{Err: "invalid op code:0x70"},
+		},
+	}.Run(t)
+}
