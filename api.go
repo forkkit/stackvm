@@ -8,7 +8,7 @@ import (
 	"io"
 )
 
-const _minProgSize = 4
+const _minProgSize = 3
 
 var errRunning = errors.New("machine running")
 

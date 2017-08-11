@@ -66,6 +66,16 @@ func TestMach_operational_errors(t *testing.T) {
 			Result: Result{Err: "crashed"},
 		},
 		{
+			Name: "crash: implicit",
+			Err:  "crashed",
+			Prog: []byte{
+				0x00,       // version
+				0x00, 0x40, // stack size
+				// empty program, 0 by default
+			},
+			Result: Result{Err: "crashed"},
+		},
+		{
 			Name: "crash: jump out of program",
 			Err:  "crashed",
 			Prog: MustAssemble(
