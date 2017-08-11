@@ -8,6 +8,8 @@ import (
 	"io"
 )
 
+const _minProgSize = 4
+
 var errRunning = errors.New("machine running")
 
 // NoSuchOpError is returned by ResolveOp if the named operation is not //
@@ -48,8 +50,8 @@ func (name NoSuchOpError) Error() string {
 // IP offset from the parameter stack if no immediate is given.
 func New(prog []byte) (*Mach, error) {
 	p := prog
-	if len(p) < 4 {
-		return nil, errors.New("program too short, need at least 4 bytes")
+	if len(p) < _minProgSize {
+		return nil, fmt.Errorf("program too short, need at least %v bytes", _minProgSize)
 	}
 
 	if p[0] != _machVersionCode {
