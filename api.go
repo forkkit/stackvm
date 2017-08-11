@@ -10,7 +10,10 @@ import (
 
 const _minProgSize = 3
 
-var errRunning = errors.New("machine running")
+var (
+	errRunning = errors.New("machine running")
+	errNoArg   = errors.New("operation does not accept an argument")
+)
 
 // NoSuchOpError is returned by ResolveOp if the named operation is not //
 // defined.
@@ -247,6 +250,9 @@ func ResolveOp(name string, arg uint32, have bool) (Op, error) {
 	code, def := opName2Code[name]
 	if !def {
 		return Op{}, NoSuchOpError(name)
+	}
+	if have && ops[code].imm.kind() == opImmNone {
+		return Op{}, errNoArg
 	}
 	return Op{code, arg, have}, nil
 }
