@@ -22,6 +22,7 @@ var (
 	errNoQueue      = errors.New("no queue, cannot copy")
 	errAlignment    = errors.New("unaligned memory access")
 	errHalted       = errors.New("halted")
+	errCrashed      = errors.New("crashed")
 )
 
 type alignmentError struct {
@@ -207,6 +208,10 @@ func (m *Mach) step() {
 
 	// execute
 	switch oc.code {
+	// crash
+	case opCodeCrash:
+		m.err = errCrashed
+
 	// stack
 	case opCodePush | opCodeWithImm:
 		m.err = m.push(oc.arg)

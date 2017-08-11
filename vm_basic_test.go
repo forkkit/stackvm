@@ -55,5 +55,35 @@ func TestMach_operational_errors(t *testing.T) {
 			},
 			Result: Result{Err: "invalid op code:0x70"},
 		},
+		{
+			Name: "crash: explicit",
+			Err:  "crashed",
+			Prog: []byte{
+				0x00,       // version
+				0x00, 0x40, // stack size
+				0x00, // opCodeCrash=0
+			},
+			Result: Result{Err: "crashed"},
+		},
+		{
+			Name: "crash: jump out of program",
+			Err:  "crashed",
+			Prog: MustAssemble(
+				0x40,
+				96, "jump", "halt",
+			),
+			Result: Result{Err: "crashed"},
+		},
+		{
+			Name: "crash: implicit assembled",
+			Err:  "crashed",
+			Prog: MustAssemble(
+				0x40,
+				1, "push",
+				2, "add",
+				// and then?...
+			),
+			Result: Result{Err: "crashed"},
+		},
 	}.Run(t)
 }

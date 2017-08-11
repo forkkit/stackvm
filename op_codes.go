@@ -1,10 +1,11 @@
 package stackvm
 
 const (
-	opCodePush    = opCode(0x00)
-	opCodePop     = opCode(0x01)
-	opCodeDup     = opCode(0x02)
-	opCodeSwap    = opCode(0x03)
+	opCodeCrash   = opCode(0x00)
+	opCodePush    = opCode(0x01)
+	opCodePop     = opCode(0x02)
+	opCodeDup     = opCode(0x03)
+	opCodeSwap    = opCode(0x04)
 	opCodeFetch   = opCode(0x08)
 	opCodeStore   = opCode(0x09)
 	opCodeStoreto = opCode(0x0a)
