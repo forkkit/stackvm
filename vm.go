@@ -20,7 +20,6 @@ var (
 	errInvalidIP    = errors.New("invalid IP")
 	errSegfault     = errors.New("segfault")
 	errNoQueue      = errors.New("no queue, cannot copy")
-	errAlignment    = errors.New("unaligned memory access")
 	errHalted       = errors.New("halted")
 	errCrashed      = errors.New("crashed")
 )
@@ -85,24 +84,6 @@ type page struct {
 	d [_pageSize]byte
 }
 
-func (pg *page) fetchByte(off uint32) byte {
-	if pg == nil {
-		return 0
-	}
-	return pg.d[off]
-}
-
-func (pg *page) fetch(off uint32) (uint32, error) {
-	if off%4 != 0 {
-		return 0, errAlignment
-	}
-	if pg == nil {
-		return 0, nil
-	}
-	val := *(*uint32)(unsafe.Pointer(&(pg.d[off])))
-	return val, nil
-}
-
 type pagePoolT struct {
 	sync.Pool
 }
@@ -146,21 +127,6 @@ func (pg *page) storeBytes(off uint32, p []byte) (*page, int) {
 	pg = pg.own()
 	n := copy(pg.d[off:], p)
 	return pg, n
-}
-
-func (pg *page) storeByte(off uint32, val byte) *page {
-	pg = pg.own()
-	pg.d[off] = val
-	return pg
-}
-
-func (pg *page) ref(off uint32) (*page, *uint32, error) {
-	if off%4 != 0 {
-		return nil, nil, errAlignment
-	}
-	pg = pg.own()
-	p := (*uint32)(unsafe.Pointer(&(pg.d[off])))
-	return pg, p, nil
 }
 
 func (m *Mach) halted() (uint32, bool) {
