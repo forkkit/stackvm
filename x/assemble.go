@@ -9,6 +9,16 @@ import (
 	"github.com/jcorbin/stackvm"
 )
 
+// MustAssemble uses assemble the input, using Assemble(), and panics
+// if it returns a non-nil error.
+func MustAssemble(in ...interface{}) []byte {
+	prog, err := Assemble(in...)
+	if err != nil {
+		panic(err)
+	}
+	return prog
+}
+
 // copied from generated op_codes.go, which isn't that bad
 // since having "the zero op crash" should perhaps be the
 // most stable part of the ISA.
@@ -69,16 +79,6 @@ func Assemble(in ...interface{}) ([]byte, error) {
 	}
 
 	return assemble(opts, toks)
-}
-
-// MustAssemble uses assemble the input, using Assemble(), and panics
-// if it returns a non-nil error.
-func MustAssemble(in ...interface{}) []byte {
-	prog, err := Assemble(in...)
-	if err != nil {
-		panic(err)
-	}
-	return prog
 }
 
 type tokenType uint8
