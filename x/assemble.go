@@ -48,13 +48,8 @@ func Assemble(in ...interface{}) ([]byte, error) {
 			v, v)
 	}
 
-	// rest is tokens
-	toks, err := tokenize(in[1:])
-	if err != nil {
-		return nil, err
-	}
-
-	return assemble(opts, toks)
+	// rest is assembly tokens
+	return assemble(opts, in[1:])
 }
 
 // copied from generated op_codes.go, which isn't that bad since having "the
@@ -80,7 +75,7 @@ func opData(op stackvm.Op) (uint32, bool) {
 	return 0, false
 }
 
-func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
+func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
 	var (
 		ops       []stackvm.Op
 		jumps     []int
@@ -89,10 +84,19 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 		labels    = make(map[string]int)
 		refs      = make(map[string][]int)
 		arg, have = uint32(0), false
+		tokz      = tokenizer{
+			in:    in,
+			out:   make([]token, 0, len(in)),
+			state: tokenizerText,
+		}
 	)
 
-	for i := 0; i < len(toks); i++ {
-		tok := toks[i]
+	if err := tokz.scan(); err != nil {
+		return nil, err
+	}
+
+	for i := 0; i < len(tokz.out); i++ {
+		tok := tokz.out[i]
 
 		switch tok.t {
 		case labelToken:
@@ -102,7 +106,7 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 			ref := tok.s
 			// resolve label references
 			i++
-			tok = toks[i]
+			tok = tokz.out[i]
 			if tok.t != opToken {
 				return nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
 			}
@@ -126,7 +130,7 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 			// op with immediate arg
 			arg, have = tok.d, true
 			i++
-			tok = toks[i]
+			tok = tokz.out[i]
 			switch tok.t {
 			case opToken:
 				goto resolveOp
@@ -272,16 +276,6 @@ func (t token) String() string {
 	default:
 		return fmt.Sprintf("InvalidToken(t:%d, s:%q, d:%v)", t.t, t.s, t.d)
 	}
-}
-
-func tokenize(in []interface{}) ([]token, error) {
-	tokz := tokenizer{
-		in:    in,
-		out:   make([]token, 0, len(in)),
-		state: tokenizerText,
-	}
-	err := tokz.scan()
-	return tokz.out, err
 }
 
 type tokenizer struct {
