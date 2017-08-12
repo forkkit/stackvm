@@ -1,6 +1,7 @@
 package stackvm
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"sync"
@@ -31,6 +32,24 @@ type alignmentError struct {
 
 func (ae alignmentError) Error() string {
 	return fmt.Sprintf("unaligned memory %s @0x%04x", ae.op, ae.addr)
+}
+
+// ByteOrder is the binary.ByteOrder used by the vm when
+// fetching and storing words.
+var ByteOrder binary.ByteOrder
+
+func init() {
+	n := uint32(0x12345678)
+	buf := make([]byte, 4)
+	for _, bo := range []binary.ByteOrder{binary.BigEndian, binary.LittleEndian} {
+		bo.PutUint32(buf, n)
+		p := (*uint32)(unsafe.Pointer(&buf[0]))
+		if *p == n {
+			ByteOrder = bo
+			return
+		}
+	}
+	panic("unable to determine native byte order")
 }
 
 // Mach is a stack machine.
