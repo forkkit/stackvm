@@ -109,7 +109,7 @@ var (
 	pagePool pagePoolT
 )
 
-func (pg *page) own() *page {
+func (pg *page) storeBytes(off uint32, p []byte) (*page, int) {
 	if pg == nil {
 		pg = pagePool.Get()
 		pg.r = 1
@@ -120,11 +120,6 @@ func (pg *page) own() *page {
 		atomic.AddInt32(&pg.r, -1)
 		pg = newPage
 	}
-	return pg
-}
-
-func (pg *page) storeBytes(off uint32, p []byte) (*page, int) {
-	pg = pg.own()
 	n := copy(pg.d[off:], p)
 	return pg, n
 }
