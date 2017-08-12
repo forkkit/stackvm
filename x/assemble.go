@@ -75,38 +75,47 @@ func opData(op stackvm.Op) (uint32, bool) {
 	return 0, false
 }
 
+type assembler struct {
+	tokenizer
+	ops      []stackvm.Op
+	jumps    []int
+	numJumps int
+	maxBytes int
+	labels   map[string]int
+	refs     map[string][]int
+	arg      uint32
+	have     bool
+}
+
 func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
-	var (
-		ops       []stackvm.Op
-		jumps     []int
-		numJumps  = 0
-		maxBytes  = opts.NeededSize()
-		labels    = make(map[string]int)
-		refs      = make(map[string][]int)
-		arg, have = uint32(0), false
-		tokz      = tokenizer{
+	asm := assembler{
+		tokenizer: tokenizer{
 			in:    in,
 			out:   make([]token, 0, len(in)),
 			state: tokenizerText,
-		}
-	)
+		},
+	}
 
-	if err := tokz.scan(); err != nil {
+	if err := asm.scan(); err != nil {
 		return nil, err
 	}
 
-	for i := 0; i < len(tokz.out); i++ {
-		tok := tokz.out[i]
+	asm.maxBytes = opts.NeededSize()
+	asm.labels = make(map[string]int)
+	asm.refs = make(map[string][]int)
+
+	for i := 0; i < len(asm.tokenizer.out); i++ {
+		tok := asm.tokenizer.out[i]
 
 		switch tok.t {
 		case labelToken:
-			labels[tok.s] = len(ops)
+			asm.labels[tok.s] = len(asm.ops)
 
 		case refToken:
 			ref := tok.s
 			// resolve label references
 			i++
-			tok = tokz.out[i]
+			tok = asm.tokenizer.out[i]
 			if tok.t != opToken {
 				return nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
 			}
@@ -117,20 +126,20 @@ func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
 			if !op.AcceptsRef() {
 				return nil, fmt.Errorf("%v does not accept ref %q", op, ref)
 			}
-			maxBytes += 6
-			refs[ref] = append(refs[ref], len(ops))
-			ops = append(ops, op)
-			numJumps++
+			asm.maxBytes += 6
+			asm.refs[ref] = append(asm.refs[ref], len(asm.ops))
+			asm.ops = append(asm.ops, op)
+			asm.numJumps++
 
 		case dataToken:
-			maxBytes += 4
-			ops = append(ops, dataOp(tok.d))
+			asm.maxBytes += 4
+			asm.ops = append(asm.ops, dataOp(tok.d))
 
 		case immToken:
 			// op with immediate arg
-			arg, have = tok.d, true
+			asm.arg, asm.have = tok.d, true
 			i++
-			tok = tokz.out[i]
+			tok = asm.tokenizer.out[i]
 			switch tok.t {
 			case opToken:
 				goto resolveOp
@@ -148,41 +157,41 @@ func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
 		continue
 
 	resolveOp:
-		op, err := stackvm.ResolveOp(tok.s, arg, have)
+		op, err := stackvm.ResolveOp(tok.s, asm.arg, asm.have)
 		if err != nil {
 			return nil, err
 		}
-		maxBytes += op.NeededSize()
-		ops = append(ops, op)
-		arg, have = uint32(0), false
+		asm.maxBytes += op.NeededSize()
+		asm.ops = append(asm.ops, op)
+		asm.arg, asm.have = uint32(0), false
 
 	}
 
-	if numJumps > 0 {
-		jumps = make([]int, 0, numJumps)
-		for name, sites := range refs {
-			i, ok := labels[name]
+	if asm.numJumps > 0 {
+		asm.jumps = make([]int, 0, asm.numJumps)
+		for name, sites := range asm.refs {
+			i, ok := asm.labels[name]
 			if !ok {
 				return nil, fmt.Errorf("undefined label %q", name)
 			}
 			for _, j := range sites {
-				ops[j].Arg = uint32(i - j - 1)
+				asm.ops[j].Arg = uint32(i - j - 1)
 			}
-			jumps = append(jumps, sites...)
+			asm.jumps = append(asm.jumps, sites...)
 		}
 	}
 
 	// setup jump tracking state
-	jc := makeJumpCursor(ops, jumps)
+	jc := makeJumpCursor(asm.ops, asm.jumps)
 
-	buf := make([]byte, maxBytes)
+	buf := make([]byte, asm.maxBytes)
 
 	n := opts.EncodeInto(buf)
 	p := buf[n:]
 	base := uint32(opts.StackSize)
-	offsets := make([]uint32, len(ops)+1)
+	offsets := make([]uint32, len(asm.ops)+1)
 	c, i := uint32(0), 0 // current op offset and index
-	for i < len(ops) {
+	for i < len(asm.ops) {
 		// fix a previously encoded jump's target
 		for 0 <= jc.ji && jc.ji < i && jc.ti <= i {
 			jIP := base + offsets[jc.ji]
@@ -192,10 +201,10 @@ func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
 			} else { // jc.ti == i
 				tIP += c
 			}
-			ops[jc.ji] = ops[jc.ji].ResolveRefArg(jIP, tIP)
+			asm.ops[jc.ji] = asm.ops[jc.ji].ResolveRefArg(jIP, tIP)
 			// re-encode the jump and rewind if arg size changed
 			lo, hi := offsets[jc.ji], offsets[jc.ji+1]
-			if end := lo + uint32(ops[jc.ji].EncodeInto(p[lo:])); end != hi {
+			if end := lo + uint32(asm.ops[jc.ji].EncodeInto(p[lo:])); end != hi {
 				i, c = jc.ji+1, end
 				offsets[i] = c
 				jc = jc.rewind(i)
@@ -204,7 +213,7 @@ func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
 			}
 		}
 
-		if d, ok := opData(ops[i]); ok {
+		if d, ok := opData(asm.ops[i]); ok {
 			// encode a dataToken
 			stackvm.ByteOrder.PutUint32(p[c:], d)
 			c += 4
@@ -214,7 +223,7 @@ func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
 		}
 
 		// encode next operation
-		c += uint32(ops[i].EncodeInto(p[c:]))
+		c += uint32(asm.ops[i].EncodeInto(p[c:]))
 		i++
 		offsets[i] = c
 	}
