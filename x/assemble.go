@@ -19,30 +19,6 @@ func MustAssemble(in ...interface{}) []byte {
 	return prog
 }
 
-// copied from generated op_codes.go, which isn't that bad
-// since having "the zero op crash" should perhaps be the
-// most stable part of the ISA.
-const opCodeCrash = 0x00
-
-// dataOp returns an invalid Op that carries a dataToken. These invalid ops are
-// used temporarily within within assemble. The ops are "invalid" because thy
-// are a "crash with immediate", which will never be represented by a valid
-// combination of immToken and opToken.
-func dataOp(d uint32) stackvm.Op {
-	return stackvm.Op{
-		Code: opCodeCrash,
-		Have: true,
-		Arg:  d,
-	}
-}
-
-func opData(op stackvm.Op) (uint32, bool) {
-	if op.Code == opCodeCrash && op.Have {
-		return op.Arg, true
-	}
-	return 0, false
-}
-
 // Assemble builds a byte encoded machine program from a slice of
 // operation names. Operations may be preceded by an immediate
 // argument. An immediate argument may be an integer value, or a label
@@ -79,6 +55,169 @@ func Assemble(in ...interface{}) ([]byte, error) {
 	}
 
 	return assemble(opts, toks)
+}
+
+// copied from generated op_codes.go, which isn't that bad since having "the
+// zero op crash" should perhaps be the most stable part of the ISA.
+const opCodeCrash = 0x00
+
+// dataOp returns an invalid Op that carries a dataToken. These invalid ops are
+// used temporarily within within assemble. The ops are "invalid" because thy
+// are a "crash with immediate", which will never be represented by a valid
+// combination of immToken and opToken.
+func dataOp(d uint32) stackvm.Op {
+	return stackvm.Op{
+		Code: opCodeCrash,
+		Have: true,
+		Arg:  d,
+	}
+}
+
+func opData(op stackvm.Op) (uint32, bool) {
+	if op.Code == opCodeCrash && op.Have {
+		return op.Arg, true
+	}
+	return 0, false
+}
+
+func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
+	var (
+		ops       []stackvm.Op
+		jumps     []int
+		numJumps  = 0
+		maxBytes  = opts.NeededSize()
+		labels    = make(map[string]int)
+		refs      = make(map[string][]int)
+		arg, have = uint32(0), false
+	)
+
+	for i := 0; i < len(toks); i++ {
+		tok := toks[i]
+
+		switch tok.t {
+		case labelToken:
+			labels[tok.s] = len(ops)
+
+		case refToken:
+			ref := tok.s
+			// resolve label references
+			i++
+			tok = toks[i]
+			if tok.t != opToken {
+				return nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
+			}
+			op, err := stackvm.ResolveOp(tok.s, 0, true)
+			if err != nil {
+				return nil, err
+			}
+			if !op.AcceptsRef() {
+				return nil, fmt.Errorf("%v does not accept ref %q", op, ref)
+			}
+			maxBytes += 6
+			refs[ref] = append(refs[ref], len(ops))
+			ops = append(ops, op)
+			numJumps++
+
+		case dataToken:
+			maxBytes += 4
+			ops = append(ops, dataOp(tok.d))
+
+		case immToken:
+			// op with immediate arg
+			arg, have = tok.d, true
+			i++
+			tok = toks[i]
+			switch tok.t {
+			case opToken:
+				goto resolveOp
+			default:
+				return nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
+			}
+
+		case opToken:
+			// op without immediate arg
+			goto resolveOp
+
+		default:
+			return nil, fmt.Errorf("unexpected %v token", tok.t)
+		}
+		continue
+
+	resolveOp:
+		op, err := stackvm.ResolveOp(tok.s, arg, have)
+		if err != nil {
+			return nil, err
+		}
+		maxBytes += op.NeededSize()
+		ops = append(ops, op)
+		arg, have = uint32(0), false
+
+	}
+
+	if numJumps > 0 {
+		jumps = make([]int, 0, numJumps)
+		for name, sites := range refs {
+			i, ok := labels[name]
+			if !ok {
+				return nil, fmt.Errorf("undefined label %q", name)
+			}
+			for _, j := range sites {
+				ops[j].Arg = uint32(i - j - 1)
+			}
+			jumps = append(jumps, sites...)
+		}
+	}
+
+	// setup jump tracking state
+	jc := makeJumpCursor(ops, jumps)
+
+	buf := make([]byte, maxBytes)
+
+	n := opts.EncodeInto(buf)
+	p := buf[n:]
+	base := uint32(opts.StackSize)
+	offsets := make([]uint32, len(ops)+1)
+	c, i := uint32(0), 0 // current op offset and index
+	for i < len(ops) {
+		// fix a previously encoded jump's target
+		for 0 <= jc.ji && jc.ji < i && jc.ti <= i {
+			jIP := base + offsets[jc.ji]
+			tIP := base
+			if jc.ti < i {
+				tIP += offsets[jc.ti]
+			} else { // jc.ti == i
+				tIP += c
+			}
+			ops[jc.ji] = ops[jc.ji].ResolveRefArg(jIP, tIP)
+			// re-encode the jump and rewind if arg size changed
+			lo, hi := offsets[jc.ji], offsets[jc.ji+1]
+			if end := lo + uint32(ops[jc.ji].EncodeInto(p[lo:])); end != hi {
+				i, c = jc.ji+1, end
+				offsets[i] = c
+				jc = jc.rewind(i)
+			} else {
+				jc = jc.next()
+			}
+		}
+
+		if d, ok := opData(ops[i]); ok {
+			// encode a dataToken
+			stackvm.ByteOrder.PutUint32(p[c:], d)
+			c += 4
+			i++
+			offsets[i] = c
+			continue
+		}
+
+		// encode next operation
+		c += uint32(ops[i].EncodeInto(p[c:]))
+		i++
+		offsets[i] = c
+	}
+	n += int(c)
+	buf = buf[:n]
+
+	return buf, nil
 }
 
 type tokenType uint8
@@ -273,146 +412,6 @@ func (tokz *tokenizer) expect(desc string) (interface{}, error) {
 		return tokz.in[tokz.i], nil
 	}
 	return nil, fmt.Errorf("unexpected end of input, expected %s", desc)
-}
-
-func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
-	var (
-		ops       []stackvm.Op
-		jumps     []int
-		numJumps  = 0
-		maxBytes  = opts.NeededSize()
-		labels    = make(map[string]int)
-		refs      = make(map[string][]int)
-		arg, have = uint32(0), false
-	)
-
-	for i := 0; i < len(toks); i++ {
-		tok := toks[i]
-
-		switch tok.t {
-		case labelToken:
-			labels[tok.s] = len(ops)
-
-		case refToken:
-			ref := tok.s
-			// resolve label references
-			i++
-			tok = toks[i]
-			if tok.t != opToken {
-				return nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
-			}
-			op, err := stackvm.ResolveOp(tok.s, 0, true)
-			if err != nil {
-				return nil, err
-			}
-			if !op.AcceptsRef() {
-				return nil, fmt.Errorf("%v does not accept ref %q", op, ref)
-			}
-			maxBytes += 6
-			refs[ref] = append(refs[ref], len(ops))
-			ops = append(ops, op)
-			numJumps++
-
-		case dataToken:
-			maxBytes += 4
-			ops = append(ops, dataOp(tok.d))
-
-		case immToken:
-			// op with immediate arg
-			arg, have = tok.d, true
-			i++
-			tok = toks[i]
-			switch tok.t {
-			case opToken:
-				goto resolveOp
-			default:
-				return nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
-			}
-
-		case opToken:
-			// op without immediate arg
-			goto resolveOp
-
-		default:
-			return nil, fmt.Errorf("unexpected %v token", tok.t)
-		}
-		continue
-
-	resolveOp:
-		op, err := stackvm.ResolveOp(tok.s, arg, have)
-		if err != nil {
-			return nil, err
-		}
-		maxBytes += op.NeededSize()
-		ops = append(ops, op)
-		arg, have = uint32(0), false
-
-	}
-
-	if numJumps > 0 {
-		jumps = make([]int, 0, numJumps)
-		for name, sites := range refs {
-			i, ok := labels[name]
-			if !ok {
-				return nil, fmt.Errorf("undefined label %q", name)
-			}
-			for _, j := range sites {
-				ops[j].Arg = uint32(i - j - 1)
-			}
-			jumps = append(jumps, sites...)
-		}
-	}
-
-	// setup jump tracking state
-	jc := makeJumpCursor(ops, jumps)
-
-	buf := make([]byte, maxBytes)
-
-	n := opts.EncodeInto(buf)
-	p := buf[n:]
-	base := uint32(opts.StackSize)
-	offsets := make([]uint32, len(ops)+1)
-	c, i := uint32(0), 0 // current op offset and index
-	for i < len(ops) {
-		// fix a previously encoded jump's target
-		for 0 <= jc.ji && jc.ji < i && jc.ti <= i {
-			jIP := base + offsets[jc.ji]
-			tIP := base
-			if jc.ti < i {
-				tIP += offsets[jc.ti]
-			} else { // jc.ti == i
-				tIP += c
-			}
-			ops[jc.ji] = ops[jc.ji].ResolveRefArg(jIP, tIP)
-			// re-encode the jump and rewind if arg size changed
-			lo, hi := offsets[jc.ji], offsets[jc.ji+1]
-			if end := lo + uint32(ops[jc.ji].EncodeInto(p[lo:])); end != hi {
-				i, c = jc.ji+1, end
-				offsets[i] = c
-				jc = jc.rewind(i)
-			} else {
-				jc = jc.next()
-			}
-		}
-
-		if d, ok := opData(ops[i]); ok {
-			// encode a dataToken
-			stackvm.ByteOrder.PutUint32(p[c:], d)
-			c += 4
-			i++
-			offsets[i] = c
-			continue
-		}
-
-		// encode next operation
-		c += uint32(ops[i].EncodeInto(p[c:]))
-		i++
-		offsets[i] = c
-	}
-	n += int(c)
-	buf = buf[:n]
-
-	return buf, nil
 }
 
 type jumpCursor struct {
