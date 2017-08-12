@@ -952,7 +952,7 @@ doCopy:
 
 func (m *Mach) fetch(addr uint32) (uint32, error) {
 	i, off := addr>>6, addr&_pageMask
-	if off%4 != 0 {
+	if addr < m.cbp && off%4 != 0 {
 		return 0, alignmentError{"fetch", addr}
 	}
 	if int(i) < len(m.pages) {
@@ -966,7 +966,7 @@ func (m *Mach) fetch(addr uint32) (uint32, error) {
 
 func (m *Mach) ref(addr uint32) (*uint32, error) {
 	i, off := addr>>6, addr&_pageMask
-	if off%4 != 0 {
+	if addr < m.cbp && off%4 != 0 {
 		return nil, alignmentError{"store", addr}
 	}
 
