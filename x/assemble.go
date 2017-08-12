@@ -135,101 +135,141 @@ func (t token) String() string {
 	}
 }
 
-func tokenize(in []interface{}) (out []token, err error) {
-	i := 0
-
-	goto text
-
-data:
-	for ; i < len(in); i++ {
-		if s, ok := in[i].(string); ok {
-			// directive
-			if len(s) > 1 && s[0] == '.' {
-				switch s[1:] {
-				case "data":
-					continue
-				case "text":
-					goto text
-				default:
-					return nil, fmt.Errorf("invalid directive %s", s)
-				}
-			}
-
-			// label
-			if j := len(s) - 1; j > 0 && s[j] == ':' {
-				out = append(out, label(s[:j]))
-				continue
-			}
-
-			return nil, fmt.Errorf("unexpected string %q", s)
-		}
-
-		// data word
-		if n, ok := in[i].(int); ok {
-			out = append(out, data(uint32(n)))
-			continue
-		}
-
-		return nil, fmt.Errorf(
-			`invalid token %T(%v); expected ".directive", "label:", or an int`,
-			in[i], in[i])
+func tokenize(in []interface{}) ([]token, error) {
+	tokz := tokenizer{
+		in:    in,
+		out:   make([]token, 0, len(in)),
+		state: tokenizerText,
 	}
+	err := tokz.scan()
+	return tokz.out, err
+}
 
-text:
-	for ; i < len(in); i++ {
-		if s, ok := in[i].(string); ok {
-			// directive
-			if len(s) > 1 && s[0] == '.' {
-				switch s[1:] {
-				case "data":
-					goto data
-				case "text":
-					continue
-				default:
-					return nil, fmt.Errorf("invalid directive %s", s)
-				}
-			}
+type tokenizer struct {
+	i     int
+	in    []interface{}
+	out   []token
+	state tokenizerState
+}
 
-			// label
-			if j := len(s) - 1; j > 0 && s[j] == ':' {
-				out = append(out, label(s[:j]))
-				continue
-			}
+type tokenizerState uint8
 
-			// ref
-			if len(s) > 1 && s[0] == ':' {
-				out = append(out, ref(s[1:]))
-				goto op
-			}
+const (
+	tokenizerText tokenizerState = iota + 1
+	tokenizerData
+)
 
-			// opName
-			out = append(out, opName(s))
-			continue
+func (tokz *tokenizer) scan() error {
+	var err error
+	for ; err == nil && tokz.i < len(tokz.in); tokz.i++ {
+		switch tokz.state {
+		case tokenizerData:
+			err = tokz.handleData(tokz.in[tokz.i])
+		case tokenizerText:
+			err = tokz.handleText(tokz.in[tokz.i])
+		default:
+			return fmt.Errorf("invalid tokenizer state %d", tokz.state)
 		}
-
-		// imm
-		if n, ok := in[i].(int); ok {
-			out = append(out, imm(n))
-			goto op
-		}
-
-		return nil, fmt.Errorf(
-			`invalid token %T(%v); expected ".directive", "label:", ":ref", "opName", or an int`,
-			in[i], in[i])
-
-	op:
-		i++
-		// got r ref or v imm, must have opName
-		if s, ok := in[i].(string); ok {
-			out = append(out, opName(s))
-			continue
-		}
-
-		return nil, fmt.Errorf(
-			`invalid token %T(%v); expected "opName"`,
-			in[i], in[i])
 	}
-	return
+	return err
+}
+
+func (tokz *tokenizer) handleData(val interface{}) error {
+	switch v := val.(type) {
+	case string:
+		switch {
+		// directive
+		case len(v) > 1 && v[0] == '.':
+			return tokz.handleDirective(v)
+
+		// label
+		case len(v) > 1 && v[len(v)-1] == ':':
+			tokz.out = append(tokz.out, label(v[:len(v)-1]))
+			return nil
+
+		default:
+			return fmt.Errorf("unexpected string %q", v)
+		}
+
+	// data word
+	case int:
+		tokz.out = append(tokz.out, data(uint32(v)))
+		return nil
+
+	default:
+		return fmt.Errorf(`invalid token %T(%v); expected ".directive", "label:", or an int`, val, val)
+	}
+}
+
+func (tokz *tokenizer) handleText(val interface{}) error {
+	switch v := val.(type) {
+	case string:
+		switch {
+		// directive
+		case len(v) > 1 && v[0] == '.':
+			return tokz.handleDirective(v)
+
+		// label
+		case len(v) > 1 && v[len(v)-1] == ':':
+			tokz.out = append(tokz.out, label(v[:len(v)-1]))
+			return nil
+
+		// ref
+		case len(v) > 1 && v[0] == ':':
+			tokz.out = append(tokz.out, ref(v[1:]))
+			return tokz.expectOp()
+
+		// opName
+		default:
+			tokz.out = append(tokz.out, opName(v))
+			return nil
+		}
+
+	// imm
+	case int:
+		tokz.out = append(tokz.out, imm(v))
+		return tokz.expectOp()
+
+	default:
+		return fmt.Errorf(`invalid token %T(%v); expected ".directive", "label:", ":ref", "opName", or an int`, val, val)
+	}
+}
+
+func (tokz *tokenizer) handleDirective(s string) error {
+	switch s[1:] {
+	case "data":
+		tokz.state = tokenizerData
+		return nil
+	case "text":
+		tokz.state = tokenizerText
+		return nil
+	default:
+		return fmt.Errorf("invalid directive %s", s)
+	}
+}
+
+func (tokz *tokenizer) expectOp() error {
+	s, err := tokz.expectString(`"opName"`)
+	if err == nil {
+		tokz.out = append(tokz.out, opName(s))
+	}
+	return err
+}
+
+func (tokz *tokenizer) expectString(desc string) (string, error) {
+	val, err := tokz.expect(desc)
+	if err == nil {
+		if s, ok := val.(string); ok {
+			return s, nil
+		}
+		err = fmt.Errorf("invalid token %T(%v); expected %s", val, val, desc)
+	}
+	return "", err
+}
+
+func (tokz *tokenizer) expect(desc string) (interface{}, error) {
+	tokz.i++
+	return tokz.in[tokz.i], nil
 }
 
 func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
