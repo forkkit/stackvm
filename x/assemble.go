@@ -269,7 +269,10 @@ func (tokz *tokenizer) expectString(desc string) (string, error) {
 
 func (tokz *tokenizer) expect(desc string) (interface{}, error) {
 	tokz.i++
-	return tokz.in[tokz.i], nil
+	if tokz.i < len(tokz.in) {
+		return tokz.in[tokz.i], nil
+	}
+	return nil, fmt.Errorf("unexpected end of input, expected %s", desc)
 }
 
 func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
