@@ -109,21 +109,6 @@ var (
 	pagePool pagePoolT
 )
 
-func (pg *page) storeBytes(off uint32, p []byte) (*page, int) {
-	if pg == nil {
-		pg = pagePool.Get()
-		pg.r = 1
-	} else if atomic.LoadInt32(&pg.r) > 1 {
-		newPage := pagePool.Get()
-		newPage.r = 1
-		newPage.d = pg.d
-		atomic.AddInt32(&pg.r, -1)
-		pg = newPage
-	}
-	n := copy(pg.d[off:], p)
-	return pg, n
-}
-
 func (m *Mach) halted() (uint32, bool) {
 	if m.err == errHalted {
 		return m.pa, true
@@ -925,11 +910,22 @@ nextPage:
 	}
 
 doCopy:
-	npg, pgn := pg.storeBytes(j, bs[n:])
-	n += pgn
-	if npg != pg {
+	if pg == nil {
+		// create-on-write
+		npg := pagePool.Get()
+		npg.r = 1
+		pg = m.setPage(i, npg)
+	} else if atomic.LoadInt32(&pg.r) > 1 {
+		// copy-on-write
+		npg := pagePool.Get()
+		npg.r = 1
+		npg.d = pg.d
+		atomic.AddInt32(&pg.r, -1)
 		pg = m.setPage(i, npg)
 	}
+
+	n += copy(pg.d[j:], bs[n:])
+
 	if n < len(bs) {
 		goto nextPage
 	}
