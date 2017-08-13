@@ -268,36 +268,36 @@ func (asm *assembler) handleDirective(s string) error {
 }
 
 func (asm *assembler) handleLabel(name string) error {
-	asm.out = append(asm.out, label(name))
+	asm.out = append(asm.out, token{t: labelToken, s: name})
 	return nil
 }
 
 func (asm *assembler) handleRef(name string) error {
-	asm.out = append(asm.out, ref(name))
+	asm.out = append(asm.out, token{t: refToken, s: name})
 	name, err := asm.expectOp()
 	if err != nil {
 		return err
 	}
-	asm.out = append(asm.out, opName(name))
+	asm.out = append(asm.out, token{t: opToken, s: name})
 	return nil
 }
 
 func (asm *assembler) handleOp(name string) error {
-	asm.out = append(asm.out, opName(name))
+	asm.out = append(asm.out, token{t: opToken, s: name})
 	return nil
 }
 
 func (asm *assembler) handleImm(d uint32) error {
-	asm.out = append(asm.out, imm(d))
+	asm.out = append(asm.out, token{t: immToken, d: d})
 	name, err := asm.expectOp()
 	if err == nil {
-		asm.out = append(asm.out, opName(name))
+		asm.out = append(asm.out, token{t: opToken, s: name})
 	}
 	return err
 }
 
 func (asm *assembler) handleDataWord(d uint32) error {
-	asm.out = append(asm.out, data(d))
+	asm.out = append(asm.out, token{t: dataToken, d: d})
 	return nil
 }
 
@@ -413,12 +413,6 @@ type token struct {
 	s string
 	d uint32
 }
-
-func label(s string) token  { return token{t: labelToken, s: s} }
-func ref(s string) token    { return token{t: refToken, s: s} }
-func opName(s string) token { return token{t: opToken, s: s} }
-func imm(d uint32) token    { return token{t: immToken, d: d} }
-func data(d uint32) token   { return token{t: dataToken, d: d} }
 
 func (t token) String() string {
 	switch t.t {
