@@ -108,6 +108,10 @@ const (
 )
 
 func (asm *assembler) scan() error {
+	asm.maxBytes = asm.opts.NeededSize()
+	asm.labels = make(map[string]int)
+	asm.refs = make(map[string][]int)
+
 	var err error
 	for ; err == nil && asm.i < len(asm.in); asm.i++ {
 		switch asm.state {
@@ -122,10 +126,6 @@ func (asm *assembler) scan() error {
 	if err != nil {
 		return err
 	}
-
-	asm.maxBytes = asm.opts.NeededSize()
-	asm.labels = make(map[string]int)
-	asm.refs = make(map[string][]int)
 
 	for i := 0; i < len(asm.out); i++ {
 		tok := asm.out[i]
