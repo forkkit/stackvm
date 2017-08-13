@@ -211,11 +211,9 @@ func (asm *assembler) handleData(val interface{}) error {
 	switch v := val.(type) {
 	case string:
 		switch {
-		// directive
 		case len(v) > 1 && v[0] == '.':
 			return asm.handleDirective(v)
 
-		// label
 		case len(v) > 1 && v[len(v)-1] == ':':
 			return asm.handleLabel(v[:len(v)-1])
 
@@ -223,7 +221,6 @@ func (asm *assembler) handleData(val interface{}) error {
 			return fmt.Errorf("unexpected string %q", v)
 		}
 
-	// data word
 	case int:
 		return asm.handleDataWord(uint32(v))
 
@@ -236,24 +233,19 @@ func (asm *assembler) handleText(val interface{}) error {
 	switch v := val.(type) {
 	case string:
 		switch {
-		// directive
 		case len(v) > 1 && v[0] == '.':
 			return asm.handleDirective(v)
 
-		// label
 		case len(v) > 1 && v[len(v)-1] == ':':
 			return asm.handleLabel(v[:len(v)-1])
 
-		// ref
 		case len(v) > 1 && v[0] == ':':
 			return asm.handleRef(v[1:])
 
-		// opName
 		default:
 			return asm.handleOp(v)
 		}
 
-	// imm
 	case int:
 		return asm.handleImm(v)
 
