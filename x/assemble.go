@@ -52,9 +52,9 @@ func Assemble(in ...interface{}) ([]byte, error) {
 	asm := assembler{
 		opts: opts,
 		tokenizer: tokenizer{
-			in:  in[1:],
-			out: make([]token, 0, len(in)-1),
+			in: in[1:],
 		},
+		out:   make([]token, 0, len(in)-1),
 		state: tokenizerText,
 	}
 	if err := asm.scan(); err != nil {
@@ -88,6 +88,7 @@ func opData(op stackvm.Op) (uint32, bool) {
 
 type assembler struct {
 	tokenizer
+	out      []token
 	state    tokenizerState
 	opts     stackvm.MachOptions
 	ops      []stackvm.Op
@@ -101,9 +102,8 @@ type assembler struct {
 }
 
 type tokenizer struct {
-	i   int
-	in  []interface{}
-	out []token
+	i  int
+	in []interface{}
 }
 
 type tokenizerState uint8
@@ -133,8 +133,8 @@ func (asm *assembler) scan() error {
 	asm.labels = make(map[string]int)
 	asm.refs = make(map[string][]int)
 
-	for i := 0; i < len(asm.tokenizer.out); i++ {
-		tok := asm.tokenizer.out[i]
+	for i := 0; i < len(asm.out); i++ {
+		tok := asm.out[i]
 
 		switch tok.t {
 		case labelToken:
@@ -144,7 +144,7 @@ func (asm *assembler) scan() error {
 			ref := tok.s
 			// resolve label references
 			i++
-			tok = asm.tokenizer.out[i]
+			tok = asm.out[i]
 			if tok.t != opToken {
 				return fmt.Errorf("next token must be an op, got %v instead", tok.t)
 			}
@@ -168,7 +168,7 @@ func (asm *assembler) scan() error {
 			// op with immediate arg
 			asm.arg, asm.have = tok.d, true
 			i++
-			tok = asm.tokenizer.out[i]
+			tok = asm.out[i]
 			switch tok.t {
 			case opToken:
 				goto resolveOp
@@ -223,7 +223,7 @@ func (asm *assembler) handleData(val interface{}) error {
 
 		// label
 		case len(v) > 1 && v[len(v)-1] == ':':
-			asm.tokenizer.out = append(asm.tokenizer.out, label(v[:len(v)-1]))
+			asm.out = append(asm.out, label(v[:len(v)-1]))
 			return nil
 
 		default:
@@ -232,7 +232,7 @@ func (asm *assembler) handleData(val interface{}) error {
 
 	// data word
 	case int:
-		asm.tokenizer.out = append(asm.tokenizer.out, data(uint32(v)))
+		asm.out = append(asm.out, data(uint32(v)))
 		return nil
 
 	default:
@@ -250,23 +250,23 @@ func (asm *assembler) handleText(val interface{}) error {
 
 		// label
 		case len(v) > 1 && v[len(v)-1] == ':':
-			asm.tokenizer.out = append(asm.tokenizer.out, label(v[:len(v)-1]))
+			asm.out = append(asm.out, label(v[:len(v)-1]))
 			return nil
 
 		// ref
 		case len(v) > 1 && v[0] == ':':
-			asm.tokenizer.out = append(asm.tokenizer.out, ref(v[1:]))
+			asm.out = append(asm.out, ref(v[1:]))
 			return asm.expectOp()
 
 		// opName
 		default:
-			asm.tokenizer.out = append(asm.tokenizer.out, opName(v))
+			asm.out = append(asm.out, opName(v))
 			return nil
 		}
 
 	// imm
 	case int:
-		asm.tokenizer.out = append(asm.tokenizer.out, imm(v))
+		asm.out = append(asm.out, imm(v))
 		return asm.expectOp()
 
 	default:
@@ -290,7 +290,7 @@ func (asm *assembler) handleDirective(s string) error {
 func (asm *assembler) expectOp() error {
 	s, err := asm.expectString(`"opName"`)
 	if err == nil {
-		asm.tokenizer.out = append(asm.tokenizer.out, opName(s))
+		asm.out = append(asm.out, opName(s))
 	}
 	return err
 }
