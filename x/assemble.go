@@ -330,7 +330,7 @@ func (asm *assembler) encode() []byte {
 
 type refCursor struct {
 	sites []int // op indices that are refs
-	offs  []int // target offsets
+	targs []int // target offsets
 	i     int   // index of the current site in sites...
 	ji    int   // ...op index of its site
 	ti    int   // ...op index of its target
@@ -340,14 +340,14 @@ func makeRefCursor(ops []stackvm.Op, sites []int) refCursor {
 	rc := refCursor{sites: sites, ji: -1, ti: -1}
 	if len(sites) > 0 {
 		sort.Ints(sites)
-		// TODO: offs only for sites
-		offs := make([]int, len(ops))
+		// TODO: targs only for sites
+		targs := make([]int, len(ops))
 		for i := range ops {
-			offs[i] = int(int32(ops[i].Arg))
+			targs[i] = i + 1 + int(int32(ops[i].Arg))
 		}
-		rc.offs = offs
+		rc.targs = targs
 		rc.ji = rc.sites[0]
-		rc.ti = rc.ji + 1 + rc.offs[rc.ji]
+		rc.ti = rc.targs[rc.ji]
 	}
 	return rc
 }
@@ -358,14 +358,14 @@ func (rc refCursor) next() refCursor {
 		rc.ji, rc.ti = -1, -1
 	} else {
 		rc.ji = rc.sites[rc.i]
-		rc.ti = rc.ji + 1 + rc.offs[rc.ji]
+		rc.ti = rc.targs[rc.ji]
 	}
 	return rc
 }
 
 func (rc refCursor) rewind(ri int) refCursor {
 	for i, ji := range rc.sites {
-		ti := ji + 1 + rc.offs[ji]
+		ti := rc.targs[ji]
 		if ji >= ri || ti >= ri {
 			rc.i, rc.ji, rc.ti = i, ji, ti
 			break
