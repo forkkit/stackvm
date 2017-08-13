@@ -276,8 +276,8 @@ func (asm *assembler) expect(desc string) (interface{}, error) {
 }
 
 func (asm *assembler) encode() []byte {
-	// setup jump tracking state
-	jc := makeJumpCursor(asm.ops, asm.jumps)
+	// setup ref tracking state
+	rc := makeRefCursor(asm.ops, asm.jumps)
 
 	buf := make([]byte, asm.maxBytes)
 
@@ -287,24 +287,24 @@ func (asm *assembler) encode() []byte {
 	offsets := make([]uint32, len(asm.ops)+1)
 	c, i := uint32(0), 0 // current op offset and index
 	for i < len(asm.ops) {
-		// fix a previously encoded jump's target
-		for 0 <= jc.ji && jc.ji < i && jc.ti <= i {
-			jIP := base + offsets[jc.ji]
+		// fix a previously encoded ref's target
+		for 0 <= rc.ji && rc.ji < i && rc.ti <= i {
+			jIP := base + offsets[rc.ji]
 			tIP := base
-			if jc.ti < i {
-				tIP += offsets[jc.ti]
-			} else { // jc.ti == i
+			if rc.ti < i {
+				tIP += offsets[rc.ti]
+			} else { // rc.ti == i
 				tIP += c
 			}
-			asm.ops[jc.ji] = asm.ops[jc.ji].ResolveRefArg(jIP, tIP)
-			// re-encode the jump and rewind if arg size changed
-			lo, hi := offsets[jc.ji], offsets[jc.ji+1]
-			if end := lo + uint32(asm.ops[jc.ji].EncodeInto(p[lo:])); end != hi {
-				i, c = jc.ji+1, end
+			asm.ops[rc.ji] = asm.ops[rc.ji].ResolveRefArg(jIP, tIP)
+			// re-encode the ref and rewind if arg size changed
+			lo, hi := offsets[rc.ji], offsets[rc.ji+1]
+			if end := lo + uint32(asm.ops[rc.ji].EncodeInto(p[lo:])); end != hi {
+				i, c = rc.ji+1, end
 				offsets[i] = c
-				jc = jc.rewind(i)
+				rc = rc.rewind(i)
 			} else {
-				jc = jc.next()
+				rc = rc.next()
 			}
 		}
 
@@ -328,48 +328,48 @@ func (asm *assembler) encode() []byte {
 	return buf
 }
 
-type jumpCursor struct {
-	jumps []int // op indices that are jumps
-	offs  []int // jump offsets, mined out of op args
-	i     int   // index of the current jump in jumps...
-	ji    int   // ...op index of its jump
+type refCursor struct {
+	sites []int // op indices that are refs
+	offs  []int // target offsets
+	i     int   // index of the current site in sites...
+	ji    int   // ...op index of its site
 	ti    int   // ...op index of its target
 }
 
-func makeJumpCursor(ops []stackvm.Op, jumps []int) jumpCursor {
-	jc := jumpCursor{jumps: jumps, ji: -1, ti: -1}
-	if len(jumps) > 0 {
-		sort.Ints(jumps)
-		// TODO: offs only for jumps
+func makeRefCursor(ops []stackvm.Op, sites []int) refCursor {
+	rc := refCursor{sites: sites, ji: -1, ti: -1}
+	if len(sites) > 0 {
+		sort.Ints(sites)
+		// TODO: offs only for sites
 		offs := make([]int, len(ops))
 		for i := range ops {
 			offs[i] = int(int32(ops[i].Arg))
 		}
-		jc.offs = offs
-		jc.ji = jc.jumps[0]
-		jc.ti = jc.ji + 1 + jc.offs[jc.ji]
+		rc.offs = offs
+		rc.ji = rc.sites[0]
+		rc.ti = rc.ji + 1 + rc.offs[rc.ji]
 	}
-	return jc
+	return rc
 }
 
-func (jc jumpCursor) next() jumpCursor {
-	jc.i++
-	if jc.i >= len(jc.jumps) {
-		jc.ji, jc.ti = -1, -1
+func (rc refCursor) next() refCursor {
+	rc.i++
+	if rc.i >= len(rc.sites) {
+		rc.ji, rc.ti = -1, -1
 	} else {
-		jc.ji = jc.jumps[jc.i]
-		jc.ti = jc.ji + 1 + jc.offs[jc.ji]
+		rc.ji = rc.sites[rc.i]
+		rc.ti = rc.ji + 1 + rc.offs[rc.ji]
 	}
-	return jc
+	return rc
 }
 
-func (jc jumpCursor) rewind(ri int) jumpCursor {
-	for i, ji := range jc.jumps {
-		ti := ji + 1 + jc.offs[ji]
+func (rc refCursor) rewind(ri int) refCursor {
+	for i, ji := range rc.sites {
+		ti := ji + 1 + rc.offs[ji]
 		if ji >= ri || ti >= ri {
-			jc.i, jc.ji, jc.ti = i, ji, ti
+			rc.i, rc.ji, rc.ti = i, ji, ti
 			break
 		}
 	}
-	return jc
+	return rc
 }
