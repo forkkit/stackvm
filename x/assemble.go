@@ -129,7 +129,12 @@ func (asm *assembler) handleData(val interface{}) error {
 	case string:
 		switch {
 		case len(v) > 1 && v[0] == '.':
-			return asm.handleDirective(v[1:])
+			switch s := v[1:]; s {
+			case "alloc":
+				return asm.handleAlloc()
+			default:
+				return asm.handleDirective(s)
+			}
 
 		case len(v) > 1 && v[len(v)-1] == ':':
 			return asm.handleLabel(v[:len(v)-1])
@@ -237,6 +242,24 @@ func (asm *assembler) handleImm(n int) (err error) {
 		asm.ops = append(asm.ops, op)
 	}
 	return err
+}
+
+func (asm *assembler) handleAlloc() error {
+	n, err := asm.expectInt(`int`)
+	if err != nil {
+		return err
+	}
+	if n < 1 {
+		return fmt.Errorf("invalid .alloc %v, must be positive", n)
+	}
+	// TODO: should be in bytes, not words
+	// TODO: would like to avoid N*append
+	do := dataOp(0)
+	asm.maxBytes += 4 * n
+	for i := 0; i < n; i++ {
+		asm.ops = append(asm.ops, do)
+	}
+	return nil
 }
 
 func (asm *assembler) handleDataWord(d uint32) error {
