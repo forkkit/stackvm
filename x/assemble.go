@@ -49,7 +49,18 @@ func Assemble(in ...interface{}) ([]byte, error) {
 	}
 
 	// rest is assembly tokens
-	return assemble(opts, in[1:])
+	asm := assembler{
+		opts: opts,
+		tokenizer: tokenizer{
+			in:    in[1:],
+			out:   make([]token, 0, len(in)-1),
+			state: tokenizerText,
+		},
+	}
+	if err := asm.scan(); err != nil {
+		return nil, err
+	}
+	return asm.encode(), nil
 }
 
 // copied from generated op_codes.go, which isn't that bad since having "the
@@ -86,23 +97,6 @@ type assembler struct {
 	refs     map[string][]int
 	arg      uint32
 	have     bool
-}
-
-func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
-	asm := assembler{
-		opts: opts,
-		tokenizer: tokenizer{
-			in:    in,
-			out:   make([]token, 0, len(in)),
-			state: tokenizerText,
-		},
-	}
-
-	if err := asm.scan(); err != nil {
-		return nil, err
-	}
-
-	return asm.encode(), nil
 }
 
 func (asm *assembler) scan() error {
