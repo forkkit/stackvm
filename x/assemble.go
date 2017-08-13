@@ -294,12 +294,7 @@ func (asm *assembler) encode() []byte {
 		// fix a previously encoded ref's target
 		for 0 <= rc.si && rc.si < i && rc.ti <= i {
 			jIP := base + offsets[rc.si]
-			tIP := base
-			if rc.ti < i {
-				tIP += offsets[rc.ti]
-			} else { // rc.ti == i
-				tIP += c
-			}
+			tIP := base + offsets[rc.ti]
 			asm.ops[rc.si] = asm.ops[rc.si].ResolveRefArg(jIP, tIP)
 			// re-encode the ref and rewind if arg size changed
 			lo, hi := offsets[rc.si], offsets[rc.si+1]
