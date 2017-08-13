@@ -201,10 +201,7 @@ func (asm *assembler) handleRef(name string) error {
 		return fmt.Errorf("%v does not accept ref %q", op, name)
 	}
 	asm.maxBytes += 6
-	asm.refsBy[name] = append(asm.refsBy[name], ref{site: len(asm.ops)})
-	if _, defined := asm.labels[name]; !defined {
-		asm.labels[name] = -len(asm.ops) - 1
-	}
+	asm.defRef(name)
 	asm.ops = append(asm.ops, op)
 	return nil
 }
@@ -258,6 +255,14 @@ func (asm *assembler) expect(desc string) (interface{}, error) {
 		return asm.in[asm.i], nil
 	}
 	return nil, fmt.Errorf("unexpected end of input, expected %s", desc)
+}
+
+func (asm *assembler) defRef(name string) {
+	rf := ref{site: len(asm.ops)}
+	asm.refsBy[name] = append(asm.refsBy[name], rf)
+	if _, defined := asm.labels[name]; !defined {
+		asm.labels[name] = -len(asm.ops) - 1
+	}
 }
 
 func (asm *assembler) buildRefs() error {
