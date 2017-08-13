@@ -225,8 +225,7 @@ func (asm *assembler) handleData(val interface{}) error {
 
 	// data word
 	case int:
-		asm.out = append(asm.out, data(uint32(v)))
-		return nil
+		return asm.handleDataWord(uint32(v))
 
 	default:
 		return fmt.Errorf(`invalid token %T(%v); expected ".directive", "label:", or an int`, val, val)
@@ -294,6 +293,11 @@ func (asm *assembler) handleOp(name string) error {
 func (asm *assembler) handleImm(d int) error {
 	asm.out = append(asm.out, imm(d))
 	return asm.expectOp()
+}
+
+func (asm *assembler) handleDataWord(d uint32) error {
+	asm.out = append(asm.out, data(d))
+	return nil
 }
 
 func (asm *assembler) expectOp() error {
