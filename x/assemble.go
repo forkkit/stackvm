@@ -131,9 +131,9 @@ func (asm *assembler) scan() error {
 	if n > 0 {
 		asm.jumps = make([]int, 0, n)
 		for name, sites := range asm.refSites {
-			i := asm.labels[name]
-			for _, j := range sites {
-				asm.ops[j].Arg = uint32(i - j - 1)
+			targ := asm.labels[name]
+			for _, site := range sites {
+				asm.ops[site].Arg = uint32(targ - site - 1)
 			}
 			asm.jumps = append(asm.jumps, sites...)
 		}
