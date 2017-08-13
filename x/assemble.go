@@ -77,6 +77,7 @@ func opData(op stackvm.Op) (uint32, bool) {
 
 type assembler struct {
 	tokenizer
+	opts     stackvm.MachOptions
 	ops      []stackvm.Op
 	jumps    []int
 	numJumps int
@@ -89,6 +90,7 @@ type assembler struct {
 
 func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
 	asm := assembler{
+		opts: opts,
 		tokenizer: tokenizer{
 			in:    in,
 			out:   make([]token, 0, len(in)),
@@ -100,7 +102,15 @@ func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	asm.maxBytes = opts.NeededSize()
+	return asm.encode(), nil
+}
+
+func (asm *assembler) scan() error {
+	if err := asm.tokenizer.scan(); err != nil {
+		return err
+	}
+
+	asm.maxBytes = asm.opts.NeededSize()
 	asm.labels = make(map[string]int)
 	asm.refs = make(map[string][]int)
 
@@ -117,14 +127,14 @@ func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
 			i++
 			tok = asm.tokenizer.out[i]
 			if tok.t != opToken {
-				return nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
+				return fmt.Errorf("next token must be an op, got %v instead", tok.t)
 			}
 			op, err := stackvm.ResolveOp(tok.s, 0, true)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			if !op.AcceptsRef() {
-				return nil, fmt.Errorf("%v does not accept ref %q", op, ref)
+				return fmt.Errorf("%v does not accept ref %q", op, ref)
 			}
 			asm.maxBytes += 6
 			asm.refs[ref] = append(asm.refs[ref], len(asm.ops))
@@ -144,7 +154,7 @@ func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
 			case opToken:
 				goto resolveOp
 			default:
-				return nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
+				return fmt.Errorf("next token must be an op, got %v instead", tok.t)
 			}
 
 		case opToken:
@@ -152,14 +162,14 @@ func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
 			goto resolveOp
 
 		default:
-			return nil, fmt.Errorf("unexpected %v token", tok.t)
+			return fmt.Errorf("unexpected %v token", tok.t)
 		}
 		continue
 
 	resolveOp:
 		op, err := stackvm.ResolveOp(tok.s, asm.arg, asm.have)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		asm.maxBytes += op.NeededSize()
 		asm.ops = append(asm.ops, op)
@@ -172,7 +182,7 @@ func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
 		for name, sites := range asm.refs {
 			i, ok := asm.labels[name]
 			if !ok {
-				return nil, fmt.Errorf("undefined label %q", name)
+				return fmt.Errorf("undefined label %q", name)
 			}
 			for _, j := range sites {
 				asm.ops[j].Arg = uint32(i - j - 1)
@@ -181,14 +191,18 @@ func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
 		}
 	}
 
+	return nil
+}
+
+func (asm *assembler) encode() []byte {
 	// setup jump tracking state
 	jc := makeJumpCursor(asm.ops, asm.jumps)
 
 	buf := make([]byte, asm.maxBytes)
 
-	n := opts.EncodeInto(buf)
+	n := asm.opts.EncodeInto(buf)
 	p := buf[n:]
-	base := uint32(opts.StackSize)
+	base := uint32(asm.opts.StackSize)
 	offsets := make([]uint32, len(asm.ops)+1)
 	c, i := uint32(0), 0 // current op offset and index
 	for i < len(asm.ops) {
@@ -230,7 +244,7 @@ func assemble(opts stackvm.MachOptions, in []interface{}) ([]byte, error) {
 	n += int(c)
 	buf = buf[:n]
 
-	return buf, nil
+	return buf
 }
 
 type tokenType uint8
