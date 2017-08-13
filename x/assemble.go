@@ -99,6 +99,20 @@ type assembler struct {
 	have     bool
 }
 
+type tokenizer struct {
+	i     int
+	in    []interface{}
+	out   []token
+	state tokenizerState
+}
+
+type tokenizerState uint8
+
+const (
+	tokenizerText tokenizerState = iota + 1
+	tokenizerData
+)
+
 func (asm *assembler) scan() error {
 	var err error
 	for ; err == nil && asm.tokenizer.i < len(asm.tokenizer.in); asm.tokenizer.i++ {
@@ -305,20 +319,6 @@ func (t token) String() string {
 		return fmt.Sprintf("InvalidToken(t:%d, s:%q, d:%v)", t.t, t.s, t.d)
 	}
 }
-
-type tokenizer struct {
-	i     int
-	in    []interface{}
-	out   []token
-	state tokenizerState
-}
-
-type tokenizerState uint8
-
-const (
-	tokenizerText tokenizerState = iota + 1
-	tokenizerData
-)
 
 func (tokz *tokenizer) handleData(val interface{}) error {
 	switch v := val.(type) {
