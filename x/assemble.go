@@ -82,7 +82,7 @@ func opData(op stackvm.Op) (uint32, bool) {
 	return 0, false
 }
 
-type ref struct{ site, targ int }
+type ref struct{ site, targ, off int }
 
 type assembler struct {
 	i        int
@@ -198,7 +198,7 @@ func (asm *assembler) handleRef(name string) error {
 		return err
 	}
 	asm.maxBytes += 6
-	asm.defRef(name)
+	asm.defRef(name, 0)
 	asm.ops = append(asm.ops, op)
 	return nil
 }
@@ -265,8 +265,8 @@ func (asm *assembler) expect(desc string) (interface{}, error) {
 	return nil, fmt.Errorf("unexpected end of input, expected %s", desc)
 }
 
-func (asm *assembler) defRef(name string) {
-	rf := ref{site: len(asm.ops)}
+func (asm *assembler) defRef(name string, off int) {
+	rf := ref{site: len(asm.ops), off: off}
 	asm.refsBy[name] = append(asm.refsBy[name], rf)
 	if _, defined := asm.labels[name]; !defined {
 		asm.labels[name] = -len(asm.ops) - 1
@@ -317,7 +317,7 @@ func (asm *assembler) encode() []byte {
 		for 0 <= rf.site && rf.site < i && rf.targ <= i {
 			op := asm.ops[rf.site].ResolveRefArg(
 				base+offsets[rf.site],
-				base+offsets[rf.targ])
+				base+offsets[rf.targ]+uint32(refs[rfi].off))
 			asm.ops[rf.site] = op
 			// re-encode the ref and rewind if arg size changed
 			lo, hi := offsets[rf.site], offsets[rf.site+1]
