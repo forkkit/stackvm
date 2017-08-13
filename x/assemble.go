@@ -247,7 +247,7 @@ func (asm *assembler) handleText(val interface{}) error {
 		}
 
 	case int:
-		return asm.handleImm(v)
+		return asm.handleImm(uint32(v))
 
 	default:
 		return fmt.Errorf(`invalid token %T(%v); expected ".directive", "label:", ":ref", "opName", or an int`, val, val)
@@ -282,8 +282,8 @@ func (asm *assembler) handleOp(name string) error {
 	return nil
 }
 
-func (asm *assembler) handleImm(d int) error {
-	asm.out = append(asm.out, imm(uint32(d)))
+func (asm *assembler) handleImm(d uint32) error {
+	asm.out = append(asm.out, imm(d))
 	return asm.expectOp()
 }
 
