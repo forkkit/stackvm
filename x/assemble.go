@@ -89,7 +89,6 @@ type assembler struct {
 	opts     stackvm.MachOptions
 	ops      []stackvm.Op
 	jumps    []int
-	numJumps int
 	maxBytes int
 	labels   map[string]int
 	refs     map[string][]int
@@ -122,13 +121,17 @@ func (asm *assembler) scan() error {
 		return err
 	}
 
-	if asm.numJumps > 0 {
-		asm.jumps = make([]int, 0, asm.numJumps)
+	n := 0
+	for name, sites := range asm.refs {
+		if _, defined := asm.labels[name]; !defined {
+			return fmt.Errorf("undefined label %q", name)
+		}
+		n += len(sites)
+	}
+	if n > 0 {
+		asm.jumps = make([]int, 0, n)
 		for name, sites := range asm.refs {
-			i, ok := asm.labels[name]
-			if !ok {
-				return fmt.Errorf("undefined label %q", name)
-			}
+			i := asm.labels[name]
 			for _, j := range sites {
 				asm.ops[j].Arg = uint32(i - j - 1)
 			}
@@ -218,7 +221,6 @@ func (asm *assembler) handleRef(name string) error {
 	asm.maxBytes += 6
 	asm.refs[name] = append(asm.refs[name], len(asm.ops))
 	asm.ops = append(asm.ops, op)
-	asm.numJumps++
 	return nil
 }
 
