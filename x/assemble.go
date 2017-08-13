@@ -129,7 +129,7 @@ func (asm *assembler) handleData(val interface{}) error {
 	case string:
 		switch {
 		case len(v) > 1 && v[0] == '.':
-			return asm.handleDirective(v)
+			return asm.handleDirective(v[1:])
 
 		case len(v) > 1 && v[len(v)-1] == ':':
 			return asm.handleLabel(v[:len(v)-1])
@@ -151,7 +151,7 @@ func (asm *assembler) handleText(val interface{}) error {
 	case string:
 		switch {
 		case len(v) > 1 && v[0] == '.':
-			return asm.handleDirective(v)
+			return asm.handleDirective(v[1:])
 
 		case len(v) > 1 && v[len(v)-1] == ':':
 			return asm.handleLabel(v[:len(v)-1])
@@ -171,8 +171,8 @@ func (asm *assembler) handleText(val interface{}) error {
 	}
 }
 
-func (asm *assembler) handleDirective(s string) error {
-	switch s[1:] {
+func (asm *assembler) handleDirective(name string) error {
+	switch name {
 	case "data":
 		asm.state = tokenizerData
 		return nil
@@ -180,7 +180,7 @@ func (asm *assembler) handleDirective(s string) error {
 		asm.state = tokenizerText
 		return nil
 	default:
-		return fmt.Errorf("invalid directive %s", s)
+		return fmt.Errorf("invalid directive .%s", name)
 	}
 }
 
