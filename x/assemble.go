@@ -295,6 +295,25 @@ func (asm *assembler) expectOp() error {
 	return err
 }
 
+func (asm *assembler) expectString(desc string) (string, error) {
+	val, err := asm.expect(desc)
+	if err == nil {
+		if s, ok := val.(string); ok {
+			return s, nil
+		}
+		err = fmt.Errorf("invalid token %T(%v); expected %s", val, val, desc)
+	}
+	return "", err
+}
+
+func (asm *assembler) expect(desc string) (interface{}, error) {
+	asm.tokenizer.i++
+	if asm.tokenizer.i < len(asm.tokenizer.in) {
+		return asm.tokenizer.in[asm.tokenizer.i], nil
+	}
+	return nil, fmt.Errorf("unexpected end of input, expected %s", desc)
+}
+
 func (asm *assembler) encode() []byte {
 	// setup jump tracking state
 	jc := makeJumpCursor(asm.ops, asm.jumps)
@@ -400,25 +419,6 @@ func (t token) String() string {
 	default:
 		return fmt.Sprintf("InvalidToken(t:%d, s:%q, d:%v)", t.t, t.s, t.d)
 	}
-}
-
-func (tokz *tokenizer) expectString(desc string) (string, error) {
-	val, err := tokz.expect(desc)
-	if err == nil {
-		if s, ok := val.(string); ok {
-			return s, nil
-		}
-		err = fmt.Errorf("invalid token %T(%v); expected %s", val, val, desc)
-	}
-	return "", err
-}
-
-func (tokz *tokenizer) expect(desc string) (interface{}, error) {
-	tokz.i++
-	if tokz.i < len(tokz.in) {
-		return tokz.in[tokz.i], nil
-	}
-	return nil, fmt.Errorf("unexpected end of input, expected %s", desc)
 }
 
 type jumpCursor struct {
