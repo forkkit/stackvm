@@ -282,7 +282,14 @@ func (asm *assembler) expect(desc string) (interface{}, error) {
 
 func (asm *assembler) encode() []byte {
 	// setup ref tracking state
-	rc := makeRefCursor(asm.refs)
+	refs := asm.refs
+	rfi, rf := 0, ref{site: -1, targ: -1}
+	if len(refs) > 0 {
+		sort.Slice(refs, func(i, j int) bool {
+			return refs[i].site < refs[j].site
+		})
+		rf = refs[rfi]
+	}
 
 	buf := make([]byte, asm.maxBytes)
 
@@ -293,19 +300,30 @@ func (asm *assembler) encode() []byte {
 	c, i := uint32(0), 0 // current op offset and index
 	for i < len(asm.ops) {
 		// fix a previously encoded ref's target
-		for 0 <= rc.site && rc.site < i && rc.targ <= i {
-			op := asm.ops[rc.site].ResolveRefArg(
-				base+offsets[rc.site],
-				base+offsets[rc.targ])
-			asm.ops[rc.site] = op
+		for 0 <= rf.site && rf.site < i && rf.targ <= i {
+			op := asm.ops[rf.site].ResolveRefArg(
+				base+offsets[rf.site],
+				base+offsets[rf.targ])
+			asm.ops[rf.site] = op
 			// re-encode the ref and rewind if arg size changed
-			lo, hi := offsets[rc.site], offsets[rc.site+1]
+			lo, hi := offsets[rf.site], offsets[rf.site+1]
 			if end := lo + uint32(op.EncodeInto(p[lo:])); end != hi {
-				i, c = rc.site+1, end
+				// rewind to prior ref
+				i, c = rf.site+1, end
 				offsets[i] = c
-				rc = rc.rewind(i)
+				for rfi, rf = range refs {
+					if rf.site >= i || rf.targ >= i {
+						break
+					}
+				}
 			} else {
-				rc = rc.next()
+				// next ref
+				rfi++
+				if rfi >= len(refs) {
+					rf = ref{site: -1, targ: -1}
+				} else {
+					rf = refs[rfi]
+				}
 			}
 		}
 
@@ -328,45 +346,4 @@ func (asm *assembler) encode() []byte {
 	buf = buf[:n]
 
 	return buf
-}
-
-type refCursor struct {
-	refs []ref // ref {site, targ} pairs
-	i    int   // index of the current ref in refs...
-	site int   // ...op index of its site
-	targ int   // ...op index of its target
-}
-
-func makeRefCursor(refs []ref) refCursor {
-	rc := refCursor{site: -1, targ: -1}
-	if len(refs) > 0 {
-		sort.Slice(refs, func(i, j int) bool {
-			return refs[i].site < refs[j].site
-		})
-		rc.refs = refs
-		rc.site = rc.refs[0].site
-		rc.targ = rc.refs[0].targ
-	}
-	return rc
-}
-
-func (rc refCursor) next() refCursor {
-	rc.i++
-	if rc.i >= len(rc.refs) {
-		rc.site, rc.targ = -1, -1
-	} else {
-		rc.site = rc.refs[rc.i].site
-		rc.targ = rc.refs[rc.i].targ
-	}
-	return rc
-}
-
-func (rc refCursor) rewind(ri int) refCursor {
-	for i, ref := range rc.refs {
-		if ref.site >= ri || ref.targ >= ri {
-			rc.i, rc.site, rc.targ = i, ref.site, ref.targ
-			break
-		}
-	}
-	return rc
 }
