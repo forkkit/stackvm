@@ -50,10 +50,8 @@ func Assemble(in ...interface{}) ([]byte, error) {
 
 	// rest is assembly tokens
 	asm := assembler{
-		opts: opts,
-		tokenizer: tokenizer{
-			in: in[1:],
-		},
+		opts:  opts,
+		in:    in[1:],
 		out:   make([]token, 0, len(in)-1),
 		state: tokenizerText,
 	}
@@ -87,7 +85,8 @@ func opData(op stackvm.Op) (uint32, bool) {
 }
 
 type assembler struct {
-	tokenizer
+	i        int
+	in       []interface{}
 	out      []token
 	state    tokenizerState
 	opts     stackvm.MachOptions
@@ -101,11 +100,6 @@ type assembler struct {
 	have     bool
 }
 
-type tokenizer struct {
-	i  int
-	in []interface{}
-}
-
 type tokenizerState uint8
 
 const (
@@ -115,12 +109,12 @@ const (
 
 func (asm *assembler) scan() error {
 	var err error
-	for ; err == nil && asm.tokenizer.i < len(asm.tokenizer.in); asm.tokenizer.i++ {
+	for ; err == nil && asm.i < len(asm.in); asm.i++ {
 		switch asm.state {
 		case tokenizerData:
-			err = asm.handleData(asm.tokenizer.in[asm.tokenizer.i])
+			err = asm.handleData(asm.in[asm.i])
 		case tokenizerText:
-			err = asm.handleText(asm.tokenizer.in[asm.tokenizer.i])
+			err = asm.handleText(asm.in[asm.i])
 		default:
 			return fmt.Errorf("invalid tokenizer state %d", asm.state)
 		}
@@ -307,9 +301,9 @@ func (asm *assembler) expectString(desc string) (string, error) {
 }
 
 func (asm *assembler) expect(desc string) (interface{}, error) {
-	asm.tokenizer.i++
-	if asm.tokenizer.i < len(asm.tokenizer.in) {
-		return asm.tokenizer.in[asm.tokenizer.i], nil
+	asm.i++
+	if asm.i < len(asm.in) {
+		return asm.in[asm.i], nil
 	}
 	return nil, fmt.Errorf("unexpected end of input, expected %s", desc)
 }
