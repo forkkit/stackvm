@@ -247,8 +247,7 @@ func (asm *assembler) handleText(val interface{}) error {
 
 		// ref
 		case len(v) > 1 && v[0] == ':':
-			asm.out = append(asm.out, ref(v[1:]))
-			return asm.expectOp()
+			return asm.handleRef(v[1:])
 
 		// opName
 		default:
@@ -282,6 +281,11 @@ func (asm *assembler) handleDirective(s string) error {
 func (asm *assembler) handleLabel(name string) error {
 	asm.out = append(asm.out, label(name))
 	return nil
+}
+
+func (asm *assembler) handleRef(name string) error {
+	asm.out = append(asm.out, ref(name))
+	return asm.expectOp()
 }
 
 func (asm *assembler) expectOp() error {
