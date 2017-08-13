@@ -82,6 +82,8 @@ func opData(op stackvm.Op) (uint32, bool) {
 	return 0, false
 }
 
+type ref struct{ site, targ int }
+
 type assembler struct {
 	i        int
 	in       []interface{}
@@ -329,51 +331,50 @@ func (asm *assembler) encode() []byte {
 }
 
 type refCursor struct {
-	sites []int // op indices that are refs
-	targs []int // target offsets
-	i     int   // index of the current site in sites...
-	ji    int   // ...op index of its site
-	ti    int   // ...op index of its target
+	refs []ref // ref {site, targ} pairs
+	i    int   // index of the current ref in refs...
+	ji   int   // ...op index of its site
+	ti   int   // ...op index of its target
 }
 
 func makeRefCursor(ops []stackvm.Op, sites []int) refCursor {
-	rc := refCursor{sites: sites, ji: -1, ti: -1}
+	rc := refCursor{ji: -1, ti: -1}
 	if len(sites) > 0 {
 		sort.Ints(sites)
-		targs := make([]int, len(sites))
+		refs := make([]ref, len(sites))
 		i := 0
 		for site := range ops {
 			if site == sites[i] {
-				targs[i] = site + 1 + int(int32(ops[site].Arg))
+				targ := site + 1 + int(int32(ops[site].Arg))
+				refs[i] = ref{site, targ}
 				i++
 				if i >= len(sites) {
 					break
 				}
 			}
 		}
-		rc.targs = targs
-		rc.ji = rc.sites[0]
-		rc.ti = rc.targs[0]
+		rc.refs = refs
+		rc.ji = rc.refs[0].site
+		rc.ti = rc.refs[0].targ
 	}
 	return rc
 }
 
 func (rc refCursor) next() refCursor {
 	rc.i++
-	if rc.i >= len(rc.sites) {
+	if rc.i >= len(rc.refs) {
 		rc.ji, rc.ti = -1, -1
 	} else {
-		rc.ji = rc.sites[rc.i]
-		rc.ti = rc.targs[rc.i]
+		rc.ji = rc.refs[rc.i].site
+		rc.ti = rc.refs[rc.i].targ
 	}
 	return rc
 }
 
 func (rc refCursor) rewind(ri int) refCursor {
-	for i, ji := range rc.sites {
-		ti := rc.targs[i]
-		if ji >= ri || ti >= ri {
-			rc.i, rc.ji, rc.ti = i, ji, ti
+	for i, ref := range rc.refs {
+		if ref.site >= ri || ref.targ >= ri {
+			rc.i, rc.ji, rc.ti = i, ref.site, ref.targ
 			break
 		}
 	}
