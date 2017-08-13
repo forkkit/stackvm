@@ -273,12 +273,12 @@ func (asm *assembler) handleLabel(name string) error {
 }
 
 func (asm *assembler) handleRef(name string) error {
-	asm.out = append(asm.out, token{t: refToken, s: name})
-	name, err := asm.expectOp()
+	opName, err := asm.expectOp()
 	if err != nil {
 		return err
 	}
-	asm.out = append(asm.out, token{t: opToken, s: name})
+	asm.out = append(asm.out, token{t: refToken, s: name})
+	asm.out = append(asm.out, token{t: opToken, s: opName})
 	return nil
 }
 
@@ -288,10 +288,10 @@ func (asm *assembler) handleOp(name string) error {
 }
 
 func (asm *assembler) handleImm(d uint32) error {
-	asm.out = append(asm.out, token{t: immToken, d: d})
-	name, err := asm.expectOp()
+	opName, err := asm.expectOp()
 	if err == nil {
-		asm.out = append(asm.out, token{t: opToken, s: name})
+		asm.out = append(asm.out, token{t: immToken, d: d})
+		asm.out = append(asm.out, token{t: opToken, s: opName})
 	}
 	return err
 }
