@@ -107,7 +107,6 @@ func (asm *assembler) scan() error {
 	asm.maxBytes = asm.opts.NeededSize()
 	asm.labels = make(map[string]int)
 	asm.refsBy = make(map[string][]ref)
-
 	var err error
 	for ; err == nil && asm.i < len(asm.in); asm.i++ {
 		switch asm.state {
@@ -122,26 +121,7 @@ func (asm *assembler) scan() error {
 	if err != nil {
 		return err
 	}
-
-	n := 0
-	for name, refs := range asm.refsBy {
-		if _, defined := asm.labels[name]; !defined {
-			return fmt.Errorf("undefined label %q", name)
-		}
-		n += len(refs)
-	}
-	if n > 0 {
-		asm.refs = make([]ref, 0, n)
-		for name, refs := range asm.refsBy {
-			targ := asm.labels[name]
-			for _, rf := range refs {
-				rf.targ = targ
-				asm.refs = append(asm.refs, rf)
-			}
-		}
-	}
-
-	return nil
+	return asm.buildRefs()
 }
 
 func (asm *assembler) handleData(val interface{}) error {
@@ -278,6 +258,27 @@ func (asm *assembler) expect(desc string) (interface{}, error) {
 		return asm.in[asm.i], nil
 	}
 	return nil, fmt.Errorf("unexpected end of input, expected %s", desc)
+}
+
+func (asm *assembler) buildRefs() error {
+	n := 0
+	for name, refs := range asm.refsBy {
+		if _, defined := asm.labels[name]; !defined {
+			return fmt.Errorf("undefined label %q", name)
+		}
+		n += len(refs)
+	}
+	if n > 0 {
+		asm.refs = make([]ref, 0, n)
+		for name, refs := range asm.refsBy {
+			targ := asm.labels[name]
+			for _, rf := range refs {
+				rf.targ = targ
+				asm.refs = append(asm.refs, rf)
+			}
+		}
+	}
+	return nil
 }
 
 func (asm *assembler) encode() []byte {
