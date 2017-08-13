@@ -273,12 +273,12 @@ func (asm *assembler) handleLabel(name string) error {
 }
 
 func (asm *assembler) handleRef(name string) error {
-	opName, err := asm.expectOp()
+	op, err := asm.expectOp(0, true)
 	if err != nil {
 		return err
 	}
 	asm.out = append(asm.out, token{t: refToken, s: name})
-	asm.out = append(asm.out, token{t: opToken, s: opName})
+	asm.out = append(asm.out, token{t: opToken, s: op.Name})
 	return nil
 }
 
@@ -288,10 +288,10 @@ func (asm *assembler) handleOp(name string) error {
 }
 
 func (asm *assembler) handleImm(d uint32) error {
-	opName, err := asm.expectOp()
+	op, err := asm.expectOp(d, true)
 	if err == nil {
 		asm.out = append(asm.out, token{t: immToken, d: d})
-		asm.out = append(asm.out, token{t: opToken, s: opName})
+		asm.out = append(asm.out, token{t: opToken, s: op.Name()})
 	}
 	return err
 }
@@ -301,12 +301,12 @@ func (asm *assembler) handleDataWord(d uint32) error {
 	return nil
 }
 
-func (asm *assembler) expectOp() (string, error) {
+func (asm *assembler) expectOp(arg uint32, have bool) (stackvm.Op, error) {
 	name, err := asm.expectString(`"opName"`)
 	if err != nil {
-		return "", err
+		return stackvm.Op{}, err
 	}
-	return name, nil
+	return stackvm.ResolveOp(name, arg, have)
 }
 
 func (asm *assembler) expectString(desc string) (string, error) {
