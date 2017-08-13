@@ -287,6 +287,14 @@ func (asm *assembler) handleDirective(s string) error {
 	}
 }
 
+func (asm *assembler) expectOp() error {
+	s, err := asm.expectString(`"opName"`)
+	if err == nil {
+		asm.tokenizer.out = append(asm.tokenizer.out, opName(s))
+	}
+	return err
+}
+
 func (asm *assembler) encode() []byte {
 	// setup jump tracking state
 	jc := makeJumpCursor(asm.ops, asm.jumps)
@@ -392,14 +400,6 @@ func (t token) String() string {
 	default:
 		return fmt.Sprintf("InvalidToken(t:%d, s:%q, d:%v)", t.t, t.s, t.d)
 	}
-}
-
-func (tokz *tokenizer) expectOp() error {
-	s, err := tokz.expectString(`"opName"`)
-	if err == nil {
-		tokz.out = append(tokz.out, opName(s))
-	}
-	return err
 }
 
 func (tokz *tokenizer) expectString(desc string) (string, error) {
