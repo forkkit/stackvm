@@ -251,8 +251,7 @@ func (asm *assembler) handleText(val interface{}) error {
 
 		// opName
 		default:
-			asm.out = append(asm.out, opName(v))
-			return nil
+			return asm.handleOp(v)
 		}
 
 	// imm
@@ -286,6 +285,11 @@ func (asm *assembler) handleLabel(name string) error {
 func (asm *assembler) handleRef(name string) error {
 	asm.out = append(asm.out, ref(name))
 	return asm.expectOp()
+}
+
+func (asm *assembler) handleOp(name string) error {
+	asm.out = append(asm.out, opName(name))
+	return nil
 }
 
 func (asm *assembler) expectOp() error {
