@@ -200,6 +200,9 @@ func (asm *assembler) handleDirective(s string) error {
 }
 
 func (asm *assembler) handleLabel(name string) error {
+	if _, defined := asm.labels[name]; defined {
+		return fmt.Errorf("label %q already defined", name)
+	}
 	asm.labels[name] = len(asm.ops)
 	return nil
 }
