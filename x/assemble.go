@@ -274,7 +274,12 @@ func (asm *assembler) handleLabel(name string) error {
 
 func (asm *assembler) handleRef(name string) error {
 	asm.out = append(asm.out, ref(name))
-	return asm.expectOp()
+	name, err := asm.expectOp()
+	if err != nil {
+		return err
+	}
+	asm.out = append(asm.out, opName(name))
+	return nil
 }
 
 func (asm *assembler) handleOp(name string) error {
@@ -284,7 +289,11 @@ func (asm *assembler) handleOp(name string) error {
 
 func (asm *assembler) handleImm(d uint32) error {
 	asm.out = append(asm.out, imm(d))
-	return asm.expectOp()
+	name, err := asm.expectOp()
+	if err == nil {
+		asm.out = append(asm.out, opName(name))
+	}
+	return err
 }
 
 func (asm *assembler) handleDataWord(d uint32) error {
@@ -292,12 +301,12 @@ func (asm *assembler) handleDataWord(d uint32) error {
 	return nil
 }
 
-func (asm *assembler) expectOp() error {
+func (asm *assembler) expectOp() (string, error) {
 	name, err := asm.expectString(`"opName"`)
-	if err == nil {
-		asm.out = append(asm.out, opName(name))
+	if err != nil {
+		return "", err
 	}
-	return err
+	return name, nil
 }
 
 func (asm *assembler) expectString(desc string) (string, error) {
@@ -408,7 +417,7 @@ type token struct {
 func label(s string) token  { return token{t: labelToken, s: s} }
 func ref(s string) token    { return token{t: refToken, s: s} }
 func opName(s string) token { return token{t: opToken, s: s} }
-func imm(d uint32) token       { return token{t: immToken, d: d} }
+func imm(d uint32) token    { return token{t: immToken, d: d} }
 func data(d uint32) token   { return token{t: dataToken, d: d} }
 
 func (t token) String() string {
