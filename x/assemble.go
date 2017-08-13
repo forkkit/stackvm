@@ -193,12 +193,9 @@ func (asm *assembler) handleLabel(name string) error {
 }
 
 func (asm *assembler) handleRef(name string) error {
-	op, err := asm.expectOp(0, true)
+	op, err := asm.expectRefOp(0, true, name)
 	if err != nil {
 		return err
-	}
-	if !op.AcceptsRef() {
-		return fmt.Errorf("%v does not accept ref %q", op, name)
 	}
 	asm.maxBytes += 6
 	asm.defRef(name)
@@ -228,6 +225,17 @@ func (asm *assembler) handleDataWord(d uint32) error {
 	asm.maxBytes += 4
 	asm.ops = append(asm.ops, dataOp(d))
 	return nil
+}
+
+func (asm *assembler) expectRefOp(arg uint32, have bool, name string) (op stackvm.Op, err error) {
+	opName, err := asm.expectString(`"opName"`)
+	if err == nil {
+		op, err = stackvm.ResolveOp(opName, arg, have)
+	}
+	if err == nil && !op.AcceptsRef() {
+		err = fmt.Errorf("%v does not accept ref %q", op, name)
+	}
+	return
 }
 
 func (asm *assembler) expectOp(arg uint32, have bool) (op stackvm.Op, err error) {
