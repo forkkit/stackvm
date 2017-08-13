@@ -294,12 +294,13 @@ func (asm *assembler) encode() []byte {
 	for i < len(asm.ops) {
 		// fix a previously encoded ref's target
 		for 0 <= rc.si && rc.si < i && rc.ti <= i {
-			asm.ops[rc.si] = asm.ops[rc.si].ResolveRefArg(
+			op := asm.ops[rc.si].ResolveRefArg(
 				base+offsets[rc.si],
 				base+offsets[rc.ti])
+			asm.ops[rc.si] = op
 			// re-encode the ref and rewind if arg size changed
 			lo, hi := offsets[rc.si], offsets[rc.si+1]
-			if end := lo + uint32(asm.ops[rc.si].EncodeInto(p[lo:])); end != hi {
+			if end := lo + uint32(op.EncodeInto(p[lo:])); end != hi {
 				i, c = rc.si+1, end
 				offsets[i] = c
 				rc = rc.rewind(i)
@@ -308,7 +309,8 @@ func (asm *assembler) encode() []byte {
 			}
 		}
 
-		if d, ok := opData(asm.ops[i]); ok {
+		op := asm.ops[i]
+		if d, ok := opData(op); ok {
 			// encode a data word
 			stackvm.ByteOrder.PutUint32(p[c:], d)
 			c += 4
@@ -318,7 +320,7 @@ func (asm *assembler) encode() []byte {
 		}
 
 		// encode next operation
-		c += uint32(asm.ops[i].EncodeInto(p[c:]))
+		c += uint32(op.EncodeInto(p[c:]))
 		i++
 		offsets[i] = c
 	}
