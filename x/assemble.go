@@ -340,14 +340,20 @@ func makeRefCursor(ops []stackvm.Op, sites []int) refCursor {
 	rc := refCursor{sites: sites, ji: -1, ti: -1}
 	if len(sites) > 0 {
 		sort.Ints(sites)
-		// TODO: targs only for sites
-		targs := make([]int, len(ops))
-		for i := range ops {
-			targs[i] = i + 1 + int(int32(ops[i].Arg))
+		targs := make([]int, len(sites))
+		i := 0
+		for site := range ops {
+			if site == sites[i] {
+				targs[i] = site + 1 + int(int32(ops[site].Arg))
+				i++
+				if i >= len(sites) {
+					break
+				}
+			}
 		}
 		rc.targs = targs
 		rc.ji = rc.sites[0]
-		rc.ti = rc.targs[rc.ji]
+		rc.ti = rc.targs[0]
 	}
 	return rc
 }
@@ -358,14 +364,14 @@ func (rc refCursor) next() refCursor {
 		rc.ji, rc.ti = -1, -1
 	} else {
 		rc.ji = rc.sites[rc.i]
-		rc.ti = rc.targs[rc.ji]
+		rc.ti = rc.targs[rc.i]
 	}
 	return rc
 }
 
 func (rc refCursor) rewind(ri int) refCursor {
 	for i, ji := range rc.sites {
-		ti := rc.targs[ji]
+		ti := rc.targs[i]
 		if ji >= ri || ti >= ri {
 			rc.i, rc.ji, rc.ti = i, ji, ti
 			break
