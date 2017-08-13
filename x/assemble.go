@@ -275,6 +275,17 @@ func (asm *assembler) expectString(desc string) (string, error) {
 	return "", err
 }
 
+func (asm *assembler) expectInt(desc string) (int, error) {
+	val, err := asm.expect(desc)
+	if err == nil {
+		if n, ok := val.(int); ok {
+			return n, nil
+		}
+		err = fmt.Errorf("invalid token %T(%v); expected %s", val, val, desc)
+	}
+	return 0, err
+}
+
 func (asm *assembler) expect(desc string) (interface{}, error) {
 	asm.i++
 	if asm.i < len(asm.in) {
