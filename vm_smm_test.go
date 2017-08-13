@@ -32,10 +32,14 @@ var smmTest = TestCase{
 
 		0x40, // stack size
 
+		":main", "jump", // TODO proper entry point
+
 		// used   [10]uint32 @0x0100    TODO use a bit vector
 		// values [8]uint32  @0x0140
 		// 0 1 2 3 4 5 6 7
 		// d e y n r o s m
+
+		"main:",
 
 		0x0140, "cpush", 0x0140+4*8, "cpush", // : 0x0140 0x0160
 
