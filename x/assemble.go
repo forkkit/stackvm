@@ -90,7 +90,7 @@ type assembler struct {
 	state    tokenizerState
 	opts     stackvm.MachOptions
 	ops      []stackvm.Op
-	jumps    []int
+	refs     []ref
 	maxBytes int
 	labels   map[string]int
 	refSites map[string][]int
@@ -131,13 +131,12 @@ func (asm *assembler) scan() error {
 		n += len(sites)
 	}
 	if n > 0 {
-		asm.jumps = make([]int, 0, n)
+		asm.refs = make([]ref, 0, n)
 		for name, sites := range asm.refSites {
 			targ := asm.labels[name]
 			for _, site := range sites {
-				asm.ops[site].Arg = uint32(targ - site - 1)
+				asm.refs = append(asm.refs, ref{site, targ})
 			}
-			asm.jumps = append(asm.jumps, sites...)
 		}
 	}
 
@@ -279,7 +278,7 @@ func (asm *assembler) expect(desc string) (interface{}, error) {
 
 func (asm *assembler) encode() []byte {
 	// setup ref tracking state
-	rc := makeRefCursor(asm.ops, asm.jumps)
+	rc := makeRefCursor(asm.refs)
 
 	buf := make([]byte, asm.maxBytes)
 
@@ -337,22 +336,12 @@ type refCursor struct {
 	ti   int   // ...op index of its target
 }
 
-func makeRefCursor(ops []stackvm.Op, sites []int) refCursor {
+func makeRefCursor(refs []ref) refCursor {
 	rc := refCursor{ji: -1, ti: -1}
-	if len(sites) > 0 {
-		sort.Ints(sites)
-		refs := make([]ref, len(sites))
-		i := 0
-		for site := range ops {
-			if site == sites[i] {
-				targ := site + 1 + int(int32(ops[site].Arg))
-				refs[i] = ref{site, targ}
-				i++
-				if i >= len(sites) {
-					break
-				}
-			}
-		}
+	if len(refs) > 0 {
+		sort.Slice(refs, func(i, j int) bool {
+			return refs[i].site < refs[j].site
+		})
 		rc.refs = refs
 		rc.ji = rc.refs[0].site
 		rc.ti = rc.refs[0].targ
