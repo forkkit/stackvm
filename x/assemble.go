@@ -217,8 +217,7 @@ func (asm *assembler) handleData(val interface{}) error {
 
 		// label
 		case len(v) > 1 && v[len(v)-1] == ':':
-			asm.out = append(asm.out, label(v[:len(v)-1]))
-			return nil
+			return asm.handleLabel(v[:len(v)-1])
 
 		default:
 			return fmt.Errorf("unexpected string %q", v)
@@ -244,8 +243,7 @@ func (asm *assembler) handleText(val interface{}) error {
 
 		// label
 		case len(v) > 1 && v[len(v)-1] == ':':
-			asm.out = append(asm.out, label(v[:len(v)-1]))
-			return nil
+			return asm.handleLabel(v[:len(v)-1])
 
 		// ref
 		case len(v) > 1 && v[0] == ':':
@@ -279,6 +277,11 @@ func (asm *assembler) handleDirective(s string) error {
 	default:
 		return fmt.Errorf("invalid directive %s", s)
 	}
+}
+
+func (asm *assembler) handleLabel(name string) error {
+	asm.out = append(asm.out, label(name))
+	return nil
 }
 
 func (asm *assembler) expectOp() error {
