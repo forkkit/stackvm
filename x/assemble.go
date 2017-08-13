@@ -213,6 +213,80 @@ func (asm *assembler) scan() error {
 	return nil
 }
 
+func (asm *assembler) handleData(val interface{}) error {
+	switch v := val.(type) {
+	case string:
+		switch {
+		// directive
+		case len(v) > 1 && v[0] == '.':
+			return asm.handleDirective(v)
+
+		// label
+		case len(v) > 1 && v[len(v)-1] == ':':
+			asm.tokenizer.out = append(asm.tokenizer.out, label(v[:len(v)-1]))
+			return nil
+
+		default:
+			return fmt.Errorf("unexpected string %q", v)
+		}
+
+	// data word
+	case int:
+		asm.tokenizer.out = append(asm.tokenizer.out, data(uint32(v)))
+		return nil
+
+	default:
+		return fmt.Errorf(`invalid token %T(%v); expected ".directive", "label:", or an int`, val, val)
+	}
+}
+
+func (asm *assembler) handleText(val interface{}) error {
+	switch v := val.(type) {
+	case string:
+		switch {
+		// directive
+		case len(v) > 1 && v[0] == '.':
+			return asm.handleDirective(v)
+
+		// label
+		case len(v) > 1 && v[len(v)-1] == ':':
+			asm.tokenizer.out = append(asm.tokenizer.out, label(v[:len(v)-1]))
+			return nil
+
+		// ref
+		case len(v) > 1 && v[0] == ':':
+			asm.tokenizer.out = append(asm.tokenizer.out, ref(v[1:]))
+			return asm.expectOp()
+
+		// opName
+		default:
+			asm.tokenizer.out = append(asm.tokenizer.out, opName(v))
+			return nil
+		}
+
+	// imm
+	case int:
+		asm.tokenizer.out = append(asm.tokenizer.out, imm(v))
+		return asm.expectOp()
+
+	default:
+		return fmt.Errorf(`invalid token %T(%v); expected ".directive", "label:", ":ref", "opName", or an int`, val, val)
+	}
+}
+
+func (asm *assembler) handleDirective(s string) error {
+	switch s[1:] {
+	case "data":
+		asm.tokenizer.state = tokenizerData
+		return nil
+	case "text":
+		asm.tokenizer.state = tokenizerText
+		return nil
+	default:
+		return fmt.Errorf("invalid directive %s", s)
+	}
+}
+
 func (asm *assembler) encode() []byte {
 	// setup jump tracking state
 	jc := makeJumpCursor(asm.ops, asm.jumps)
@@ -317,80 +391,6 @@ func (t token) String() string {
 		return strconv.Itoa(int(t.d))
 	default:
 		return fmt.Sprintf("InvalidToken(t:%d, s:%q, d:%v)", t.t, t.s, t.d)
-	}
-}
-
-func (tokz *tokenizer) handleData(val interface{}) error {
-	switch v := val.(type) {
-	case string:
-		switch {
-		// directive
-		case len(v) > 1 && v[0] == '.':
-			return tokz.handleDirective(v)
-
-		// label
-		case len(v) > 1 && v[len(v)-1] == ':':
-			tokz.out = append(tokz.out, label(v[:len(v)-1]))
-			return nil
-
-		default:
-			return fmt.Errorf("unexpected string %q", v)
-		}
-
-	// data word
-	case int:
-		tokz.out = append(tokz.out, data(uint32(v)))
-		return nil
-
-	default:
-		return fmt.Errorf(`invalid token %T(%v); expected ".directive", "label:", or an int`, val, val)
-	}
-}
-
-func (tokz *tokenizer) handleText(val interface{}) error {
-	switch v := val.(type) {
-	case string:
-		switch {
-		// directive
-		case len(v) > 1 && v[0] == '.':
-			return tokz.handleDirective(v)
-
-		// label
-		case len(v) > 1 && v[len(v)-1] == ':':
-			tokz.out = append(tokz.out, label(v[:len(v)-1]))
-			return nil
-
-		// ref
-		case len(v) > 1 && v[0] == ':':
-			tokz.out = append(tokz.out, ref(v[1:]))
-			return tokz.expectOp()
-
-		// opName
-		default:
-			tokz.out = append(tokz.out, opName(v))
-			return nil
-		}
-
-	// imm
-	case int:
-		tokz.out = append(tokz.out, imm(v))
-		return tokz.expectOp()
-
-	default:
-		return fmt.Errorf(`invalid token %T(%v); expected ".directive", "label:", ":ref", "opName", or an int`, val, val)
-	}
-}
-
-func (tokz *tokenizer) handleDirective(s string) error {
-	switch s[1:] {
-	case "data":
-		tokz.state = tokenizerData
-		return nil
-	case "text":
-		tokz.state = tokenizerText
-		return nil
-	default:
-		return fmt.Errorf("invalid directive %s", s)
 	}
 }
 
