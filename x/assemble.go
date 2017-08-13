@@ -293,9 +293,9 @@ func (asm *assembler) handleDataWord(d uint32) error {
 }
 
 func (asm *assembler) expectOp() error {
-	s, err := asm.expectString(`"opName"`)
+	name, err := asm.expectString(`"opName"`)
 	if err == nil {
-		asm.out = append(asm.out, opName(s))
+		asm.out = append(asm.out, opName(name))
 	}
 	return err
 }
