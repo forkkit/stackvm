@@ -113,10 +113,10 @@ func TestMach_data_refs(t *testing.T) {
 				"main:",
 
 				":d", "fetch", // d[0] :
-				":d", "push", 4*1, "add", "fetch", // d[0] d[1] :
-				":d", "push", 4*2, "add", "fetch", // d[0] d[1] d[2] :
-				":d", "push", 4*3, "add", "fetch", // d[0] d[1] d[2] d[3] :
-				":d", "push", 4*4, "add", "fetch", // d[0] d[1] d[2] d[3] d[4] :
+				4*1, ":d", "push", "fetch", // d[0] d[1] :
+				4*2, ":d", "push", "fetch", // d[0] d[1] d[2] :
+				4*3, ":d", "push", "fetch", // d[0] d[1] d[2] d[3] :
+				4*4, ":d", "push", "fetch", // d[0] d[1] d[2] d[3] d[4] :
 				"add", "add", "add", "add", // s=d[0]+d[1]+d[2]+d[3]+d[4] :
 				10, "mod", // s%10 :
 				1, "hnz", // : -- error halt if non-zero

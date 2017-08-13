@@ -203,6 +203,17 @@ func (asm *assembler) handleRef(name string) error {
 	return nil
 }
 
+func (asm *assembler) handleOffRef(name string, n int) error {
+	op, err := asm.expectRefOp(0, true, name)
+	if err != nil {
+		return err
+	}
+	asm.maxBytes += 6
+	asm.defRef(name, n)
+	asm.ops = append(asm.ops, op)
+	return nil
+}
+
 func (asm *assembler) handleOp(name string) error {
 	op, err := stackvm.ResolveOp(name, 0, false)
 	if err == nil {
@@ -212,8 +223,15 @@ func (asm *assembler) handleOp(name string) error {
 	return err
 }
 
-func (asm *assembler) handleImm(n int) error {
-	op, err := asm.expectOp(uint32(n), true)
+func (asm *assembler) handleImm(n int) (err error) {
+	var op stackvm.Op
+	s, err := asm.expectString(`":ref" or "opName"`)
+	if err == nil {
+		if len(s) > 1 && s[0] == ':' {
+			return asm.handleOffRef(s[1:], n)
+		}
+		op, err = stackvm.ResolveOp(s, uint32(n), true)
+	}
 	if err == nil {
 		asm.maxBytes += op.NeededSize()
 		asm.ops = append(asm.ops, op)
