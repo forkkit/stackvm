@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strconv"
 
 	"github.com/jcorbin/stackvm"
 )
@@ -52,7 +51,6 @@ func Assemble(in ...interface{}) ([]byte, error) {
 	asm := assembler{
 		opts:  opts,
 		in:    in[1:],
-		out:   make([]token, 0, len(in)-1),
 		state: tokenizerText,
 	}
 	if err := asm.scan(); err != nil {
@@ -65,10 +63,10 @@ func Assemble(in ...interface{}) ([]byte, error) {
 // zero op crash" should perhaps be the most stable part of the ISA.
 const opCodeCrash = 0x00
 
-// dataOp returns an invalid Op that carries a dataToken. These invalid ops are
-// used temporarily within within assemble. The ops are "invalid" because thy
-// are a "crash with immediate", which will never be represented by a valid
-// combination of immToken and opToken.
+// dataOp returns an invalid Op that carries a data word. These invalid ops are
+// used temporarily between assembler.scan and assembler.encode. The ops are
+// "invalid" because they are a "crash with immediate", which will never be
+// represented by a valid combination of immediate and op name.
 func dataOp(d uint32) stackvm.Op {
 	return stackvm.Op{
 		Code: opCodeCrash,
@@ -87,7 +85,6 @@ func opData(op stackvm.Op) (uint32, bool) {
 type assembler struct {
 	i        int
 	in       []interface{}
-	out      []token
 	state    tokenizerState
 	opts     stackvm.MachOptions
 	ops      []stackvm.Op
@@ -96,8 +93,6 @@ type assembler struct {
 	maxBytes int
 	labels   map[string]int
 	refs     map[string][]int
-	arg      uint32
-	have     bool
 }
 
 type tokenizerState uint8
@@ -125,69 +120,6 @@ func (asm *assembler) scan() error {
 	}
 	if err != nil {
 		return err
-	}
-
-	for i := 0; i < len(asm.out); i++ {
-		tok := asm.out[i]
-
-		switch tok.t {
-		case labelToken:
-			asm.labels[tok.s] = len(asm.ops)
-
-		case refToken:
-			ref := tok.s
-			// resolve label references
-			i++
-			tok = asm.out[i]
-			if tok.t != opToken {
-				return fmt.Errorf("next token must be an op, got %v instead", tok.t)
-			}
-			op, err := stackvm.ResolveOp(tok.s, 0, true)
-			if err != nil {
-				return err
-			}
-			if !op.AcceptsRef() {
-				return fmt.Errorf("%v does not accept ref %q", op, ref)
-			}
-			asm.maxBytes += 6
-			asm.refs[ref] = append(asm.refs[ref], len(asm.ops))
-			asm.ops = append(asm.ops, op)
-			asm.numJumps++
-
-		case dataToken:
-			asm.maxBytes += 4
-			asm.ops = append(asm.ops, dataOp(tok.d))
-
-		case immToken:
-			// op with immediate arg
-			asm.arg, asm.have = tok.d, true
-			i++
-			tok = asm.out[i]
-			switch tok.t {
-			case opToken:
-				goto resolveOp
-			default:
-				return fmt.Errorf("next token must be an op, got %v instead", tok.t)
-			}
-
-		case opToken:
-			// op without immediate arg
-			goto resolveOp
-
-		default:
-			return fmt.Errorf("unexpected %v token", tok.t)
-		}
-		continue
-
-	resolveOp:
-		op, err := stackvm.ResolveOp(tok.s, asm.arg, asm.have)
-		if err != nil {
-			return err
-		}
-		asm.maxBytes += op.NeededSize()
-		asm.ops = append(asm.ops, op)
-		asm.arg, asm.have = uint32(0), false
-
 	}
 
 	if asm.numJumps > 0 {
@@ -268,7 +200,7 @@ func (asm *assembler) handleDirective(s string) error {
 }
 
 func (asm *assembler) handleLabel(name string) error {
-	asm.out = append(asm.out, token{t: labelToken, s: name})
+	asm.labels[name] = len(asm.ops)
 	return nil
 }
 
@@ -277,15 +209,21 @@ func (asm *assembler) handleRef(name string) error {
 	if err != nil {
 		return err
 	}
-	asm.out = append(asm.out, token{t: refToken, s: name})
-	asm.out = append(asm.out, token{t: opToken, s: op.Name})
+	if !op.AcceptsRef() {
+		return fmt.Errorf("%v does not accept ref %q", op, name)
+	}
+	asm.maxBytes += 6
+	asm.refs[name] = append(asm.refs[name], len(asm.ops))
+	asm.ops = append(asm.ops, op)
+	asm.numJumps++
 	return nil
 }
 
 func (asm *assembler) handleOp(name string) error {
 	op, err := stackvm.ResolveOp(name, 0, false)
 	if err == nil {
-		asm.out = append(asm.out, token{t: opToken, s: name})
+		asm.maxBytes += op.NeededSize()
+		asm.ops = append(asm.ops, op)
 	}
 	return err
 }
@@ -293,14 +231,15 @@ func (asm *assembler) handleOp(name string) error {
 func (asm *assembler) handleImm(d uint32) error {
 	op, err := asm.expectOp(d, true)
 	if err == nil {
-		asm.out = append(asm.out, token{t: immToken, d: d})
-		asm.out = append(asm.out, token{t: opToken, s: op.Name()})
+		asm.maxBytes += op.NeededSize()
+		asm.ops = append(asm.ops, op)
 	}
 	return err
 }
 
 func (asm *assembler) handleDataWord(d uint32) error {
-	asm.out = append(asm.out, token{t: dataToken, d: d})
+	asm.maxBytes += 4
+	asm.ops = append(asm.ops, dataOp(d))
 	return nil
 }
 
@@ -365,7 +304,7 @@ func (asm *assembler) encode() []byte {
 		}
 
 		if d, ok := opData(asm.ops[i]); ok {
-			// encode a dataToken
+			// encode a data word
 			stackvm.ByteOrder.PutUint32(p[c:], d)
 			c += 4
 			i++
@@ -382,54 +321,6 @@ func (asm *assembler) encode() []byte {
 	buf = buf[:n]
 
 	return buf
-}
-
-type tokenType uint8
-
-const (
-	labelToken tokenType = iota + 1
-	refToken
-	opToken
-	immToken
-	dataToken
-)
-
-func (tt tokenType) String() string {
-	switch tt {
-	case labelToken:
-		return "label"
-	case refToken:
-		return "ref"
-	case opToken:
-		return "op"
-	case immToken:
-		return "imm"
-	case dataToken:
-		return "data"
-	default:
-		return fmt.Sprintf("InvalidTokenType(%d)", tt)
-	}
-}
-
-type token struct {
-	t tokenType
-	s string
-	d uint32
-}
-
-func (t token) String() string {
-	switch t.t {
-	case labelToken:
-		return t.s + ":"
-	case refToken:
-		return ":" + t.s
-	case opToken:
-		return t.s
-	case immToken:
-		return strconv.Itoa(int(t.d))
-	default:
-		return fmt.Sprintf("InvalidToken(t:%d, s:%q, d:%v)", t.t, t.s, t.d)
-	}
 }
 
 type jumpCursor struct {
