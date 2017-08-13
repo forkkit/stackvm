@@ -204,7 +204,7 @@ func (asm *assembler) handleDirective(s string) error {
 }
 
 func (asm *assembler) handleLabel(name string) error {
-	if _, defined := asm.labels[name]; defined {
+	if i, defined := asm.labels[name]; defined && i >= 0 {
 		return fmt.Errorf("label %q already defined", name)
 	}
 	asm.labels[name] = len(asm.ops)
@@ -221,6 +221,9 @@ func (asm *assembler) handleRef(name string) error {
 	}
 	asm.maxBytes += 6
 	asm.refSites[name] = append(asm.refSites[name], len(asm.ops))
+	if _, defined := asm.labels[name]; !defined {
+		asm.labels[name] = -len(asm.ops) - 1
+	}
 	asm.ops = append(asm.ops, op)
 	return nil
 }
