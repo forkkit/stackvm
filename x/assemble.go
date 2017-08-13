@@ -283,8 +283,11 @@ func (asm *assembler) handleRef(name string) error {
 }
 
 func (asm *assembler) handleOp(name string) error {
-	asm.out = append(asm.out, token{t: opToken, s: name})
-	return nil
+	op, err := stackvm.ResolveOp(name, 0, false)
+	if err == nil {
+		asm.out = append(asm.out, token{t: opToken, s: name})
+	}
+	return err
 }
 
 func (asm *assembler) handleImm(d uint32) error {
