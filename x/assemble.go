@@ -100,7 +100,18 @@ type assembler struct {
 }
 
 func (asm *assembler) scan() error {
-	if err := asm.tokenizer.scan(); err != nil {
+	var err error
+	for ; err == nil && asm.tokenizer.i < len(asm.tokenizer.in); asm.tokenizer.i++ {
+		switch asm.tokenizer.state {
+		case tokenizerData:
+			err = asm.handleData(asm.tokenizer.in[asm.tokenizer.i])
+		case tokenizerText:
+			err = asm.handleText(asm.tokenizer.in[asm.tokenizer.i])
+		default:
+			return fmt.Errorf("invalid tokenizer state %d", asm.tokenizer.state)
+		}
+	}
+	if err != nil {
 		return err
 	}
 
@@ -308,21 +319,6 @@ const (
 	tokenizerText tokenizerState = iota + 1
 	tokenizerData
 )
-
-func (tokz *tokenizer) scan() error {
-	var err error
-	for ; err == nil && tokz.i < len(tokz.in); tokz.i++ {
-		switch tokz.state {
-		case tokenizerData:
-			err = tokz.handleData(tokz.in[tokz.i])
-		case tokenizerText:
-			err = tokz.handleText(tokz.in[tokz.i])
-		default:
-			return fmt.Errorf("invalid tokenizer state %d", tokz.state)
-		}
-	}
-	return err
-}
 
 func (tokz *tokenizer) handleData(val interface{}) error {
 	switch v := val.(type) {
