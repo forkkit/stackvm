@@ -91,7 +91,7 @@ type assembler struct {
 	jumps    []int
 	maxBytes int
 	labels   map[string]int
-	refs     map[string][]int
+	refSites map[string][]int
 }
 
 type tokenizerState uint8
@@ -104,7 +104,7 @@ const (
 func (asm *assembler) scan() error {
 	asm.maxBytes = asm.opts.NeededSize()
 	asm.labels = make(map[string]int)
-	asm.refs = make(map[string][]int)
+	asm.refSites = make(map[string][]int)
 
 	var err error
 	for ; err == nil && asm.i < len(asm.in); asm.i++ {
@@ -122,7 +122,7 @@ func (asm *assembler) scan() error {
 	}
 
 	n := 0
-	for name, sites := range asm.refs {
+	for name, sites := range asm.refSites {
 		if _, defined := asm.labels[name]; !defined {
 			return fmt.Errorf("undefined label %q", name)
 		}
@@ -130,7 +130,7 @@ func (asm *assembler) scan() error {
 	}
 	if n > 0 {
 		asm.jumps = make([]int, 0, n)
-		for name, sites := range asm.refs {
+		for name, sites := range asm.refSites {
 			i := asm.labels[name]
 			for _, j := range sites {
 				asm.ops[j].Arg = uint32(i - j - 1)
@@ -219,7 +219,7 @@ func (asm *assembler) handleRef(name string) error {
 		return fmt.Errorf("%v does not accept ref %q", op, name)
 	}
 	asm.maxBytes += 6
-	asm.refs[name] = append(asm.refs[name], len(asm.ops))
+	asm.refSites[name] = append(asm.refSites[name], len(asm.ops))
 	asm.ops = append(asm.ops, op)
 	return nil
 }
