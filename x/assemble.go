@@ -283,7 +283,7 @@ func (asm *assembler) handleOp(name string) error {
 }
 
 func (asm *assembler) handleImm(d int) error {
-	asm.out = append(asm.out, imm(d))
+	asm.out = append(asm.out, imm(uint32(d)))
 	return asm.expectOp()
 }
 
@@ -408,7 +408,7 @@ type token struct {
 func label(s string) token  { return token{t: labelToken, s: s} }
 func ref(s string) token    { return token{t: refToken, s: s} }
 func opName(s string) token { return token{t: opToken, s: s} }
-func imm(n int) token       { return token{t: immToken, d: uint32(n)} }
+func imm(d uint32) token       { return token{t: immToken, d: d} }
 func data(d uint32) token   { return token{t: dataToken, d: d} }
 
 func (t token) String() string {
