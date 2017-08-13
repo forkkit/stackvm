@@ -34,70 +34,72 @@ var smmTest = TestCase{
 
 		":main", "jump", // TODO proper entry point
 
-		// used   [10]uint32 @0x0100    TODO use a bit vector
-		// values [8]uint32  @0x0140
+		".data",
+		"used:", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // TODO use a bit vector
+		"values:", 0, 0, 0, 0, 0, 0, 0, 0,
 		// 0 1 2 3 4 5 6 7
 		// d e y n r o s m
 
+		".text",
 		"main:",
 
-		0x0140, "cpush", 0x0140+4*8, "cpush", // : 0x0140 0x0160
+		":values", "cpush", 4*8, ":values", "cpush", // : &values[0] &values[8]
 
 		//// d + e = y  (mod 10)
 
-		0x0140+4*0, "push", ":choose", "call", // $d :
-		0x0140+4*1, "push", ":choose", "call", // $d $e :
+		4*0, ":values", "push", ":choose", "call", // $d :
+		4*1, ":values", "push", ":choose", "call", // $d $e :
 		"add", "dup", // $d+e $d+e :
 		10, "mod", // $d+e ($d+e)%10 :
-		"dup", 0x0140+4*2, "storeTo", // $d+e $y :   -- $y=($d+e)%10
+		"dup", 4*2, ":values", "storeTo", // $d+e $y :   -- $y=($d+e)%10
 		":markUsed", "call", // $d+e :
 		10, "div", // carry :
 
 		//// carry + n + r = e  (mod 10)
 
-		"dup",               // carry carry :
-		0x0140+4*1, "fetch", // carry carry $e :
-		"swap",                                // carry $e carry :
-		0x0140+4*3, "push", ":choose", "call", // carry $e carry $n :
+		"dup",                   // carry carry :
+		4*1, ":values", "fetch", // carry carry $e :
+		"swap",                                    // carry $e carry :
+		4*3, ":values", "push", ":choose", "call", // carry $e carry $n :
 		"add", "sub", 10, "mod", // carry ($e-(carry+$n))%10 :
-		"dup", 0x0140+4*4, "storeTo", // carry $r :   -- $r=($e-(carry+$n))%10
+		"dup", 4*4, ":values", "storeTo", // carry $r :   -- $r=($e-(carry+$n))%10
 		":markUsed", "call", // carry :
-		0x0140+4*3, "fetch", // carry $n :
-		0x0140+4*4, "fetch", // carry $n $r :
+		4*3, ":values", "fetch", // carry $n :
+		4*4, ":values", "fetch", // carry $n $r :
 		"add", "add", 10, "div", // carry :
 
 		//// carry + e + o = n  (mod 10)
 
-		"dup",               // carry carry :
-		0x0140+4*1, "fetch", // carry carry $e :
-		"add",               // carry carry+$e :
-		0x0140+4*3, "fetch", // carry carry+$e $n :
+		"dup",                   // carry carry :
+		4*1, ":values", "fetch", // carry carry $e :
+		"add",                   // carry carry+$e :
+		4*3, ":values", "fetch", // carry carry+$e $n :
 		"swap", "sub", // carry $n-(carry+$e) :
 		10, "mod", // carry ($n-(carry+$e))%10 :
-		"dup", 0x0140+4*5, "storeTo", // carry $o :   -- $o=($n-(carry+$e))%10
+		"dup", 4*5, ":values", "storeTo", // carry $o :   -- $o=($n-(carry+$e))%10
 		":markUsed", "call", // carry :
-		0x0140+4*1, "fetch", // carry $e :
-		0x0140+4*5, "fetch", // carry $e $o :
+		4*1, ":values", "fetch", // carry $e :
+		4*5, ":values", "fetch", // carry $e $o :
 		"add", "add", 10, "div", // carry :
 
 		//// carry + s + m = o  (mod 10)
 
-		"dup",                                 // carry carry :
-		0x0140+4*6, "push", ":choose", "call", // carry carry $s :
-		"add",               // carry carry+$s :
-		0x0140+4*5, "fetch", // carry carry+$s $o :
+		"dup",                                     // carry carry :
+		4*6, ":values", "push", ":choose", "call", // carry carry $s :
+		"add",                   // carry carry+$s :
+		4*5, ":values", "fetch", // carry carry+$s $o :
 		"swap", "sub", // carry $o-(carry+$s) :
 		10, "mod", // carry ($o-(carry+$s))%10 :
-		"dup", 0x0140+4*7, "storeTo", // carry $m :   -- $m=($o-(carry+$s))%10
+		"dup", 4*7, ":values", "storeTo", // carry $m :   -- $m=($o-(carry+$s))%10
 		":markUsed", "call", // carry :
-		0x0140+4*6, "fetch", // carry $s :
+		4*6, ":values", "fetch", // carry $s :
 		"dup", 1, "hz", // carry $s :   -- guard $s != 0
-		0x0140+4*7, "fetch", // carry $s $m :
+		4*7, ":values", "fetch", // carry $s $m :
 		"dup", 1, "hz", // carry $s $m :   -- guard $m != 0
 		"add", "add", 10, "div", // carry :
 
 		//// carry = m  (mod 10)
-		0x0140+4*7, "fetch", // carry $m
+		4*7, ":values", "fetch", // carry $m
 		"eq", 3, "hz",
 
 		//// Done
@@ -111,8 +113,8 @@ var smmTest = TestCase{
 		"dup", 2, "swap", "storeTo", // $X=i : retIp
 		"dup", // $X $X : retIP   -- dup as arg for fallsthrough to markUsed
 
-		"markUsed:",                     // $X : retIp
-		4, "mul", 0x0100, "add", // ... &used[$X]
+		"markUsed:",              // $X : retIp
+		4, "mul", ":used", "add", // ... &used[$X]
 		"dup", "fetch", // ... &used[$X] used[$X]
 		2, "hnz", // ... &used[$X]
 		1, "store", // ... -- used[$X] = 1
