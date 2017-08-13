@@ -252,12 +252,12 @@ func (asm *assembler) handleDataWord(d uint32) error {
 	return nil
 }
 
-func (asm *assembler) expectOp(arg uint32, have bool) (stackvm.Op, error) {
-	name, err := asm.expectString(`"opName"`)
-	if err != nil {
-		return stackvm.Op{}, err
+func (asm *assembler) expectOp(arg uint32, have bool) (op stackvm.Op, err error) {
+	opName, err := asm.expectString(`"opName"`)
+	if err == nil {
+		op, err = stackvm.ResolveOp(opName, arg, have)
 	}
-	return stackvm.ResolveOp(name, arg, have)
+	return
 }
 
 func (asm *assembler) expectString(desc string) (string, error) {
