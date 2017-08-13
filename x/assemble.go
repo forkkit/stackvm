@@ -293,15 +293,15 @@ func (asm *assembler) encode() []byte {
 	c, i := uint32(0), 0 // current op offset and index
 	for i < len(asm.ops) {
 		// fix a previously encoded ref's target
-		for 0 <= rc.si && rc.si < i && rc.ti <= i {
-			op := asm.ops[rc.si].ResolveRefArg(
-				base+offsets[rc.si],
-				base+offsets[rc.ti])
-			asm.ops[rc.si] = op
+		for 0 <= rc.site && rc.site < i && rc.targ <= i {
+			op := asm.ops[rc.site].ResolveRefArg(
+				base+offsets[rc.site],
+				base+offsets[rc.targ])
+			asm.ops[rc.site] = op
 			// re-encode the ref and rewind if arg size changed
-			lo, hi := offsets[rc.si], offsets[rc.si+1]
+			lo, hi := offsets[rc.site], offsets[rc.site+1]
 			if end := lo + uint32(op.EncodeInto(p[lo:])); end != hi {
-				i, c = rc.si+1, end
+				i, c = rc.site+1, end
 				offsets[i] = c
 				rc = rc.rewind(i)
 			} else {
@@ -333,19 +333,19 @@ func (asm *assembler) encode() []byte {
 type refCursor struct {
 	refs []ref // ref {site, targ} pairs
 	i    int   // index of the current ref in refs...
-	si   int   // ...op index of its site
-	ti   int   // ...op index of its target
+	site int   // ...op index of its site
+	targ int   // ...op index of its target
 }
 
 func makeRefCursor(refs []ref) refCursor {
-	rc := refCursor{si: -1, ti: -1}
+	rc := refCursor{site: -1, targ: -1}
 	if len(refs) > 0 {
 		sort.Slice(refs, func(i, j int) bool {
 			return refs[i].site < refs[j].site
 		})
 		rc.refs = refs
-		rc.si = rc.refs[0].site
-		rc.ti = rc.refs[0].targ
+		rc.site = rc.refs[0].site
+		rc.targ = rc.refs[0].targ
 	}
 	return rc
 }
@@ -353,10 +353,10 @@ func makeRefCursor(refs []ref) refCursor {
 func (rc refCursor) next() refCursor {
 	rc.i++
 	if rc.i >= len(rc.refs) {
-		rc.si, rc.ti = -1, -1
+		rc.site, rc.targ = -1, -1
 	} else {
-		rc.si = rc.refs[rc.i].site
-		rc.ti = rc.refs[rc.i].targ
+		rc.site = rc.refs[rc.i].site
+		rc.targ = rc.refs[rc.i].targ
 	}
 	return rc
 }
@@ -364,7 +364,7 @@ func (rc refCursor) next() refCursor {
 func (rc refCursor) rewind(ri int) refCursor {
 	for i, ref := range rc.refs {
 		if ref.site >= ri || ref.targ >= ri {
-			rc.i, rc.si, rc.ti = i, ref.site, ref.targ
+			rc.i, rc.site, rc.targ = i, ref.site, ref.targ
 			break
 		}
 	}
