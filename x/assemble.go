@@ -104,7 +104,6 @@ func (asm *assembler) scan() error {
 		asm.opts.StackSize = defaultStackSize
 	}
 	asm.state = assemblerText
-	asm.maxBytes = asm.opts.NeededSize()
 	asm.labels = make(map[string]int)
 	asm.refsBy = make(map[string][]ref)
 	var err error
@@ -118,10 +117,27 @@ func (asm *assembler) scan() error {
 			return fmt.Errorf("invalid assembler state %d", asm.state)
 		}
 	}
+	asm.maxBytes += asm.opts.NeededSize()
 	if err != nil {
 		return err
 	}
 	return asm.buildRefs()
+}
+
+func (asm *assembler) handleStackSize() error {
+	n, err := asm.expectInt("stackSize int")
+	if err != nil {
+		return err
+	}
+	return asm.procStackSize(n)
+}
+
+func (asm *assembler) procStackSize(n int) error {
+	if n < +0 || n > 0xffff {
+		return fmt.Errorf("stackSize %d out of range, must be in (0x0000, 0xffff)", n)
+	}
+	asm.opts.StackSize = uint16(n)
+	return nil
 }
 
 func (asm *assembler) handleData(val interface{}) error {
@@ -178,6 +194,8 @@ func (asm *assembler) handleText(val interface{}) error {
 
 func (asm *assembler) handleDirective(name string) error {
 	switch name {
+	case "stackSize":
+		return asm.handleStackSize()
 	case "data":
 		asm.state = assemblerData
 		return nil
