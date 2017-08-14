@@ -80,7 +80,12 @@ func (asm *assembler) init() error {
 	if asm.opts.StackSize == 0 {
 		asm.opts.StackSize = defaultStackSize
 	}
+	asm.i = 0
+	// TODO in
 	asm.state = assemblerText
+	asm.ops = nil
+	asm.refs = nil
+	asm.maxBytes = 0
 	asm.labels = make(map[string]int)
 	asm.refsBy = make(map[string][]ref)
 	return nil
