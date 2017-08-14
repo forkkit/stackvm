@@ -40,7 +40,7 @@ func Test_snakeCube(t *testing.T) {
 			0, 0, -1,
 
 			"occupied:", ".alloc", N * N * N, // TODO bitvector
-			// choices [M+1]uint32 @0x1000
+			"choices:", ".alloc", M+1,
 			// - choices[0] is the starting index
 			// - choices[1:] are the orientation choice for each fixed-chain head
 
@@ -109,7 +109,7 @@ func Test_snakeCube(t *testing.T) {
 			"choose_0:",
 			0, "push", 5, "push", ":forall", "call", // i vi :
 			"dup",             // i vi vi :
-			0x1000, "storeTo", // i vi :   -- choices[0]=vi
+			":choices", "storeTo", // i vi :   -- choices[0]=vi
 			"swap", // vi i :
 		}
 
@@ -130,7 +130,7 @@ func Test_snakeCube(t *testing.T) {
 					"eq",     // i vi vi%3==lastVi%3 :
 					1, "hnz", // i vi :  -- halt if ...
 					"dup",                 // i vi vi :
-					0x1000+4*i, "storeTo", // i vi :   -- choices[i]=vi
+					4*i, ":choices", "storeTo", // i vi :   -- choices[i]=vi FIXME off-by-one indexing
 					"swap", // vi i :
 				)
 
@@ -171,8 +171,7 @@ func Test_snakeCube(t *testing.T) {
 		code = append(code,
 			"done:",  // i v :
 			2, "pop", // :
-			0x1000, "cpush", // : &choices[0]
-			0x1000+4*(M+1), "cpush", // : &choices[0] &choices[M+1]
+			":choices", "cpush", 4*(M+1), ":choices", "cpush", // : &choices[0] &choices[M+1]
 			"halt", // : &choices[0] &choices[M+1]
 		)
 
