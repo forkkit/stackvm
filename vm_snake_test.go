@@ -24,8 +24,6 @@ func Test_snakeCube(t *testing.T) {
 		M := len(labels)
 
 		code := []interface{}{
-			":chooseStart", "jump", // TODO entry point
-
 			//// definitions and setup
 
 			// forall returns N times for ever lo <= n <= hi
@@ -110,7 +108,7 @@ func Test_snakeCube(t *testing.T) {
 			// TODO: prune using some symmetry (probably we can get away with
 			// only one boundary-inclusive oct of the cube)
 
-			"chooseStart:",
+			".entry", "chooseStart:",
 			0, "push", N, "push", ":forall", "call", // xi :
 			0, "push", N, "push", ":forall", "call", // xi yi :
 			0, "push", N, "push", ":forall", "call", // xi yi zi :
