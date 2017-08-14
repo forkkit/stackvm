@@ -1,7 +1,6 @@
 package xstackvm
 
 import (
-	"errors"
 	"fmt"
 	"sort"
 
@@ -24,10 +23,6 @@ func MustAssemble(in ...interface{}) []byte {
 // reference string of the form ":name". Labels are defined with a string of
 // the form "name:".
 func Assemble(in ...interface{}) ([]byte, error) {
-	if len(in) < 2 {
-		return nil, errors.New("program too short, need at least options and one token")
-	}
-
 	// first element is ~ machine options
 	var opts stackvm.MachOptions
 	switch v := in[0].(type) {
