@@ -39,7 +39,7 @@ func Test_snakeCube(t *testing.T) {
 			0, -1, 0,
 			0, 0, -1,
 
-			// occupied [N*N*N]uint32 @0x2000 TODO bitvector
+			"occupied:", ".alloc", N * N * N, // TODO bitvector
 			// choices [M+1]uint32 @0x1000
 			// - choices[0] is the starting index
 			// - choices[1:] are the orientation choice for each fixed-chain head
@@ -159,8 +159,8 @@ func Test_snakeCube(t *testing.T) {
 				2, "hnz", // vi i :   -- halt if ...
 				"dup", N*N*N, "gte", // vi i i>=N^3 :
 				2, "hnz", // vi i :   -- halt if ...
-				"dup",                   // vi i i :
-				4, "mul", 0x2000, "add", // vi i &occupied[i] :
+				"dup",                        // vi i i :
+				4, "mul", ":occupied", "add", // vi i &occupied[i] :
 				"dup",    // vi i &occupied[i] &occupied[i] :
 				"fetch",  // vi i &occupied[i] occupied[i] :
 				3, "hnz", // vi i &occupied[i] :   -- halt if ...
