@@ -25,6 +25,26 @@ func Test_snakeCube(t *testing.T) {
 
 		code := []interface{}{
 			//// definitions and setup
+			".data",
+
+			// unit vectors in x,y,z space. Strategically laid out such that a
+			// direction and its opposite are congruent index-mod-9. The
+			// index-mod-9 property lets us quickly check for 'not same or
+			// opposiite direction' later on.
+			"vectors:",
+			1, 0, 0,
+			0, 1, 0,
+			0, 0, 1,
+			-1, 0, 0,
+			0, -1, 0,
+			0, 0, -1,
+
+			// occupied [N*N*N]uint32 @0x2000 TODO bitvector
+			// choices [M+1]uint32 @0x1000
+			// - choices[0] is the starting index
+			// - choices[1:] are the orientation choice for each fixed-chain head
+
+			".text",
 
 			// forall returns N times for ever lo <= n <= hi
 			"forall:",             // lo hi : retIp
@@ -67,42 +87,6 @@ func Test_snakeCube(t *testing.T) {
 			"fetch", // x+dx y+dy z dz=*p : retIp
 			"add",   // x+dx y+dy z+dz : retIp
 			"ret",   // x+dx y+dy z+dz :
-
-			// unit vectors in x,y,z space. Strategically laid out such that a
-			// direction and its opposite are congruent index-mod-9. The
-			// index-mod-9 property lets us quickly check for 'not same or
-			// opposiite direction' later on.
-			"initVectors:", // vectors [6]int32 @0x0800
-
-			0x0800, "push", 1, "store",
-			0x0804, "push", 0, "store",
-			0x0808, "push", 0, "store",
-
-			0x080c, "push", 0, "store",
-			0x0810, "push", 1, "store",
-			0x0814, "push", 0, "store",
-
-			0x0818, "push", 0, "store",
-			0x081c, "push", 0, "store",
-			0x0820, "push", 1, "store",
-
-			0x0824, "push", -1, "store",
-			0x0828, "push", 0, "store",
-			0x082c, "push", 0, "store",
-
-			0x0830, "push", 0, "store",
-			0x0834, "push", -1, "store",
-			0x0838, "push", 0, "store",
-
-			0x083c, "push", 0, "store",
-			0x0840, "push", 0, "store",
-			0x0844, "push", -1, "store",
-
-			// occupied [N*N*N]uint32 @0x2000 TODO bitvector
-
-			// choices [M+1]uint32 @0x1000
-			// - choices[0] is the starting index
-			// - choices[1:] are the orientation choice for each fixed-chain head
 
 			//// choose starting position
 			// TODO: prune using some symmetry (probably we can get away with
@@ -168,7 +152,7 @@ func Test_snakeCube(t *testing.T) {
 				fmt.Sprintf("advance_%d:", i), // vi i :
 				":i2xyz", "call",              // vi x y z :
 				4, "dup", 3, "mul", // vi x y z 3*vi :
-				4, "mul", 0x0800, "add", // vi x y z &vectors[3*vi] :
+				4, "mul", ":vectors", "add", // vi x y z &vectors[3*vi] :
 				":vec3addptr", "call", // vi x y z :   -- x,y,z now incremented by the vector
 				":xyz2i", "call", // vi i :
 				"dup", 0, "lt", // vi i i<0 :
