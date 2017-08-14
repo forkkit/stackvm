@@ -24,6 +24,8 @@ func Test_snakeCube(t *testing.T) {
 		M := len(labels)
 
 		code := []interface{}{
+			".maxOps", 10000,
+
 			//// definitions and setup
 			".data",
 
