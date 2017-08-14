@@ -46,7 +46,7 @@ func Assemble(in ...interface{}) ([]byte, error) {
 	asm := assembler{
 		opts:  opts,
 		in:    in[1:],
-		state: tokenizerText,
+		state: assemblerText,
 	}
 	if err := asm.scan(); err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ type ref struct{ site, targ, off int }
 type assembler struct {
 	i        int
 	in       []interface{}
-	state    tokenizerState
+	state    assemblerState
 	opts     stackvm.MachOptions
 	ops      []stackvm.Op
 	refs     []ref
@@ -91,11 +91,11 @@ type assembler struct {
 	refsBy   map[string][]ref
 }
 
-type tokenizerState uint8
+type assemblerState uint8
 
 const (
-	tokenizerText tokenizerState = iota + 1
-	tokenizerData
+	assemblerText assemblerState = iota + 1
+	assemblerData
 )
 
 func (asm *assembler) scan() error {
@@ -105,12 +105,12 @@ func (asm *assembler) scan() error {
 	var err error
 	for ; err == nil && asm.i < len(asm.in); asm.i++ {
 		switch asm.state {
-		case tokenizerData:
+		case assemblerData:
 			err = asm.handleData(asm.in[asm.i])
-		case tokenizerText:
+		case assemblerText:
 			err = asm.handleText(asm.in[asm.i])
 		default:
-			return fmt.Errorf("invalid tokenizer state %d", asm.state)
+			return fmt.Errorf("invalid assembler state %d", asm.state)
 		}
 	}
 	if err != nil {
@@ -174,10 +174,10 @@ func (asm *assembler) handleText(val interface{}) error {
 func (asm *assembler) handleDirective(name string) error {
 	switch name {
 	case "data":
-		asm.state = tokenizerData
+		asm.state = assemblerData
 		return nil
 	case "text":
-		asm.state = tokenizerText
+		asm.state = assemblerText
 		return nil
 	default:
 		return fmt.Errorf("invalid directive .%s", name)
