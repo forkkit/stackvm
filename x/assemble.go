@@ -123,10 +123,6 @@ func (asm *assembler) handleStackSize() error {
 	if err != nil {
 		return err
 	}
-	return asm.procStackSize(n)
-}
-
-func (asm *assembler) procStackSize(n int) error {
 	if n < +0 || n > 0xffff {
 		return fmt.Errorf("stackSize %d out of range, must be in (0x0000, 0xffff)", n)
 	}
