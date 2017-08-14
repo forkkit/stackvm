@@ -44,9 +44,8 @@ func Assemble(in ...interface{}) ([]byte, error) {
 
 	// rest is assembly tokens
 	asm := assembler{
-		opts:  opts,
-		in:    in[1:],
-		state: assemblerText,
+		opts: opts,
+		in:   in[1:],
 	}
 	if err := asm.scan(); err != nil {
 		return nil, err
@@ -99,6 +98,7 @@ const (
 )
 
 func (asm *assembler) scan() error {
+	asm.state = assemblerText
 	asm.maxBytes = asm.opts.NeededSize()
 	asm.labels = make(map[string]int)
 	asm.refsBy = make(map[string][]ref)
