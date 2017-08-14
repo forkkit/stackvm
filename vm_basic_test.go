@@ -49,6 +49,7 @@ func TestMach_operational_errors(t *testing.T) {
 			Prog: []byte{
 				0x00,       // version
 				0x00, 0x40, // stack size
+				0x00, 0x00, 0x00, 0x00, // max ops
 				0x70, // undefined op code
 			},
 			Result: Result{Err: "invalid op code:0x70"},
@@ -59,6 +60,7 @@ func TestMach_operational_errors(t *testing.T) {
 			Prog: []byte{
 				0x00,       // version
 				0x00, 0x40, // stack size
+				0x00, 0x00, 0x00, 0x00, // max ops
 				0x00, // opCodeCrash=0
 			},
 			Result: Result{Err: "crashed"},
@@ -69,6 +71,7 @@ func TestMach_operational_errors(t *testing.T) {
 			Prog: []byte{
 				0x00,       // version
 				0x00, 0x40, // stack size
+				0x00, 0x00, 0x00, 0x00, // max ops
 				// empty program, 0 by default
 			},
 			Result: Result{Err: "crashed"},
@@ -90,6 +93,19 @@ func TestMach_operational_errors(t *testing.T) {
 				// and then?...
 			),
 			Result: Result{Err: "crashed"},
+		},
+		{
+			Name: "maxops stops an infinite loop",
+			Err:  "op count limit exceeded",
+			Prog: MustAssemble(
+				".maxOps", 100,
+				1, "push",
+				"loop:",
+				1, "add",
+				":loop", "jump",
+				0, "halt",
+			),
+			Result: Result{Err: "op count limit exceeded"},
 		},
 	}.Run(t)
 }

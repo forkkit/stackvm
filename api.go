@@ -72,14 +72,18 @@ func New(prog []byte) (*Mach, error) {
 	}
 	p = p[2:]
 
+	maxOps := binary.BigEndian.Uint32(p)
+	p = p[4:]
+
 	m := Mach{
-		ctx: defaultContext,
-		opc: makeOpCache(len(p)),
-		pbp: 0,
-		psp: _pspInit,
-		cbp: uint32(stackSize) - 4,
-		csp: uint32(stackSize) - 4,
-		ip:  uint32(stackSize),
+		ctx:   defaultContext,
+		opc:   makeOpCache(len(p)),
+		pbp:   0,
+		psp:   _pspInit,
+		cbp:   uint32(stackSize) - 4,
+		csp:   uint32(stackSize) - 4,
+		ip:    uint32(stackSize),
+		limit: uint(maxOps),
 	}
 
 	m.storeBytes(m.ip, p)
@@ -268,17 +272,25 @@ func (o Op) Name() string {
 // New).
 type MachOptions struct {
 	StackSize uint16
+	MaxOps    uint32
 }
 
 // EncodeInto encodes machine optios for the header of a program.
-func (opts MachOptions) EncodeInto(p []byte) int {
+func (opts MachOptions) EncodeInto(p []byte) (n int) {
 	p[0] = _machVersionCode
-	binary.BigEndian.PutUint16(p[1:], opts.StackSize)
-	return 3
+	n++
+
+	binary.BigEndian.PutUint16(p[n:], opts.StackSize)
+	n += 2
+
+	binary.BigEndian.PutUint32(p[n:], opts.MaxOps)
+	n += 4
+
+	return
 }
 
 // NeededSize returns the number of bytes needed for EncodeInto.
-func (opts MachOptions) NeededSize() int { return 3 }
+func (opts MachOptions) NeededSize() int { return 1 + 2 + 4 }
 
 // EncodeInto encodes the operation into the given buffer, returning the number
 // of bytes encoded.

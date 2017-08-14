@@ -23,6 +23,7 @@ var (
 	errNoQueue      = errors.New("no queue, cannot copy")
 	errHalted       = errors.New("halted")
 	errCrashed      = errors.New("crashed")
+	errLimit        = errors.New("op count limit exceeded")
 )
 
 type alignmentError struct {
@@ -61,6 +62,8 @@ type Mach struct {
 	pbp, psp uint32  // param stack
 	pa       uint32  // param head
 	cbp, csp uint32  // control stack
+	count    uint
+	limit    uint
 	// TODO track code segment and data segment
 	pages []*page // memory
 }
@@ -159,6 +162,14 @@ repeat:
 }
 
 func (m *Mach) step() {
+	if m.limit != 0 {
+		if m.count >= m.limit {
+			m.err = errLimit
+			return
+		}
+		m.count++
+	}
+
 	// decode
 	ck := m.ip - m.cbp
 	oc, cached := m.opc.get(ck)
