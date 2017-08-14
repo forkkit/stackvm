@@ -30,16 +30,13 @@ var smmTest = TestCase{
 		// -----------
 		//   m o n e y
 
-		":main", "jump", // TODO proper entry point
-
 		".data",
 		"used:", ".alloc", 10, // TODO use a bit vector
 		"values:", ".alloc", 8,
 		// 0 1 2 3 4 5 6 7
 		// d e y n r o s m
 
-		".text",
-		"main:",
+		".entry", "main:",
 
 		":values", "cpush", 4*8, ":values", "cpush", // : &values[0] &values[8]
 

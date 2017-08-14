@@ -88,6 +88,14 @@ func (asm *assembler) init() error {
 	asm.maxBytes = 0
 	asm.labels = make(map[string]int)
 	asm.refsBy = make(map[string][]ref)
+	op, err := stackvm.ResolveOp("jump", 0, true)
+	if err != nil {
+		return err
+	}
+	if err == nil {
+		asm.ops = append(asm.ops, op)
+		asm.maxBytes += 6
+	}
 	return nil
 }
 
@@ -180,6 +188,8 @@ func (asm *assembler) handleText(val interface{}) error {
 
 func (asm *assembler) handleDirective(name string) error {
 	switch name {
+	case "entry":
+		return asm.handleEntry()
 	case "stackSize":
 		return asm.handleStackSize()
 	case "data":
@@ -191,6 +201,39 @@ func (asm *assembler) handleDirective(name string) error {
 	default:
 		return fmt.Errorf("invalid directive .%s", name)
 	}
+}
+
+func (asm *assembler) handleEntry() error {
+	s, err := asm.expectString(`"label:"`)
+	if err != nil {
+		return err
+	}
+
+	// expect and define label
+	if len(s) < 2 || s[len(s)-1] != ':' {
+		return fmt.Errorf("unexpected string %q, expected .entry label", s)
+	}
+	name := s[:len(s)-1]
+	if err := asm.handleLabel(name); err != nil {
+		return err
+	}
+
+	// dupe check .entry
+	if i, defined := asm.labels[".entry"]; defined && i >= 0 {
+		for dupName, j := range asm.labels {
+			if j == i {
+				return fmt.Errorf("duplicate .entry %q, already set to %q", name, dupName)
+			}
+		}
+		return fmt.Errorf("duplicate .entry %q, already set to ???", name)
+	}
+	asm.labels[".entry"] = len(asm.ops)
+
+	// back-fill the ref for the jump in ops[0]
+	asm.refsBy[name] = append(asm.refsBy[name], ref{site: 0})
+
+	asm.state = assemblerText
+	return nil
 }
 
 func (asm *assembler) handleLabel(name string) error {
@@ -368,6 +411,10 @@ func (asm *assembler) encode() []byte {
 	base := uint32(asm.opts.StackSize)
 	offsets := make([]uint32, len(asm.ops)+1)
 	c, i := uint32(0), 0 // current op offset and index
+	if _, defined := asm.labels[".entry"]; !defined {
+		// skip entry jump
+		i++
+	}
 	for i < len(asm.ops) {
 		// fix a previously encoded ref's target
 		for 0 <= rf.site && rf.site < i && rf.targ <= i {
