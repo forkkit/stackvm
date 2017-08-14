@@ -57,6 +57,8 @@ func New(prog []byte) (*Mach, error) {
 		return nil, fmt.Errorf("program too short, need at least %v bytes", _minProgSize)
 	}
 
+	// TODO: a reader func for MachOptions would be nice
+
 	if p[0] != _machVersionCode {
 		return nil, fmt.Errorf("unsupported stackvm program version %02x", p[0])
 	}
