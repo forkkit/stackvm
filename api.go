@@ -63,10 +63,10 @@ func New(prog []byte) (*Mach, error) {
 	p = p[1:]
 
 	stackSize := binary.BigEndian.Uint16(p)
-	if stackSize%_pageSize != 0 {
+	if stackSize%4 != 0 {
 		return nil, fmt.Errorf(
-			"invalid stacksize %#02x, not a %#02x-multiple",
-			stackSize, _pageSize)
+			"invalid stacksize %#02x, not a word-multiple",
+			stackSize)
 	}
 	p = p[2:]
 
