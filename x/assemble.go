@@ -76,14 +76,18 @@ const (
 
 const defaultStackSize = 0x40
 
-func (asm *assembler) scan() error {
+func (asm *assembler) init() error {
 	if asm.opts.StackSize == 0 {
 		asm.opts.StackSize = defaultStackSize
 	}
 	asm.state = assemblerText
 	asm.labels = make(map[string]int)
 	asm.refsBy = make(map[string][]ref)
-	var err error
+	return nil
+}
+
+func (asm *assembler) scan() error {
+	err := asm.init()
 	for ; err == nil && asm.i < len(asm.in); asm.i++ {
 		switch asm.state {
 		case assemblerData:
