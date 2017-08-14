@@ -20,7 +20,6 @@ func TestMach_basic_math(t *testing.T) {
 			Name: "33addeq5 should fail",
 			Err:  "HALT(1)",
 			Prog: MustAssemble(
-				0x40,
 				3, "push", 3, "push", "add",
 				5, "push", "eq",
 				1, "hz", "halt",
@@ -33,7 +32,6 @@ func TestMach_basic_math(t *testing.T) {
 		{
 			Name: "23addeq5 should succeed",
 			Prog: MustAssemble(
-				0x40,
 				2, "push", 3, "push", "add",
 				5, "push", "eq",
 				1, "hz", "halt",
@@ -79,7 +77,6 @@ func TestMach_operational_errors(t *testing.T) {
 			Name: "crash: jump out of program",
 			Err:  "crashed",
 			Prog: MustAssemble(
-				0x40,
 				96, "jump", "halt",
 			),
 			Result: Result{Err: "crashed"},
@@ -88,7 +85,6 @@ func TestMach_operational_errors(t *testing.T) {
 			Name: "crash: implicit assembled",
 			Err:  "crashed",
 			Prog: MustAssemble(
-				0x40,
 				1, "push",
 				2, "add",
 				// and then?...
@@ -103,7 +99,6 @@ func TestMach_data_refs(t *testing.T) {
 		{
 			Name: "mod-10 check",
 			Prog: MustAssemble(
-				0x40,
 				":main", "jump",
 
 				".data",

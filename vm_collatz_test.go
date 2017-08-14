@@ -33,8 +33,6 @@ func TestMach_collatz_sequence(t *testing.T) {
 		tcs = append(tcs, TestCase{
 			Name: fmt.Sprintf("collatz(%d)", n),
 			Prog: MustAssemble(
-				0x40,
-
 				n, "push", "dup", // v v :
 				0x100, "push", // v v i :
 				"dup", 4, "add", "p2c", // v v i : i=i+4
@@ -86,8 +84,6 @@ func TestMach_collatz_sequence(t *testing.T) {
 var collatzExplore = TestCase{
 	Name: "gen collatz",
 	Prog: MustAssemble(
-		0x40,
-
 		6, "push", // d :
 		0x100, "push", // d i :
 		0x100, "push", // d i b :

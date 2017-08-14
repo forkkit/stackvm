@@ -23,30 +23,7 @@ func MustAssemble(in ...interface{}) []byte {
 // reference string of the form ":name". Labels are defined with a string of
 // the form "name:".
 func Assemble(in ...interface{}) ([]byte, error) {
-	// first element is ~ machine options
-	var opts stackvm.MachOptions
-	switch v := in[0].(type) {
-	case int:
-		if v < +0 || v > 0xffff {
-			return nil, fmt.Errorf("stackSize %d out of range, must be in (0, 65536)", v)
-		}
-		opts.StackSize = uint16(v)
-
-	case stackvm.MachOptions:
-		opts = v
-
-	default:
-		return nil, fmt.Errorf("invalid machine options, "+
-			"expected a stackvm.MachOptions or an int, "+
-			"but got %T(%v) instead",
-			v, v)
-	}
-
-	// rest is assembly tokens
-	asm := assembler{
-		opts: opts,
-		in:   in[1:],
-	}
+	asm := assembler{in: in}
 	if err := asm.scan(); err != nil {
 		return nil, err
 	}

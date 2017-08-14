@@ -30,8 +30,6 @@ var smmTest = TestCase{
 		// -----------
 		//   m o n e y
 
-		0x40, // stack size
-
 		":main", "jump", // TODO proper entry point
 
 		".data",
