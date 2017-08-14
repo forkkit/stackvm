@@ -97,7 +97,12 @@ const (
 	assemblerData
 )
 
+const defaultStackSize = 0x40
+
 func (asm *assembler) scan() error {
+	if asm.opts.StackSize == 0 {
+		asm.opts.StackSize = defaultStackSize
+	}
 	asm.state = assemblerText
 	asm.maxBytes = asm.opts.NeededSize()
 	asm.labels = make(map[string]int)
