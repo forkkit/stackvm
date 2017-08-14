@@ -24,7 +24,6 @@ func Test_snakeCube(t *testing.T) {
 		M := len(labels)
 
 		code := []interface{}{
-			0x40,                   // stack size
 			":chooseStart", "jump", // TODO entry point
 
 			//// definitions and setup
