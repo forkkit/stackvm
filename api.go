@@ -2,7 +2,6 @@ package stackvm
 
 import (
 	"bytes"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -258,8 +257,9 @@ func (o Op) Name() string {
 }
 
 const (
-	optCodeMaxOps uint8 = iota + 2
-	optCodeEnd          = 0x7f
+	optCodeStackSize uint8 = iota + 1
+	optCodeMaxOps
+	optCodeEnd = 0x7f
 )
 
 // MachOptions represents options for a machine, currently just stack size (see
@@ -276,13 +276,6 @@ func readMachOptions(buf []byte) (opts MachOptions, n int, err error) {
 	}
 	n++
 
-	opts.StackSize = binary.BigEndian.Uint16(buf[n:])
-	n += 2
-	if opts.StackSize%4 != 0 {
-		err = fmt.Errorf("invalid stacksize %#02x, not a word-multiple", opts.StackSize)
-		return
-	}
-
 	for {
 		m, arg, code, ok := readVarCode(buf[n:])
 		n += m
@@ -291,6 +284,17 @@ func readMachOptions(buf []byte) (opts MachOptions, n int, err error) {
 			return
 		}
 		switch code {
+
+		case 0x80 | optCodeStackSize:
+			if arg > 0xffff {
+				err = fmt.Errorf("invalid stacksize %#x", arg)
+				return
+			}
+			if arg%4 != 0 {
+				err = fmt.Errorf("invalid stacksize %#02x, not a word-multiple", arg)
+				return
+			}
+			opts.StackSize = uint16(arg)
 
 		case optCodeMaxOps:
 			opts.MaxOps = 0
@@ -313,9 +317,9 @@ func (opts MachOptions) EncodeInto(p []byte) (n int) {
 	p[0] = _machVersionCode
 	n++
 
-	binary.BigEndian.PutUint16(p[n:], opts.StackSize)
-	n += 2
-
+	if opts.StackSize != 0 {
+		n += putVarCode(p[n:], uint32(opts.StackSize), 0x80|optCodeStackSize)
+	}
 	if opts.MaxOps != 0 {
 		n += putVarCode(p[n:], opts.MaxOps, 0x80|optCodeMaxOps)
 	}
@@ -326,7 +330,9 @@ func (opts MachOptions) EncodeInto(p []byte) (n int) {
 // NeededSize returns the number of bytes needed for EncodeInto.
 func (opts MachOptions) NeededSize() (n int) {
 	n++
-	n += 2
+	if opts.StackSize != 0 {
+		n += varCodeLength(uint32(opts.StackSize), 0x80|optCodeStackSize)
+	}
 	if opts.MaxOps != 0 {
 		n += varCodeLength(opts.MaxOps, 0x80|optCodeMaxOps)
 	}

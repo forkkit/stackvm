@@ -48,7 +48,7 @@ func TestMach_operational_errors(t *testing.T) {
 			Err:  "invalid op code:0x70",
 			Prog: []byte{
 				0x00,       // version
-				0x00, 0x40, // stack size
+				0xc0, 0x01, // stack size
 				0x7f, // end-of-options
 				0x70, // undefined op code
 			},
@@ -59,7 +59,7 @@ func TestMach_operational_errors(t *testing.T) {
 			Err:  "crashed",
 			Prog: []byte{
 				0x00,       // version
-				0x00, 0x40, // stack size
+				0xc0, 0x01, // stack size
 				0x7f, // end-of-options
 				0x00, // opCodeCrash=0
 			},
@@ -70,7 +70,7 @@ func TestMach_operational_errors(t *testing.T) {
 			Err:  "crashed",
 			Prog: []byte{
 				0x00,       // version
-				0x00, 0x40, // stack size
+				0xc0, 0x01, // stack size
 				0x7f, // end-of-options
 				// empty program, 0 by default
 			},
