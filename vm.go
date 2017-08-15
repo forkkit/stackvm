@@ -632,7 +632,10 @@ func (m *Mach) step() {
 }
 
 func (m *Mach) read(addr uint32) (end uint32, code opCode, arg uint32, err error) {
-	var bs [6]byte
+	var (
+		bs [6]byte
+		ok bool
+	)
 	end = addr
 	n := m.fetchBytes(addr, bs[:])
 	for k := 0; k < n; k++ {
@@ -643,23 +646,21 @@ func (m *Mach) read(addr uint32) (end uint32, code opCode, arg uint32, err error
 			if k > 0 {
 				code |= opCodeWithImm
 			}
-			goto validate
+			ok = true
+			break
 		}
 		if k == len(bs)-1 {
 			break
 		}
 		arg = arg<<7 | uint32(val&0x7f)
 	}
-	if n < len(bs) {
+	if ok {
+		err = m.validate(code, arg)
+	} else if n < len(bs) {
 		err = errInvalidIP
 	} else {
 		err = errVarIntTooBig
 	}
-	return
-
-validate:
-	err = m.validate(code, arg)
-
 	return
 }
 
