@@ -42,3 +42,18 @@ func putVarCode(buf []byte, arg uint32, code uint8) (n int) {
 	}
 	return n
 }
+
+func varCodeLength(arg uint32, code uint8) (n int) {
+	n++
+	if code&0x80 == 0 {
+		return
+	}
+	for {
+		n++
+		arg >>= 7
+		if arg == 0 {
+			break
+		}
+	}
+	return
+}

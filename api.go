@@ -304,7 +304,11 @@ func (o Op) EncodeInto(p []byte) int {
 
 // NeededSize returns the number of bytes needed to encode op.
 func (o Op) NeededSize() int {
-	return int(varOpLength(o.Arg)) + 1
+	c := uint8(o.Code)
+	if o.Have {
+		c |= 0x80
+	}
+	return varCodeLength(o.Arg, c)
 }
 
 // AcceptsRef return true only if the argument can resolve another op reference
@@ -323,10 +327,15 @@ func (o Op) ResolveRefArg(myIP, targIP uint32) Op {
 	switch ops[o.Code].imm.kind() {
 	case opImmOffset:
 		// need to skip the arg and the code...
+		c := uint8(o.Code)
+		if o.Have {
+			c |= 0x80
+		}
+
 		d := targIP - myIP
-		n := varOpLength(d)
-		d -= n
-		if id := int32(d); id < 0 && varOpLength(uint32(id)) != n {
+		n := varCodeLength(d, c)
+		d -= uint32(n)
+		if id := int32(d); id < 0 && varCodeLength(uint32(id), c) != n {
 			// ...arg off by one, now that we know its value.
 			id--
 			d = uint32(id)
@@ -510,11 +519,3 @@ type MachError struct {
 func (me MachError) Cause() error { return me.err }
 
 func (me MachError) Error() string { return fmt.Sprintf("@0x%04x: %v", me.addr, me.err) }
-
-func varOpLength(n uint32) (m uint32) {
-	for v := n; v != 0; v >>= 7 {
-		m++
-	}
-	m++
-	return
-}
