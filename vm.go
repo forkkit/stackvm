@@ -658,29 +658,30 @@ func (m *Mach) read(addr uint32) (end uint32, code opCode, arg uint32, err error
 	return
 
 validate:
+	err = m.validate(code, arg)
 
+	return
+}
+
+func (m *Mach) validate(code opCode, arg uint32) error {
 	have := code.hasImm()
 	def := ops[code.code()]
 	if def.name == "" {
 		if have {
-			err = fmt.Errorf("invalid op code:%#02x arg:%#08x", code, arg)
-		} else {
-			err = fmt.Errorf("invalid op code:%#02x", code)
+			return fmt.Errorf("invalid op code:%#02x arg:%#08x", code, arg)
 		}
-		return
+		return fmt.Errorf("invalid op code:%#02x", code)
 	}
 
 	if have && def.imm.kind() == opImmNone {
-		err = fmt.Errorf("unexpected immediate argument %#04x for %q op", arg, def.name)
-		return
+		return fmt.Errorf("unexpected immediate argument %#04x for %q op", arg, def.name)
 	}
 
 	if !have && def.imm.required() {
-		err = fmt.Errorf("missing immediate argument for %q op", def.name)
-		return
+		return fmt.Errorf("missing immediate argument for %q op", def.name)
 	}
 
-	return
+	return nil
 }
 
 func (m *Mach) jump(off int32) error {
