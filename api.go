@@ -13,6 +13,7 @@ const _minProgSize = 3
 var (
 	errRunning = errors.New("machine running")
 	errNoArg   = errors.New("operation does not accept an argument")
+	errVarOpts = errors.New("truncated options")
 )
 
 // NoSuchOpError is returned by ResolveOp if the named operation is not //
@@ -256,6 +257,10 @@ func (o Op) Name() string {
 	return ops[o.Code].name
 }
 
+const (
+	optCodeEnd = 0x7f
+)
+
 // MachOptions represents options for a machine, currently just stack size (see
 // New).
 type MachOptions struct {
@@ -263,23 +268,40 @@ type MachOptions struct {
 	MaxOps    uint32
 }
 
-func readMachOptions(p []byte) (opts MachOptions, n int, err error) {
-	if p[0] != _machVersionCode {
-		err = fmt.Errorf("unsupported stackvm program version %02x", p[0])
+func readMachOptions(buf []byte) (opts MachOptions, n int, err error) {
+	if buf[0] != _machVersionCode {
+		err = fmt.Errorf("unsupported stackvm program version %02x", buf[0])
 		return
 	}
 	n++
 
-	opts.StackSize = binary.BigEndian.Uint16(p[n:])
+	opts.StackSize = binary.BigEndian.Uint16(buf[n:])
 	n += 2
 	if opts.StackSize%4 != 0 {
 		err = fmt.Errorf("invalid stacksize %#02x, not a word-multiple", opts.StackSize)
 		return
 	}
 
-	opts.MaxOps = binary.BigEndian.Uint32(p[n:])
+	opts.MaxOps = binary.BigEndian.Uint32(buf[n:])
 	n += 4
-	return
+
+	for {
+		m, _, code, ok := readVarCode(buf[n:])
+		n += m
+		if !ok {
+			err = errVarOpts
+			return
+		}
+		switch code {
+
+		case optCodeEnd:
+			return
+
+		default:
+			err = fmt.Errorf("invalid option code %#02x", code)
+			return
+		}
+	}
 }
 
 // EncodeInto encodes machine optios for the header of a program.
@@ -293,11 +315,18 @@ func (opts MachOptions) EncodeInto(p []byte) (n int) {
 	binary.BigEndian.PutUint32(p[n:], opts.MaxOps)
 	n += 4
 
+	n += putVarCode(p[n:], 0, optCodeEnd)
 	return
 }
 
 // NeededSize returns the number of bytes needed for EncodeInto.
-func (opts MachOptions) NeededSize() int { return 1 + 2 + 4 }
+func (opts MachOptions) NeededSize() (n int) {
+	n++
+	n += 2
+	n += 4
+	n += varCodeLength(0, optCodeEnd)
+	return
+}
 
 // EncodeInto encodes the operation into the given buffer, returning the number
 // of bytes encoded.
