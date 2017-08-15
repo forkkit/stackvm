@@ -18,8 +18,8 @@ func (f HandlerFunc) Handle(m *Mach) error { return f(m) }
 
 type context interface {
 	Handler
-	queue(*Mach) error
-	next() *Mach
+	Enqueue(*Mach) error
+	Dequeue() *Mach
 }
 
 // runq implements a capped lifo queue
@@ -32,7 +32,7 @@ func newRunq(h Handler, n int) *runq {
 	return &runq{h, make([]*Mach, 0, n)}
 }
 
-func (rq *runq) queue(m *Mach) error {
+func (rq *runq) Enqueue(m *Mach) error {
 	if len(rq.q) == cap(rq.q) {
 		return errRunQFull
 	}
@@ -40,7 +40,7 @@ func (rq *runq) queue(m *Mach) error {
 	return nil
 }
 
-func (rq *runq) next() *Mach {
+func (rq *runq) Dequeue() *Mach {
 	if len(rq.q) == 0 {
 		return nil
 	}
@@ -55,5 +55,5 @@ var defaultContext = _defaultContext{}
 type _defaultContext struct{}
 
 func (dc _defaultContext) Handle(m *Mach) error { return m.Err() }
-func (dc _defaultContext) queue(*Mach) error    { return errNoQueue }
-func (dc _defaultContext) next() *Mach          { return nil }
+func (dc _defaultContext) Enqueue(*Mach) error  { return errNoQueue }
+func (dc _defaultContext) Dequeue() *Mach       { return nil }

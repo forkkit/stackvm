@@ -437,10 +437,10 @@ func (m *Mach) SetHandler(queueSize int, h Handler) {
 	m.ctx = newRunq(h, queueSize)
 }
 
-func (mt machTracer) queue(n *Mach) error {
+func (mt machTracer) Enqueue(n *Mach) error {
 	mt.t.Queue(mt.m, n)
 	fixTracer(mt.t, n)
-	return mt.context.queue(n)
+	return mt.context.Enqueue(n)
 }
 
 // Trace implements the same logic as (*Mach).run, but calls a Tracer
@@ -477,7 +477,7 @@ repeat:
 	err := m.ctx.Handle(m)
 	t.Handle(m, err)
 	if err == nil {
-		if n := m.ctx.next(); n != nil {
+		if n := m.ctx.Dequeue(); n != nil {
 			m.free()
 			m = n
 			// die

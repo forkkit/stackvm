@@ -148,7 +148,7 @@ repeat:
 	// win or die
 	err := m.ctx.Handle(m)
 	if err == nil {
-		if n := m.ctx.next(); n != nil {
+		if n := m.ctx.Dequeue(); n != nil {
 			m.free()
 			m = n
 			// die
@@ -732,7 +732,7 @@ func (m *Mach) fork(off int32) error {
 		return err
 	}
 	n.ip = ip
-	return m.ctx.queue(n)
+	return m.ctx.Enqueue(n)
 }
 
 func (m *Mach) cfork() error {
@@ -747,7 +747,7 @@ func (m *Mach) cfork() error {
 	if err := n.jumpTo(ip); err != nil {
 		return err
 	}
-	return m.ctx.queue(n)
+	return m.ctx.Enqueue(n)
 }
 
 func (m *Mach) branch(off int32) error {
@@ -760,7 +760,7 @@ func (m *Mach) branch(off int32) error {
 		return err
 	}
 	m.ip = ip
-	return m.ctx.queue(n)
+	return m.ctx.Enqueue(n)
 }
 
 func (m *Mach) cbranch() error {
@@ -772,7 +772,7 @@ func (m *Mach) cbranch() error {
 	if err != nil {
 		return err
 	}
-	if err := m.ctx.queue(n); err != nil {
+	if err := m.ctx.Enqueue(n); err != nil {
 		return err
 	}
 	return m.jumpTo(ip)
