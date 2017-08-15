@@ -258,7 +258,8 @@ func (o Op) Name() string {
 }
 
 const (
-	optCodeEnd = 0x7f
+	optCodeMaxOps uint8 = iota + 2
+	optCodeEnd          = 0x7f
 )
 
 // MachOptions represents options for a machine, currently just stack size (see
@@ -282,17 +283,20 @@ func readMachOptions(buf []byte) (opts MachOptions, n int, err error) {
 		return
 	}
 
-	opts.MaxOps = binary.BigEndian.Uint32(buf[n:])
-	n += 4
-
 	for {
-		m, _, code, ok := readVarCode(buf[n:])
+		m, arg, code, ok := readVarCode(buf[n:])
 		n += m
 		if !ok {
 			err = errVarOpts
 			return
 		}
 		switch code {
+
+		case optCodeMaxOps:
+			opts.MaxOps = 0
+
+		case 0x80 | optCodeMaxOps:
+			opts.MaxOps = arg
 
 		case optCodeEnd:
 			return
@@ -312,9 +316,9 @@ func (opts MachOptions) EncodeInto(p []byte) (n int) {
 	binary.BigEndian.PutUint16(p[n:], opts.StackSize)
 	n += 2
 
-	binary.BigEndian.PutUint32(p[n:], opts.MaxOps)
-	n += 4
-
+	if opts.MaxOps != 0 {
+		n += putVarCode(p[n:], opts.MaxOps, 0x80|optCodeMaxOps)
+	}
 	n += putVarCode(p[n:], 0, optCodeEnd)
 	return
 }
@@ -323,7 +327,9 @@ func (opts MachOptions) EncodeInto(p []byte) (n int) {
 func (opts MachOptions) NeededSize() (n int) {
 	n++
 	n += 2
-	n += 4
+	if opts.MaxOps != 0 {
+		n += varCodeLength(opts.MaxOps, 0x80|optCodeMaxOps)
+	}
 	n += varCodeLength(0, optCodeEnd)
 	return
 }
