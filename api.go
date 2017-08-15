@@ -421,11 +421,12 @@ type machTracer struct {
 	m *Mach
 }
 
-func tracify(ctx context, t Tracer, m *Mach) context {
+func fixTracer(t Tracer, m *Mach) {
+	ctx := m.ctx
 	for mt, ok := ctx.(machTracer); ok; mt, ok = ctx.(machTracer) {
 		ctx = mt.context
 	}
-	return machTracer{ctx, t, m}
+	m.ctx = machTracer{ctx, t, m}
 }
 
 // SetHandler allocates a pending queue and sets a result handling
@@ -438,7 +439,7 @@ func (m *Mach) SetHandler(queueSize int, h Handler) {
 
 func (mt machTracer) queue(n *Mach) error {
 	mt.t.Queue(mt.m, n)
-	n.ctx = tracify(n.ctx, mt.t, n)
+	fixTracer(mt.t, n)
 	return mt.context.queue(n)
 }
 
@@ -450,7 +451,7 @@ func (m *Mach) Trace(t Tracer) error {
 	// inlined)
 	orig := m
 
-	m.ctx = tracify(m.ctx, t, m)
+	fixTracer(t, m)
 
 repeat:
 	// live
