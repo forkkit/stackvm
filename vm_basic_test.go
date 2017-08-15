@@ -115,14 +115,11 @@ func TestMach_data_refs(t *testing.T) {
 		{
 			Name: "mod-10 check",
 			Prog: MustAssemble(
-				":main", "jump",
-
 				".data",
 				"d:", 4, 2, 7, 9, 8,
 
 				".text",
-				"main:",
-
+				".entry", "main:",
 				":d", "fetch", // d[0] :
 				4*1, ":d", "push", "fetch", // d[0] d[1] :
 				4*2, ":d", "push", "fetch", // d[0] d[1] d[2] :
