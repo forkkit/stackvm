@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"sync"
 	"sync/atomic"
 	"unsafe"
 )
@@ -54,12 +53,16 @@ func init() {
 
 type context struct {
 	Handler
+	machAllocator
+	pageAllocator
 	queue
 }
 
 var defaultContext = context{
-	Handler: defaultHandler,
-	queue:   noQueue,
+	Handler:       defaultHandler,
+	queue:         noQueue,
+	machAllocator: machPoolAllocator,
+	pageAllocator: pagePoolAllocator,
 }
 
 // Mach is a stack machine.
@@ -114,31 +117,6 @@ type page struct {
 	r int32
 	d [_pageSize]byte
 }
-
-type pagePoolT struct {
-	sync.Pool
-}
-
-func (pgp *pagePoolT) Put(pg *page) {
-	pgp.Pool.Put(pg)
-}
-
-func (pgp *pagePoolT) Get() *page {
-	if v := pgp.Pool.Get(); v != nil {
-		if pg, ok := v.(*page); ok {
-			for i := range pg.d {
-				pg.d[i] = 0
-			}
-			return pg
-		}
-	}
-	return &page{r: 0}
-}
-
-var (
-	machPool = sync.Pool{New: func() interface{} { return &Mach{} }}
-	pagePool pagePoolT
-)
 
 func (m *Mach) halted() (uint32, bool) {
 	if m.err == errHalted {
@@ -702,7 +680,10 @@ func (m *Mach) jumpTo(ip uint32) error {
 }
 
 func (m *Mach) copy() (*Mach, error) {
-	n := machPool.Get().(*Mach)
+	n, err := m.ctx.AllocMach()
+	if err != nil {
+		return nil, err
+	}
 	pgs := n.pages
 	*n = *m
 	if cap(pgs) < len(m.pages) {
@@ -723,13 +704,13 @@ func (m *Mach) free() {
 	for i, pg := range m.pages {
 		if pg != nil {
 			if atomic.AddInt32(&pg.r, -1) <= 0 {
-				pagePool.Put(pg)
+				m.ctx.FreePage(pg)
 			}
 		}
 		m.pages[i] = nil
 	}
 	m.pages = m.pages[:0]
-	machPool.Put(m)
+	m.ctx.FreeMach(m)
 }
 
 func (m *Mach) fork(off int32) error {
@@ -940,12 +921,12 @@ nextPage:
 doCopy:
 	if pg == nil {
 		// create-on-write
-		npg := pagePool.Get()
+		npg := m.ctx.AllocPage()
 		npg.r = 1
 		pg = m.setPage(i, npg)
 	} else if atomic.LoadInt32(&pg.r) > 1 {
 		// copy-on-write
-		npg := pagePool.Get()
+		npg := m.ctx.AllocPage()
 		npg.r = 1
 		npg.d = pg.d
 		atomic.AddInt32(&pg.r, -1)
@@ -983,9 +964,9 @@ func (m *Mach) ref(addr uint32) (*uint32, error) {
 	if int(i) < len(m.pages) {
 		pg = m.pages[i]
 		if pg == nil {
-			pg = pagePool.Get()
+			pg = m.ctx.AllocPage()
 		} else if atomic.LoadInt32(&pg.r) > 1 {
-			newPage := pagePool.Get()
+			newPage := m.ctx.AllocPage()
 			newPage.d = pg.d
 			atomic.AddInt32(&pg.r, -1)
 			pg = newPage
@@ -996,7 +977,7 @@ func (m *Mach) ref(addr uint32) (*uint32, error) {
 		pages := make([]*page, i+1)
 		copy(pages, m.pages)
 		m.pages = pages
-		pg = pagePool.Get()
+		pg = m.ctx.AllocPage()
 	}
 
 	pg.r = 1
