@@ -57,33 +57,21 @@ func New(prog []byte) (*Mach, error) {
 		return nil, fmt.Errorf("program too short, need at least %v bytes", _minProgSize)
 	}
 
-	// TODO: a reader func for MachOptions would be nice
-
-	if p[0] != _machVersionCode {
-		return nil, fmt.Errorf("unsupported stackvm program version %02x", p[0])
+	opts, n, err := readMachOptions(p)
+	if err != nil {
+		return nil, err
 	}
-	p = p[1:]
-
-	stackSize := binary.BigEndian.Uint16(p)
-	if stackSize%4 != 0 {
-		return nil, fmt.Errorf(
-			"invalid stacksize %#02x, not a word-multiple",
-			stackSize)
-	}
-	p = p[2:]
-
-	maxOps := binary.BigEndian.Uint32(p)
-	p = p[4:]
+	p = p[n:]
 
 	m := Mach{
 		ctx:   defaultContext,
 		opc:   makeOpCache(len(p)),
 		pbp:   0,
 		psp:   _pspInit,
-		cbp:   uint32(stackSize) - 4,
-		csp:   uint32(stackSize) - 4,
-		ip:    uint32(stackSize),
-		limit: uint(maxOps),
+		cbp:   uint32(opts.StackSize) - 4,
+		csp:   uint32(opts.StackSize) - 4,
+		ip:    uint32(opts.StackSize),
+		limit: uint(opts.MaxOps),
 	}
 
 	m.storeBytes(m.ip, p)
@@ -273,6 +261,25 @@ func (o Op) Name() string {
 type MachOptions struct {
 	StackSize uint16
 	MaxOps    uint32
+}
+
+func readMachOptions(p []byte) (opts MachOptions, n int, err error) {
+	if p[0] != _machVersionCode {
+		err = fmt.Errorf("unsupported stackvm program version %02x", p[0])
+		return
+	}
+	n++
+
+	opts.StackSize = binary.BigEndian.Uint16(p[n:])
+	n += 2
+	if opts.StackSize%4 != 0 {
+		err = fmt.Errorf("invalid stacksize %#02x, not a word-multiple", opts.StackSize)
+		return
+	}
+
+	opts.MaxOps = binary.BigEndian.Uint32(p[n:])
+	n += 4
+	return
 }
 
 // EncodeInto encodes machine optios for the header of a program.
