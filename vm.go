@@ -52,6 +52,16 @@ func init() {
 	panic("unable to determine native byte order")
 }
 
+type context struct {
+	Handler
+	queue
+}
+
+var defaultContext = context{
+	Handler: defaultHandler,
+	queue:   noQueue,
+}
+
 // Mach is a stack machine.
 type Mach struct {
 	ctx      context // execution context

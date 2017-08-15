@@ -409,24 +409,36 @@ func (o Op) String() string {
 
 // Tracer returns the current Tracer that the machine is running under, if any.
 func (m *Mach) Tracer() Tracer {
-	if mt, ok := m.ctx.(*machTracer); ok {
-		return mt.t
+	mt1, ok1 := m.ctx.Handler.(*machTracer)
+	mt2, ok2 := m.ctx.queue.(*machTracer)
+	if !ok1 && !ok2 {
+		return nil
 	}
-	return nil
+	if !ok1 || !ok2 || mt1 != mt2 {
+		panic("broken machTracer setup")
+	}
+	return mt1.t
 }
 
 type machTracer struct {
-	context
+	Handler
+	queue
 	t Tracer
 	m *Mach
 }
 
 func fixTracer(t Tracer, m *Mach) {
-	ctx := m.ctx
-	for mt, ok := ctx.(*machTracer); ok; mt, ok = ctx.(*machTracer) {
-		ctx = mt.context
+	h := m.ctx.Handler
+	for mt, ok := h.(*machTracer); ok; mt, ok = h.(*machTracer) {
+		h = mt.Handler
 	}
-	m.ctx = &machTracer{ctx, t, m}
+	q := m.ctx.queue
+	for mt, ok := q.(*machTracer); ok; mt, ok = q.(*machTracer) {
+		q = mt.queue
+	}
+	mt := &machTracer{h, q, t, m}
+	m.ctx.Handler = mt
+	m.ctx.queue = mt
 }
 
 // SetHandler allocates a pending queue and sets a result handling
@@ -434,13 +446,14 @@ func fixTracer(t Tracer, m *Mach) {
 // will fail. Without a result handling function, there's not much
 // point to running more than one machine.
 func (m *Mach) SetHandler(queueSize int, h Handler) {
-	m.ctx = newRunq(h, queueSize)
+	m.ctx.Handler = h
+	m.ctx.queue = newRunq(queueSize)
 }
 
 func (mt *machTracer) Enqueue(n *Mach) error {
 	mt.t.Queue(mt.m, n)
 	fixTracer(mt.t, n)
-	return mt.context.Enqueue(n)
+	return mt.queue.Enqueue(n)
 }
 
 // Trace implements the same logic as (*Mach).run, but calls a Tracer
