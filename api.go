@@ -409,23 +409,23 @@ func (o Op) String() string {
 
 // Tracer returns the current Tracer that the machine is running under, if any.
 func (m *Mach) Tracer() Tracer {
-	if tc, ok := m.ctx.(tracedContext); ok {
-		return tc.t
+	if mt, ok := m.ctx.(machTracer); ok {
+		return mt.t
 	}
 	return nil
 }
 
-type tracedContext struct {
+type machTracer struct {
 	context
 	t Tracer
 	m *Mach
 }
 
 func tracify(ctx context, t Tracer, m *Mach) context {
-	for tc, ok := ctx.(tracedContext); ok; tc, ok = ctx.(tracedContext) {
-		ctx = tc.context
+	for mt, ok := ctx.(machTracer); ok; mt, ok = ctx.(machTracer) {
+		ctx = mt.context
 	}
-	return tracedContext{ctx, t, m}
+	return machTracer{ctx, t, m}
 }
 
 // SetHandler allocates a pending queue and sets a result handling
@@ -436,10 +436,10 @@ func (m *Mach) SetHandler(queueSize int, h Handler) {
 	m.ctx = newRunq(h, queueSize)
 }
 
-func (tc tracedContext) queue(n *Mach) error {
-	tc.t.Queue(tc.m, n)
-	n.ctx = tracify(n.ctx, tc.t, n)
-	return tc.context.queue(n)
+func (mt machTracer) queue(n *Mach) error {
+	mt.t.Queue(mt.m, n)
+	n.ctx = tracify(n.ctx, mt.t, n)
+	return mt.context.queue(n)
 }
 
 // Trace implements the same logic as (*Mach).run, but calls a Tracer
