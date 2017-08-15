@@ -295,30 +295,11 @@ func (opts MachOptions) NeededSize() int { return 1 + 2 + 4 }
 // EncodeInto encodes the operation into the given buffer, returning the number
 // of bytes encoded.
 func (o Op) EncodeInto(p []byte) int {
-	var ep [6]byte
-	k, i := 0, 6
-	i--
-	ep[i] = o.Code
+	c := uint8(o.Code)
 	if o.Have {
-		v := o.Arg
-		for {
-			i--
-			if i < 0 {
-				break
-			}
-			ep[i] = byte(v) | 0x80
-			v >>= 7
-			if v == 0 {
-				break
-			}
-		}
+		c |= 0x80
 	}
-	for i < len(ep) && k < len(p) {
-		p[k] = ep[i]
-		i++
-		k++
-	}
-	return k
+	return putVarCode(p, o.Arg, c)
 }
 
 // NeededSize returns the number of bytes needed to encode op.

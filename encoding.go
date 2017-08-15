@@ -18,3 +18,30 @@ func readVarCode(buf []byte) (n int, arg uint32, code uint8, ok bool) {
 	}
 	return
 }
+
+func putVarCode(buf []byte, arg uint32, code uint8) (n int) {
+	var (
+		tmp [6]byte
+		i   = 5
+	)
+	tmp[i] = code & 0x7f
+	if code&0x80 != 0 {
+		for {
+			i--
+			if i < 0 {
+				break
+			}
+			tmp[i] = byte(arg) | 0x80
+			arg >>= 7
+			if arg == 0 {
+				break
+			}
+		}
+	}
+	for i < len(tmp) && n < len(buf) {
+		buf[n] = tmp[i]
+		i++
+		n++
+	}
+	return n
+}
