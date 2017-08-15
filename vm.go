@@ -10,10 +10,9 @@ import (
 )
 
 const (
-	_pageSize        = 0x40
-	_pageMask        = _pageSize - 1
-	_machVersionCode = 0x00
-	_pspInit         = 0xfffffffc
+	_pageSize = 0x40
+	_pageMask = _pageSize - 1
+	_pspInit  = 0xfffffffc
 )
 
 var (

@@ -257,7 +257,8 @@ func (o Op) Name() string {
 }
 
 const (
-	optCodeStackSize uint8 = iota + 1
+	optCodeVersion uint8 = iota
+	optCodeStackSize
 	optCodeMaxOps
 	optCodeEnd = 0x7f
 )
@@ -270,12 +271,6 @@ type MachOptions struct {
 }
 
 func readMachOptions(buf []byte) (opts MachOptions, n int, err error) {
-	if buf[0] != _machVersionCode {
-		err = fmt.Errorf("unsupported stackvm program version %02x", buf[0])
-		return
-	}
-	n++
-
 	for {
 		m, arg, code, ok := readVarCode(buf[n:])
 		n += m
@@ -284,6 +279,13 @@ func readMachOptions(buf []byte) (opts MachOptions, n int, err error) {
 			return
 		}
 		switch code {
+
+		case optCodeVersion:
+		case 0x80 | optCodeVersion:
+			if arg != 0 {
+				err = fmt.Errorf("unsupported machine version %v", arg)
+				return
+			}
 
 		case 0x80 | optCodeStackSize:
 			if arg > 0xffff {
@@ -314,9 +316,7 @@ func readMachOptions(buf []byte) (opts MachOptions, n int, err error) {
 
 // EncodeInto encodes machine optios for the header of a program.
 func (opts MachOptions) EncodeInto(p []byte) (n int) {
-	p[0] = _machVersionCode
-	n++
-
+	n += putVarCode(p[n:], 0, optCodeVersion)
 	if opts.StackSize != 0 {
 		n += putVarCode(p[n:], uint32(opts.StackSize), 0x80|optCodeStackSize)
 	}
@@ -329,7 +329,7 @@ func (opts MachOptions) EncodeInto(p []byte) (n int) {
 
 // NeededSize returns the number of bytes needed for EncodeInto.
 func (opts MachOptions) NeededSize() (n int) {
-	n++
+	n += varCodeLength(0, optCodeVersion)
 	if opts.StackSize != 0 {
 		n += varCodeLength(uint32(opts.StackSize), 0x80|optCodeStackSize)
 	}
