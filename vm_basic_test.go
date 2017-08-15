@@ -14,6 +14,18 @@ import (
 // building tracing to debug failures. Going forward tho, I'd like to start
 // writing more targeted/smaller "unit" tests that exercise one op or vm feature.
 
+func TestMach_misc_ops(t *testing.T) {
+	TestCases{
+		{
+			Name: "nuthin' doin'",
+			Prog: MustAssemble(
+				"nop", "nop", "nop", "nop",
+				"halt",
+			),
+		},
+	}.Run(t)
+}
+
 func TestMach_basic_math(t *testing.T) {
 	TestCases{
 		{

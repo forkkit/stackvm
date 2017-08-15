@@ -178,6 +178,9 @@ func (m *Mach) step() {
 
 	// execute
 	switch oc.code {
+	// nop
+	case opCodeNop:
+
 	// crash
 	case opCodeCrash:
 		m.err = errCrashed

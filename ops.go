@@ -89,10 +89,10 @@ func justop(name string) opDef { return opDef{name, opImmNone} }
 
 var ops = [128]opDef{
 	// 0x00
-	justop("crash"),
+	justop("crash"), justop("nop"),
 	valop("push"), valop("pop"),
 	valop("dup"), valop("swap"),
-	noop, noop, noop,
+	noop, noop,
 	// 0x08
 	addrop("fetch"), valop("store"), addrop("storeTo"),
 	noop, noop, noop, noop, noop,
