@@ -634,26 +634,13 @@ func (m *Mach) step() {
 func (m *Mach) read(addr uint32) (end uint32, code opCode, arg uint32, err error) {
 	var (
 		bs [6]byte
+		k  int
+		c  uint8
 		ok bool
 	)
-	end = addr
 	n := m.fetchBytes(addr, bs[:])
-	for k := 0; k < n; k++ {
-		val := bs[k]
-		end++
-		if val&0x80 == 0 {
-			code = opCode(val)
-			if k > 0 {
-				code |= opCodeWithImm
-			}
-			ok = true
-			break
-		}
-		if k == len(bs)-1 {
-			break
-		}
-		arg = arg<<7 | uint32(val&0x7f)
-	}
+	k, arg, c, ok = readVarCode(bs[:n])
+	end, code = addr+uint32(k), opCode(c)
 	if ok {
 		err = m.validate(code, arg)
 	} else if n < len(bs) {
