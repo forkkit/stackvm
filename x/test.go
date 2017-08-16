@@ -243,7 +243,7 @@ func (t testCaseRun) build() (*stackvm.Mach, error) {
 
 func (t testCaseRun) checkError(err error) {
 	if t.Err == "" {
-		require.NoError(t, err, "unexpected run error")
+		assert.NoError(t, err, "unexpected run error")
 	} else {
 		assert.EqualError(t, errors.Cause(err), t.Err, "expected run error")
 	}
