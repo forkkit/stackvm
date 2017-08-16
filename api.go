@@ -441,13 +441,17 @@ func fixTracer(t Tracer, m *Mach) {
 	m.ctx.queue = mt
 }
 
-// SetHandler allocates a pending queue and sets a result handling
-// function. Without a pending queue, the fork family of operations
-// will fail. Without a result handling function, there's not much
-// point to running more than one machine.
-func (m *Mach) SetHandler(queueSize int, h Handler) {
+const defaultQueueSize = 10
+
+// SetHandler sets a result handling function. Without a result handling
+// function, there's not much point to running more than one machine. If no
+// queue size has been set, a default 10-sized queue will be setup.
+func (m *Mach) SetHandler(h Handler) {
 	m.ctx.Handler = h
-	m.SetQueueSize(queueSize)
+	if m.ctx.queue == nil ||
+		m.ctx.queue == noQueue {
+		m.SetQueueSize(defaultQueueSize)
+	}
 }
 
 // SetQueueSize sets up a non-thread safe queue to support forking and

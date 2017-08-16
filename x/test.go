@@ -40,13 +40,12 @@ type TestCases []TestCase
 
 // TestCase is a test case for a stackvm.
 type TestCase struct {
-	Logf      func(format string, args ...interface{})
-	Name      string
-	Prog      []byte
-	Err       string
-	QueueSize int
-	Handler   func(*stackvm.Mach) ([]byte, error)
-	Result    TestCaseResult
+	Logf    func(format string, args ...interface{})
+	Name    string
+	Prog    []byte
+	Err     string
+	Handler func(*stackvm.Mach) ([]byte, error)
+	Result  TestCaseResult
 }
 
 // TestCaseResult represents an expectation for TestCase.Results.  Both of the
@@ -158,13 +157,6 @@ func (t testCaseRun) contextLog(m *stackvm.Mach) func(string, ...interface{}) {
 	return logf
 }
 
-func (t testCaseRun) queueSize() int {
-	if t.QueueSize <= 0 {
-		return 10
-	}
-	return t.QueueSize
-}
-
 func (t *testCaseRun) init() {
 	if t.Logf == nil {
 		t.Logf = t.TB.Logf
@@ -180,7 +172,7 @@ func (t testCaseRun) bench() {
 	require.NoError(t, err, "unexpected build error")
 	fin := t.Result.start(t.TB, m)
 	if h, ok := fin.(stackvm.Handler); ok {
-		m.SetHandler(t.queueSize(), h)
+		m.SetHandler(h)
 	}
 	t.checkError(m.Run())
 	fin.finish(m)
@@ -195,7 +187,7 @@ func (t testCaseRun) canaryFailed() bool {
 	}
 	fin := t.Result.start(t.TB, m)
 	if h, ok := fin.(stackvm.Handler); ok {
-		m.SetHandler(t.queueSize(), h)
+		m.SetHandler(h)
 	}
 	t.checkError(m.Run())
 	fin.finish(m)
@@ -220,7 +212,7 @@ func (t testCaseRun) trace() {
 	require.NoError(t, err, "unexpected build error")
 	fin := t.Result.start(t.TB, m)
 	if h, ok := fin.(stackvm.Handler); ok {
-		m.SetHandler(t.queueSize(), h)
+		m.SetHandler(h)
 	}
 	t.checkError(m.Trace(trc))
 	fin.finish(m)
