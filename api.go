@@ -59,7 +59,6 @@ func New(prog []byte) (*Mach, error) {
 	p = p[n:]
 
 	m := Mach{
-		ctx:   defaultContext,
 		opc:   makeOpCache(len(p)),
 		pbp:   0,
 		psp:   _pspInit,
@@ -69,6 +68,7 @@ func New(prog []byte) (*Mach, error) {
 		limit: uint(opts.MaxOps),
 	}
 
+	m.init()
 	m.storeBytes(m.ip, p)
 	// TODO mark code segment, update data
 
@@ -462,8 +462,6 @@ func (m *Mach) Trace(t Tracer) error {
 	// the code below is essentially an
 	// instrumented copy of Mach.Run (with mach.run
 	// inlined)
-
-	m.init()
 
 	orig := m
 

@@ -58,13 +58,6 @@ type context struct {
 	queue
 }
 
-var defaultContext = context{
-	Handler:       defaultHandler,
-	queue:         noQueue,
-	machAllocator: machPoolAllocator,
-	pageAllocator: pagePoolAllocator,
-}
-
 // Mach is a stack machine.
 type Mach struct {
 	ctx      context // execution context
@@ -126,11 +119,21 @@ func (m *Mach) halted() (uint32, bool) {
 }
 
 func (m *Mach) init() {
+	if m.ctx.Handler == nil {
+		m.ctx.Handler = defaultHandler
+	}
+	if m.ctx.queue == nil {
+		m.ctx.queue = noQueue
+	}
+	if m.ctx.machAllocator == nil {
+		m.ctx.machAllocator = machPoolAllocator
+	}
+	if m.ctx.pageAllocator == nil {
+		m.ctx.pageAllocator = pagePoolAllocator
+	}
 }
 
 func (m *Mach) run() (*Mach, error) {
-	m.init()
-
 repeat:
 	// live
 	for m.err == nil {
