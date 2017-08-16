@@ -79,3 +79,14 @@ func (pfl *pageFreeList) AllocPage() *page {
 	}
 	return &page{}
 }
+
+var defaultMachAllocator machAllocator = _defaultMachAllocator{}
+var defaultPageAllocator pageAllocator = _defaultPageAllocator{}
+
+type _defaultMachAllocator struct{}
+type _defaultPageAllocator struct{}
+
+func (dmfl _defaultMachAllocator) FreeMach(m *Mach)          {}
+func (dpfl _defaultPageAllocator) FreePage(pg *page)         {}
+func (dmfl _defaultMachAllocator) AllocMach() (*Mach, error) { return &Mach{}, nil }
+func (dpfl _defaultPageAllocator) AllocPage() *page          { return &page{} }
