@@ -462,11 +462,11 @@ func (m *Mach) SetQueueSize(n int) {
 	const pagesPerMachineGuess = 4
 	m.ctx.queue = newRunq(n)
 	if m.ctx.machAllocator == nil ||
-		m.ctx.machAllocator == machPoolAllocator {
+		m.ctx.machAllocator == defaultMachAllocator {
 		m.ctx.machAllocator = makeMachFreeList(n)
 	}
 	if m.ctx.pageAllocator == nil ||
-		m.ctx.pageAllocator == pagePoolAllocator {
+		m.ctx.pageAllocator == defaultPageAllocator {
 		m.ctx.pageAllocator = makePageFreeList(n * pagesPerMachineGuess)
 	}
 }

@@ -126,10 +126,10 @@ func (m *Mach) init() {
 		m.ctx.queue = noQueue
 	}
 	if m.ctx.machAllocator == nil {
-		m.ctx.machAllocator = machPoolAllocator
+		m.ctx.machAllocator = defaultMachAllocator
 	}
 	if m.ctx.pageAllocator == nil {
-		m.ctx.pageAllocator = pagePoolAllocator
+		m.ctx.pageAllocator = defaultPageAllocator
 	}
 }
 
