@@ -125,7 +125,11 @@ func (m *Mach) halted() (uint32, bool) {
 	return 0, false
 }
 
+func (m *Mach) init() {
+}
+
 func (m *Mach) run() (*Mach, error) {
+	m.init()
 
 repeat:
 	// live

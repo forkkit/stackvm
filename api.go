@@ -462,6 +462,9 @@ func (m *Mach) Trace(t Tracer) error {
 	// the code below is essentially an
 	// instrumented copy of Mach.Run (with mach.run
 	// inlined)
+
+	m.init()
+
 	orig := m
 
 	fixTracer(t, m)
