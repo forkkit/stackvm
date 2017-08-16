@@ -409,7 +409,7 @@ func (o Op) String() string {
 
 // Tracer returns the current Tracer that the machine is running under, if any.
 func (m *Mach) Tracer() Tracer {
-	if mt, ok := m.ctx.(machTracer); ok {
+	if mt, ok := m.ctx.(*machTracer); ok {
 		return mt.t
 	}
 	return nil
@@ -423,10 +423,10 @@ type machTracer struct {
 
 func fixTracer(t Tracer, m *Mach) {
 	ctx := m.ctx
-	for mt, ok := ctx.(machTracer); ok; mt, ok = ctx.(machTracer) {
+	for mt, ok := ctx.(*machTracer); ok; mt, ok = ctx.(*machTracer) {
 		ctx = mt.context
 	}
-	m.ctx = machTracer{ctx, t, m}
+	m.ctx = &machTracer{ctx, t, m}
 }
 
 // SetHandler allocates a pending queue and sets a result handling
@@ -437,7 +437,7 @@ func (m *Mach) SetHandler(queueSize int, h Handler) {
 	m.ctx = newRunq(h, queueSize)
 }
 
-func (mt machTracer) Enqueue(n *Mach) error {
+func (mt *machTracer) Enqueue(n *Mach) error {
 	mt.t.Queue(mt.m, n)
 	fixTracer(mt.t, n)
 	return mt.context.Enqueue(n)
