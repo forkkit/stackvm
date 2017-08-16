@@ -447,7 +447,13 @@ func fixTracer(t Tracer, m *Mach) {
 // point to running more than one machine.
 func (m *Mach) SetHandler(queueSize int, h Handler) {
 	m.ctx.Handler = h
-	m.ctx.queue = newRunq(queueSize)
+	m.SetQueueSize(queueSize)
+}
+
+// SetQueueSize sets up a non-thread safe queue to support forking and
+// branching. Without a queue, the fork and branch instructions will fail.
+func (m *Mach) SetQueueSize(n int) {
+	m.ctx.queue = newRunq(n)
 }
 
 func (mt *machTracer) Enqueue(n *Mach) error {
