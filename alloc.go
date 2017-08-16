@@ -49,3 +49,33 @@ var (
 	machPoolAllocator machAllocator = _machPoolAllocator{}
 	pagePoolAllocator pageAllocator = _pagePoolAllocator{}
 )
+
+func makeMachFreeList(n int) *machFreeList { return &machFreeList{make([]*Mach, 0, n)} }
+func makePageFreeList(n int) *pageFreeList { return &pageFreeList{make([]*page, 0, n)} }
+
+type machFreeList struct{ f []*Mach }
+type pageFreeList struct{ f []*page }
+
+func (mfl *machFreeList) FreeMach(m *Mach)  { mfl.f = append(mfl.f, m) }
+func (pfl *pageFreeList) FreePage(pg *page) { pfl.f = append(pfl.f, pg) }
+
+func (mfl *machFreeList) AllocMach() (*Mach, error) {
+	if i := len(mfl.f) - 1; i >= 0 {
+		m := mfl.f[i]
+		mfl.f = mfl.f[:i]
+		return m, nil
+	}
+	return &Mach{}, nil
+}
+
+func (pfl *pageFreeList) AllocPage() *page {
+	if i := len(pfl.f) - 1; i >= 0 {
+		pg := pfl.f[i]
+		pfl.f = pfl.f[:i]
+		for i := range pg.d {
+			pg.d[i] = 0
+		}
+		return pg
+	}
+	return &page{}
+}
