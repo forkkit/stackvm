@@ -125,7 +125,9 @@ var ops = [128]opDef{
 	offop("branch"), offop("bnz"), offop("bz"),
 	noop, noop, noop, noop, noop,
 	// 0x58
-	noop, noop, noop, noop, noop, noop, noop, noop,
+	justop("bitnot"), valop("bitand"), valop("bitor"), valop("bitxor"),
+	valop("shiftl"), valop("shiftr"),
+	noop, noop,
 	// 0x60
 	noop, noop, noop, noop, noop, noop, noop, noop,
 	// 0x68

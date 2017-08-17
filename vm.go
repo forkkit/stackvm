@@ -415,6 +415,52 @@ func (m *Mach) step() {
 	case opCodeGte | opCodeWithImm:
 		m.pa = bool2uint32(m.pa >= oc.arg)
 
+	// bitwise manipulation
+	case opCodeBitnot:
+		m.pa = ^m.pa
+
+	case opCodeBitand:
+		b, err := m.pop()
+		if err == nil {
+			m.pa &= b
+		}
+		m.err = err
+	case opCodeBitor:
+		b, err := m.pop()
+		if err == nil {
+			m.pa |= b
+		}
+		m.err = err
+	case opCodeBitxor:
+		b, err := m.pop()
+		if err == nil {
+			m.pa ^= b
+		}
+		m.err = err
+	case opCodeShiftl:
+		b, err := m.pop()
+		if err == nil {
+			m.pa <<= b
+		}
+		m.err = err
+	case opCodeShiftr:
+		b, err := m.pop()
+		if err == nil {
+			m.pa >>= b
+		}
+		m.err = err
+
+	case opCodeBitand | opCodeWithImm:
+		m.pa &= oc.arg
+	case opCodeBitor | opCodeWithImm:
+		m.pa |= oc.arg
+	case opCodeBitxor | opCodeWithImm:
+		m.pa ^= oc.arg
+	case opCodeShiftl | opCodeWithImm:
+		m.pa <<= oc.arg
+	case opCodeShiftr | opCodeWithImm:
+		m.pa >>= oc.arg
+
 	// control stack
 	case opCodeMark:
 		m.err = m.cpush(m.ip)

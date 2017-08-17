@@ -145,3 +145,75 @@ func TestMach_data_refs(t *testing.T) {
 		},
 	}.Run(t)
 }
+
+func TestMach_bitwise_ops(t *testing.T) {
+	TestCases{
+		{
+			Name: "masking",
+			Prog: MustAssemble(
+				0xdead, "push", 16, "shiftl",
+				0xbeef, "bitor",
+				"dup", 0xdeadbeef, "eq", 1, "hz",
+
+				"dup", 0xffff, "bitand",
+				0xbeef, "eq", 1, "hz",
+
+				"dup",
+				0xffff, "push", "bitnot", "bitand",
+				16, "shiftr",
+				0xdead, "eq", 1, "hz",
+
+				"halt",
+			),
+		},
+
+		{
+			Name: "bitand",
+			Prog: MustAssemble(
+				0xff, "push", 0x12, "push", "bitand",
+				0x12, "eq", 1, "hz",
+				0x0f, "push", 0x12, "bitand",
+				0x02, "eq", 1, "hz",
+				"halt",
+			),
+		},
+
+		{
+			Name: "bitor",
+			Prog: MustAssemble(
+				1, "push", 2, "push", "bitor",
+				3, "eq", 1, "hz",
+				3, "push", 6, "bitor",
+				7, "eq", 1, "hz",
+				"halt",
+			),
+		},
+
+		{
+			Name: "bitxor",
+			Prog: MustAssemble(
+				0x42, "push",
+				0x99, "push", "bitxor",
+				0xed, "bitxor",
+				"dup", 0x42^0x99^0xed, "eq", 1, "hz",
+
+				"dup",
+				0x99, "bitxor",
+				0xed, "bitxor",
+				0x42, "eq", 1, "hz",
+
+				"dup",
+				0xed, "bitxor",
+				0x42, "bitxor",
+				0x99, "eq", 1, "hz",
+
+				"dup",
+				0x42, "bitxor",
+				0x99, "bitxor",
+				0xed, "eq", 1, "hz",
+
+				"halt",
+			),
+		},
+	}.Run(t)
+}

@@ -52,7 +52,7 @@ For bleeding edge, see the [`dev`][dev] branch.
 - ops:
   - consolidate dispatch in Mach.step; fix latent bug around mutating invalid
     m.pa, when it should be an underflow
-  - missing bitwise ops (shift, and, or, xor, etc
+  - bit vector testing/setting
   - missing op to dump regs (ip, \[cp\]\[bs\]p, to (c)stack
   - forking/branching call/ret
 - unsure if should add subroutine definition support to the assembler, or just
