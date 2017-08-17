@@ -622,6 +622,8 @@ func (m *Mach) step() {
 		}
 		m.err = err
 
+	default:
+		m.err = fmt.Errorf("unimplemented op %v", oc.code)
 	}
 }
 
