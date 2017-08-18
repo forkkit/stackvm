@@ -741,14 +741,6 @@ func (m *Mach) cbranch() error {
 	return m.jumpTo(ip)
 }
 
-func (m *Mach) loop() error {
-	p, err := m.cRef(0)
-	if err != nil {
-		return err
-	}
-	return m.jumpTo(*p)
-}
-
 func (m *Mach) call(ip uint32) error {
 	if ip >= m.pbp && ip <= m.cbp {
 		return errSegfault
