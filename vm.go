@@ -237,14 +237,7 @@ func (m *Mach) step() {
 
 	// memory
 	case opCodeFetch:
-		addr, err := m.pop()
-		if err == nil {
-			val, err := m.fetch(addr)
-			if err == nil {
-				err = m.push(val)
-			}
-		}
-		m.err = err
+		m.pa, m.err = m.fetch(m.pa) // TODO: underflow check
 
 	case opCodeStore:
 		val, err := m.pop()
