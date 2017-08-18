@@ -33,6 +33,7 @@ For bleeding edge, see the [`dev`][dev] branch.
 
 # TODO
 
+- make op definitions more self-documenting
 - breakup the Tracer interface:
   - Observer factors out for just lifecycle (Begin,End,Queue,Handle)
   - Tracer is an Observer with per-op observability: Before and After
