@@ -1,5 +1,7 @@
 package stackvm
 
+import "fmt"
+
 type op func(*Mach) error
 
 type opDecoder func(arg uint32, have bool) op
@@ -38,7 +40,7 @@ func (k opImmKind) String() string {
 	case opImmOffset:
 		return "ImmediateOffset"
 	}
-	return "InvalidImmediate"
+	return fmt.Sprintf("InvalidImmediate<%d>", k)
 }
 
 type opDef struct {
