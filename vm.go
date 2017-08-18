@@ -486,43 +486,6 @@ func (m *Mach) step() {
 		}
 		m.err = err
 
-	// control flow: loops
-	case opCodeLoop:
-		p, err := m.cRef(0)
-		if err == nil {
-			err = m.jumpTo(*p)
-		}
-		m.err = err
-
-	case opCodeLnz:
-		p, err := m.cRef(0)
-		if err == nil {
-			val, e2 := m.pop()
-			if e2 == nil {
-				if val != 0 {
-					e2 = m.jumpTo(*p)
-				} else {
-					e2 = m.cdrop()
-				}
-			}
-			err = e2
-		}
-		m.err = err
-	case opCodeLz:
-		p, err := m.cRef(0)
-		if err == nil {
-			val, e2 := m.pop()
-			if e2 == nil {
-				if val == 0 {
-					e2 = m.jumpTo(*p)
-				} else {
-					e2 = m.cdrop()
-				}
-			}
-			err = e2
-		}
-		m.err = err
-
 	// control flow: calls
 	case opCodeCall:
 		val, err := m.pop()
