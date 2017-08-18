@@ -215,5 +215,38 @@ func TestMach_bitwise_ops(t *testing.T) {
 				"halt",
 			),
 		},
+
+		{
+			Name: "bit set & test & clear",
+			Prog: MustAssemble(
+				// set some bits
+				40, "push", ":vec", "bitset",
+				42, "push", ":vec", "push", "bitset",
+				99, "push", ":vec", "bitset",
+
+				// test for them, and some near misses
+				39, "push", ":vec", "bitest", 1, "hnz",
+				40, "push", ":vec", "bitest", 1, "hz",
+				41, "push", ":vec", "bitest", 1, "hnz",
+				42, "push", ":vec", "push", "bitest", 1, "hz",
+				43, "push", ":vec", "push", "bitest", 1, "hnz",
+				98, "push", ":vec", "bitest", 1, "hnz",
+				99, "push", ":vec", "bitest", 1, "hz",
+				100, "push", ":vec", "bitest", 1, "hnz",
+
+				// clear some bits
+				42, "push", ":vec", "bitost",
+				99, "push", ":vec", "push", "bitost",
+
+				// test that they're now cleared
+				42, "push", ":vec", "push", "bitest", 1, "hnz",
+				99, "push", ":vec", "bitest", 1, "hnz",
+
+				"halt",
+
+				// 4 * 32 = 128 bits
+				"vec:", ".data", ".alloc", 4,
+			),
+		},
 	}.Run(t)
 }

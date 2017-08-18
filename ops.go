@@ -129,7 +129,10 @@ var ops = [128]opDef{
 	valop("shiftl"), valop("shiftr"),
 	noop, noop,
 	// 0x60
-	noop, noop, noop, noop, noop, noop, noop, noop,
+	addrop("bitest"),
+	addrop("bitset"),
+	addrop("bitost"),
+	noop, noop, noop, noop, noop,
 	// 0x68
 	noop, noop, noop, noop, noop, noop, noop, noop,
 	// 0x70

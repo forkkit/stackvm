@@ -461,6 +461,102 @@ func (m *Mach) step() {
 	case opCodeShiftr | opCodeWithImm:
 		m.pa >>= oc.arg
 
+	// bitvector test & set
+	case opCodeBitest:
+		addr, err := m.pop()
+		if err == nil {
+			n := m.pa // TODO: underflow check
+			addr += n / 32
+			n %= 32
+			m.pa, err = m.fetch(addr)
+			if err == nil {
+				m.pa = (m.pa & (1 << n)) >> n
+			}
+		}
+		m.err = err
+
+	case opCodeBitest | opCodeWithImm:
+		addr := oc.arg
+		n := m.pa // TODO: underflow check
+		addr += n / 32
+		n %= 32
+		var err error
+		m.pa, err = m.fetch(addr)
+		if err == nil {
+			m.pa = (m.pa & (1 << n)) >> n
+		}
+		m.err = err
+
+	case opCodeBitset:
+		addr, err := m.pop()
+		if err != nil {
+			m.err = err
+			break
+		}
+		n, err := m.pop()
+		if err != nil {
+			m.err = err
+			break
+		}
+		addr += n / 32
+		n %= 32
+		p, err := m.ref(addr)
+		if err != nil {
+			m.err = err
+			break
+		}
+		*p |= (1 << n)
+
+	case opCodeBitset | opCodeWithImm:
+		n, err := m.pop()
+		if err != nil {
+			m.err = err
+			break
+		}
+		addr := oc.arg + n/32
+		n %= 32
+		p, err := m.ref(addr)
+		if err != nil {
+			m.err = err
+			break
+		}
+		*p |= (1 << n)
+
+	case opCodeBitost:
+		addr, err := m.pop()
+		if err != nil {
+			m.err = err
+			break
+		}
+		n, err := m.pop()
+		if err != nil {
+			m.err = err
+			break
+		}
+		addr += n / 32
+		n %= 32
+		p, err := m.ref(addr)
+		if err != nil {
+			m.err = err
+			break
+		}
+		*p &= ^(1 << n)
+
+	case opCodeBitost | opCodeWithImm:
+		n, err := m.pop()
+		if err != nil {
+			m.err = err
+			break
+		}
+		addr := oc.arg + n/32
+		n %= 32
+		p, err := m.ref(addr)
+		if err != nil {
+			m.err = err
+			break
+		}
+		*p &= ^(1 << n)
+
 	// control stack
 	case opCodeMark:
 		m.err = m.cpush(m.ip)
