@@ -29,6 +29,20 @@ const (
 func (k opImmKind) kind() opImmKind { return k & opImmType }
 func (k opImmKind) required() bool  { return (k & opImmReq) != 0 }
 
+func (k opImmKind) short() string {
+	switch k {
+	case opImmNone:
+		return ""
+	case opImmVal:
+		return "val"
+	case opImmAddr:
+		return "addr"
+	case opImmOffset:
+		return "offset"
+	}
+	return fmt.Sprintf("Invalid<%d>", k)
+}
+
 func (k opImmKind) String() string {
 	switch k {
 	case opImmNone:
