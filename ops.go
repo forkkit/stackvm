@@ -112,7 +112,7 @@ var ops = [128]opDef{
 	justop("mark"), noop, noop, noop,
 	// 0x30
 	offop("jump"), offop("jnz"), offop("jz"),
-	justop("loop"), justop("lnz"), justop("lz"),
+	noop, noop, noop,
 	addrop("call"), justop("ret"),
 	// 0x38
 	noop, noop, noop, noop, noop, noop, noop, noop,
