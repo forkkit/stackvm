@@ -45,14 +45,14 @@ func TestMach_operational_errors(t *testing.T) {
 	TestCases{
 		{
 			Name: "invalid op code",
-			Err:  "invalid op code:0x70",
+			Err:  "invalid op UNDEFINED<0x70>",
 			Prog: []byte{
 				0x00,       // version
 				0xc0, 0x01, // stack size
 				0x7f, // end-of-options
 				0x70, // undefined op code
 			},
-			Result: Result{Err: "invalid op code:0x70"},
+			Result: Result{Err: "invalid op UNDEFINED<0x70>"},
 		},
 		{
 			Name: "crash: explicit",

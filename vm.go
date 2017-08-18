@@ -650,9 +650,9 @@ func (m *Mach) validate(code opCode, arg uint32) error {
 	def := ops[code.code()]
 	if def.name == "" {
 		if have {
-			return fmt.Errorf("invalid op code:%#02x arg:%#08x", code, arg)
+			return fmt.Errorf("invalid op %v arg:%#08x", code, arg)
 		}
-		return fmt.Errorf("invalid op code:%#02x", code)
+		return fmt.Errorf("invalid op %v", code)
 	}
 
 	if have && def.imm.kind() == opImmNone {

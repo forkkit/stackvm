@@ -10,6 +10,18 @@ type opCode uint8
 
 const opCodeWithImm = opCode(0x80)
 
+func (c opCode) String() string {
+	od := ops[c.code()]
+	name := od.name
+	if name == "" {
+		name = fmt.Sprintf("UNDEFINED<%#02x>", c.code())
+	}
+	if c.hasImm() {
+		return fmt.Sprintf("%s-%s", od.imm.short(), name)
+	}
+	return name
+}
+
 func (c opCode) hasImm() bool { return (c & opCodeWithImm) != 0 }
 func (c opCode) code() uint8  { return uint8(c & ^opCodeWithImm) }
 
