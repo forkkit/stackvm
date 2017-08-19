@@ -119,6 +119,18 @@ func TestMach_operational_errors(t *testing.T) {
 			),
 			Result: Result{Err: "op count limit exceeded"},
 		},
+		{
+			Name: "maxcopies stops an infinite copy loop",
+			Prog: MustAssemble(
+				".maxCopies", 100,
+				"foo:", ":bar", "fork", 1, "halt",
+				"bar:", ":foo", "fork", 2, "halt",
+				3, "halt",
+			),
+			Result: Result{
+				Err: "max copies(100) exceeded",
+			}.WithExpectedHaltCodes(1, 2),
+		},
 	}.Run(t)
 }
 

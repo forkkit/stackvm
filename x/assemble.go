@@ -142,6 +142,18 @@ func (asm *assembler) handleMaxOps() error {
 	return nil
 }
 
+func (asm *assembler) handleMaxCopies() error {
+	n, err := asm.expectInt("maxCopies int")
+	if err != nil {
+		return err
+	}
+	if n < 0 {
+		return fmt.Errorf("invalid .maxCopies %v, must be non-negative", n)
+	}
+	asm.opts.MaxCopies = uint32(n)
+	return nil
+}
+
 func (asm *assembler) handleStackSize() error {
 	n, err := asm.expectInt("stackSize int")
 	if err != nil {
@@ -216,6 +228,8 @@ func (asm *assembler) handleDirective(name string) error {
 		return asm.handleQueueSize()
 	case "maxOps":
 		return asm.handleMaxOps()
+	case "maxCopies":
+		return asm.handleMaxCopies()
 	case "data":
 		asm.state = assemblerData
 		return nil
