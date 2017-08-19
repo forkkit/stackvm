@@ -52,7 +52,7 @@ type TestCase struct {
 // Result and Results types implement this interface, and can be used directly
 // to express simple expectations.
 type TestCaseResult interface {
-	start(tb testing.TB, m *stackvm.Mach) finisher
+	start(tb testing.TB) finisher
 }
 
 type finisher interface {
@@ -221,9 +221,9 @@ func (t testCaseRun) build() (m *stackvm.Mach, fin finisher, err error) {
 		t.Logf("Program to Load:")
 		t.logLines(hex.Dump(t.Prog))
 	}
+	fin = t.Result.start(t.TB)
 	m, err = stackvm.New(t.Prog)
 	if err == nil {
-		fin = t.Result.start(t.TB, m)
 		if h, ok := fin.(stackvm.Handler); ok {
 			m.SetHandler(h)
 		}
@@ -246,7 +246,7 @@ var NoResult = _NoResult{}
 type _NoResult struct{}
 type noResult struct{ testing.TB }
 
-func (nr _NoResult) start(tb testing.TB, m *stackvm.Mach) finisher { return noResult{tb} }
+func (nr _NoResult) start(tb testing.TB) finisher { return noResult{tb} }
 
 // WithExpectedHaltCodes creates a TestCaseResult that expects any number of
 // non-zero halt codes in addition to expecting no result values. If a machine
@@ -300,7 +300,7 @@ func (r Result) take(m *stackvm.Mach) (res Result, err error) {
 	return
 }
 
-func (r Result) start(tb testing.TB, m *stackvm.Mach) finisher { return &runResult{tb, r, false} }
+func (r Result) start(tb testing.TB) finisher { return &runResult{tb, r, false} }
 
 type runResult struct {
 	testing.TB
@@ -333,9 +333,7 @@ func (rr *runResult) result(actual Result) {
 // non-zero halt states.
 type Results []Result
 
-func (rs Results) start(tb testing.TB, m *stackvm.Mach) finisher {
-	return &runResults{tb, rs, 0}
-}
+func (rs Results) start(tb testing.TB) finisher { return &runResults{tb, rs, 0} }
 
 // WithExpectedHaltCodes creates a TestCaseResult that expects any number of
 // non-zero halt codes in addition to some normal results. If a machine exits
@@ -371,8 +369,8 @@ type filteredResults struct {
 	cs []resultChecker
 }
 
-func (frs filteredResults) start(tb testing.TB, m *stackvm.Mach) finisher {
-	fin := frs.TestCaseResult.start(tb, m)
+func (frs filteredResults) start(tb testing.TB) finisher {
+	fin := frs.TestCaseResult.start(tb)
 	return newFilteredRunResults(tb, fin, frs.cs)
 }
 
