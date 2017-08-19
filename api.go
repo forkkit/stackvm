@@ -83,7 +83,9 @@ var defaultContext = context{
 //
 // TODO: document operations.
 func New(prog []byte, h Handler) (*Mach, error) {
-	opts := MachOptions{}
+	opts := MachOptions{
+		QueueSize: defaultQueueSize,
+	}
 
 	n, err := opts.read(prog)
 	if err != nil {
@@ -322,6 +324,7 @@ const (
 // New).
 type MachOptions struct {
 	StackSize uint16
+	QueueSize uint32
 	MaxOps    uint32
 }
 
