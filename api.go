@@ -51,7 +51,10 @@ var defaultContext = context{
 // - 0x01 stack size: its required parameter declares the amount of memory
 //   given to the parameter and control stacks (see below for details). The
 //   size must be a multiple of 4 (32-bit word size). Default: 0x40.
-// - 0x02 max ops: its optional parameter declares a limit on the number of
+// - 0x02 queue size: its required parameter specifies a maximum limit on how
+//   many machine copies may be queued. Once this limit is reached operations
+//   like fork and branch fail with queue-full error. Default: 10.
+// - 0x03 max ops: its optional parameter declares a limit on the number of
 //   program operations that can be executed by a single machine (the runtime
 //   operation count is not shared between machine copies).
 // - 0x7f end: indicates the end of options (beginning of program); must not
@@ -310,10 +313,15 @@ const (
 	// multiple of 4 (32-bit word size). Default: 0x40.
 	optCodeStackSize = 0x01
 
+	// its required parameter specifies a maximum limit on how many machine
+	// copies may be queued. Once this limit is reached operations like fork
+	// and branch fail with queue-full error. Default: 10.
+	optCodeQueueSize = 0x02
+
 	// its optional parameter declares a limit on the number of program
 	// operations that can be executed by a single machine (the runtime
 	// operation count is not shared between machine copies).
-	optCodeMaxOps = 0x02
+	optCodeMaxOps = 0x03
 
 	// indicates the end of options (beginning of program); must not have a
 	// parameter.
@@ -356,6 +364,9 @@ func (opts *MachOptions) read(buf []byte) (n int, err error) {
 			}
 			opts.StackSize = uint16(arg)
 
+		case 0x80 | optCodeQueueSize:
+			opts.QueueSize = arg
+
 		case optCodeMaxOps:
 			opts.MaxOps = 0
 
@@ -377,6 +388,9 @@ func (opts MachOptions) EncodeInto(p []byte) (n int) {
 	n += putVarCode(p[n:], 0, optCodeVersion)
 	if opts.StackSize != 0 {
 		n += putVarCode(p[n:], uint32(opts.StackSize), 0x80|optCodeStackSize)
+	}
+	if opts.QueueSize != 0 {
+		n += putVarCode(p[n:], uint32(opts.QueueSize), 0x80|optCodeQueueSize)
 	}
 	if opts.MaxOps != 0 {
 		n += putVarCode(p[n:], opts.MaxOps, 0x80|optCodeMaxOps)
