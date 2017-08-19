@@ -242,6 +242,18 @@ func TestMach_bitwise_ops(t *testing.T) {
 				42, "push", ":vec", "push", "bitest", 1, "hnz",
 				99, "push", ":vec", "bitest", 1, "hnz",
 
+				// atomic sets
+				43, "push", ":vec", "push", "bitseta", 1, "hz",
+				43, "push", ":vec", "push", "bitseta", 1, "hnz",
+				44, "push", ":vec", "bitseta", 1, "hz",
+				44, "push", ":vec", "bitseta", 1, "hnz",
+
+				// atomic clears
+				43, "push", ":vec", "push", "bitosta", 1, "hz",
+				43, "push", ":vec", "push", "bitosta", 1, "hnz",
+				44, "push", ":vec", "bitosta", 1, "hz",
+				44, "push", ":vec", "bitosta", 1, "hnz",
+
 				"halt",
 
 				// 4 * 32 = 128 bits

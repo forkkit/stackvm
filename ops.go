@@ -132,7 +132,9 @@ var ops = [128]opDef{
 	addrop("bitest"),
 	addrop("bitset"),
 	addrop("bitost"),
-	noop, noop, noop, noop, noop,
+	addrop("bitseta"),
+	addrop("bitosta"),
+	noop, noop, noop,
 	// 0x68
 	noop, noop, noop, noop, noop, noop, noop, noop,
 	// 0x70

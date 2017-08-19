@@ -557,6 +557,84 @@ func (m *Mach) step() {
 		}
 		*p &= ^(1 << n)
 
+	case opCodeBitseta:
+		addr, err := m.pop()
+		if err != nil {
+			m.err = err
+			break
+		}
+		n := m.pa // TODO: underflow check
+		addr += n / 32
+		n %= 32
+		p, err := m.ref(addr)
+		if err != nil {
+			m.err = err
+			break
+		}
+		nm := uint32(1) << n
+		if (*p & nm) != 0 {
+			m.pa = 0
+		} else {
+			*p |= nm
+			m.pa = 1
+		}
+
+	case opCodeBitseta | opCodeWithImm:
+		n := m.pa // TODO: underflow check
+		addr := oc.arg + n/32
+		n %= 32
+		p, err := m.ref(addr)
+		if err != nil {
+			m.err = err
+			break
+		}
+		nm := uint32(1) << n
+		if (*p & nm) != 0 {
+			m.pa = 0
+		} else {
+			*p |= nm
+			m.pa = 1
+		}
+
+	case opCodeBitosta:
+		addr, err := m.pop()
+		if err != nil {
+			m.err = err
+			break
+		}
+		n := m.pa // TODO: underflow check
+		addr += n / 32
+		n %= 32
+		p, err := m.ref(addr)
+		if err != nil {
+			m.err = err
+			break
+		}
+		nm := uint32(1) << n
+		if (*p & nm) != 0 {
+			*p &= ^nm
+			m.pa = 1
+		} else {
+			m.pa = 0
+		}
+
+	case opCodeBitosta | opCodeWithImm:
+		n := m.pa // TODO: underflow check
+		addr := oc.arg + n/32
+		n %= 32
+		p, err := m.ref(addr)
+		if err != nil {
+			m.err = err
+			break
+		}
+		nm := uint32(1) << n
+		if (*p & nm) != 0 {
+			*p &= ^nm
+			m.pa = 1
+		} else {
+			m.pa = 0
+		}
+
 	// control stack
 	case opCodeMark:
 		m.err = m.cpush(m.ip)
