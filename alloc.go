@@ -1,5 +1,7 @@
 package stackvm
 
+import "fmt"
+
 type machAllocator interface {
 	AllocMach() (*Mach, error)
 	FreeMach(*Mach)
@@ -50,3 +52,20 @@ func (dmfl _defaultMachAllocator) FreeMach(m *Mach)          {}
 func (dpfl _defaultPageAllocator) FreePage(pg *page)         {}
 func (dmfl _defaultMachAllocator) AllocMach() (*Mach, error) { return &Mach{}, nil }
 func (dpfl _defaultPageAllocator) AllocPage() *page          { return &page{} }
+
+type _maxMachCopiesAllocator struct {
+	copies, limit int
+	machAllocator
+}
+
+func maxMachCopiesAllocator(n int, ma machAllocator) machAllocator {
+	return &_maxMachCopiesAllocator{0, n, ma}
+}
+
+func (mca *_maxMachCopiesAllocator) AllocMach() (*Mach, error) {
+	if mca.copies >= mca.limit {
+		return nil, fmt.Errorf("max copies(%d) exceeded", mca.limit)
+	}
+	mca.copies++
+	return mca.machAllocator.AllocMach()
+}

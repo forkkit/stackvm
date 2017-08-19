@@ -57,6 +57,10 @@ var defaultContext = context{
 // - 0x03 max ops: its optional parameter declares a limit on the number of
 //   program operations that can be executed by a single machine (the runtime
 //   operation count is not shared between machine copies).
+// - 0x04 max copies: its optional parameter declares a limit on the number
+//   of machine copies that may be made in total. Well behaved programs
+//   shouldn't need to specify this option, it should be mostly used for
+//   debugging. Default: 0.
 // - 0x7f end: indicates the end of options (beginning of program); must not
 //   have a parameter.
 //
@@ -114,6 +118,9 @@ func New(prog []byte, h Handler) (*Mach, error) {
 			queue:         newRunq(n),
 			machAllocator: makeMachFreeList(n),
 			pageAllocator: makePageFreeList(n * pagesPerMachineGuess),
+		}
+		if opts.MaxCopies > 0 {
+			m.ctx.machAllocator = maxMachCopiesAllocator(int(opts.MaxCopies), m.ctx.machAllocator)
 		}
 	}
 
@@ -323,6 +330,11 @@ const (
 	// operation count is not shared between machine copies).
 	optCodeMaxOps = 0x03
 
+	// its optional parameter declares a limit on the number of machine copies
+	// that may be made in total. Well behaved programs shouldn't need to
+	// specify this option, it should be mostly used for debugging. Default: 0.
+	optCodeMaxCopies = 0x04
+
 	// indicates the end of options (beginning of program); must not have a
 	// parameter.
 	optCodeEnd = 0x7f
@@ -334,6 +346,7 @@ type MachOptions struct {
 	StackSize uint16
 	QueueSize uint32
 	MaxOps    uint32
+	MaxCopies uint32
 }
 
 func (opts *MachOptions) read(buf []byte) (n int, err error) {
@@ -373,6 +386,12 @@ func (opts *MachOptions) read(buf []byte) (n int, err error) {
 		case 0x80 | optCodeMaxOps:
 			opts.MaxOps = arg
 
+		case optCodeMaxCopies:
+			opts.MaxCopies = 0
+
+		case 0x80 | optCodeMaxCopies:
+			opts.MaxCopies = arg
+
 		case optCodeEnd:
 			return
 
@@ -394,6 +413,9 @@ func (opts MachOptions) EncodeInto(p []byte) (n int) {
 	}
 	if opts.MaxOps != 0 {
 		n += putVarCode(p[n:], opts.MaxOps, 0x80|optCodeMaxOps)
+	}
+	if opts.MaxCopies != 0 {
+		n += putVarCode(p[n:], opts.MaxCopies, 0x80|optCodeMaxCopies)
 	}
 	n += putVarCode(p[n:], 0, optCodeEnd)
 	return
