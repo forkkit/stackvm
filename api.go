@@ -28,34 +28,61 @@ var defaultContext = context{
 	pageAllocator: defaultPageAllocator,
 }
 
-// New creates a new stack machine with a given program loaded. The prog byte
-// array is a sequence of varint encoded unsigned integers (after fixed encoded
-// options).
+// New creates a new stack machine with a given program loaded. It takes a
+// varcoded (more on that below) program, and an optional handler.
 //
-// The first fixed byte is a version number, which must currently be 0x00.
+// When a non-nil handler is given, a queue is setup to handle copies of the
+// machine at runtime. This handler will be called with each one after it has
+// halted (explicitly, crashed, or due to an error). Without a queue, machine
+// copy operations will fail (such as fork and branch).
 //
-// The next two bytes encode a 16-bit unsigned stacksize. That much space will
-// be reserved in memory for the Parameter Stack (PS) and Control Stack (CS);
-// it must be a multiple of the page size.
+// The "varcode" encoding scheme used is a variation on a varint:
+// - the final byte of the varint (the one without the high bit set) encodes a
+//   7-bit code-word
+// - prior bytes (with their high bits set) encode an associated uint32 value
 //
-// PS grows up from 0, the PS Base Pointer PBP, to at most stacksize bytes. CS
-// grows down from stacksize-1, the CS Base Pointer CBP, towards PS. The
-// address of the next slot for PS (resp CS) is stored in the PS Stack Pointer,
-// or PSP (resp CSP).
+// This scheme is used first to encode options used to setup the machine, and
+// then to encode the program that the machine will run.
 //
-// Any push onto either PS or CS will fail with an overflow error when PSP ==
-// CSP. Similarly any pop from them will fail with an underflow error when
-// their SP meets their BP.
+// Valid option codes:
+// - 0x00 version: reserved for future use, where its parameter will be the
+//   required machine/program version; passing a version value is currently
+//   unsupported.
+// - 0x01 stack size: its required parameter declares the amount of memory
+//   given to the parameter and control stacks (see below for details). The
+//   size must be a multiple of 4 (32-bit word size) and defaults to 0x40 (64
+//   bytes or 1 memory page).
+// - 0x02 max ops: its optional parameter declares a limit on the number of
+//   program operations that can be executed by a single machine (the runtime
+//   operation count is not shared between machine copies).
+// - 0x7f end: indicates the end of options (beginning of program); must not
+//   have a parameter.
 //
-// The rest of prog is loaded in memory immediately after the stack space with
-// IP pointing at its first byte. Each varint encodes an operation, with the
-// lowest 7 bits being the opcode, while all higher bits may encode an
-// immediate argument.
+// The stack space, declared by above option or 0x40 default, is shared by the
+// Parameter Stack (PS) and Control Stack (CS) which grow towards each other:
+// - PS grows up from PBP=0 (PS Base Pointer) to at most stacksize bytes
+// - CS grows down from CBP=stacksize-1 (CS Base Pointer) towards PS
+// - the head of PS is stored in PSP (Parameter Stack Pointer)
+// - the head of CS is stored in CSP (Control Stack Pointer)
+// - if PSP and CSP would touch a stack overflow error occurs (reported against
+//   which ever stack tried to push a value)
+// - similarly an undeflow will occur if PSP would go under PBP (negative)
+// - likewise an undeflow happens if CSP would go over CBP
 //
-// For many non-control flow operations, any immediate argument is used in lieu
-// of popping a value from the parameter stack. Most control flow operations
-// use their immediate argument as an IP offset, however they will consume an
-// IP offset from the parameter stack if no immediate is given.
+// The rest of prog is loaded in memory immediately after the stack space.
+// Except for data sections, prog contains varcoded operations. Each operation
+// has a 7-bit opcode, and an optional 32-bit immediate value. Most operations
+// treat their immediate as an optional alternative to popping a value from the
+// parameter stack.
+//
+// The Instruction Pointer (IP) is initialized to point at the first byte after
+// the stack space (0x40 by default). Machine execution then happens (under
+// .Run or .Step) by decoding a varcoded operation at IP, and executing it. If
+// IP becomes corrupted (points to arbitrary memory), the machine will most
+// likely crash explicitly (since memory defaults to 0-filled, and the 0 opcode
+// is "crash") or halt with a decode error.
+//
+// TODO: document operations.
 func New(prog []byte, h Handler) (*Mach, error) {
 	opts := MachOptions{}
 
