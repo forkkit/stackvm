@@ -295,23 +295,32 @@ func (r Result) take(m *stackvm.Mach) (res Result, err error) {
 	return
 }
 
-func (r Result) start(tb testing.TB, m *stackvm.Mach) finisher { return runResult{tb, r} }
+func (r Result) start(tb testing.TB, m *stackvm.Mach) finisher { return &runResult{tb, r, false} }
 
 type runResult struct {
 	testing.TB
 	Result
+	got bool
 }
 
-func (rr runResult) finish(m *stackvm.Mach) {
-	require.NotNil(rr, m, "must have a final machine")
-	actual, err := rr.Result.take(m)
-	if assert.NoError(rr, err, "unexpected error taking final result") {
-		rr.result(actual)
+func (rr *runResult) finish(m *stackvm.Mach) {
+	if rr.got {
+		assert.Nil(rr, m, "expected singular result")
+		return
+	}
+	if assert.NotNil(rr, m, "must have a final machine") {
+		actual, err := rr.Result.take(m)
+		if assert.NoError(rr, err, "unexpected error taking final result") {
+			rr.result(actual)
+		}
 	}
 }
 
-func (rr runResult) result(actual Result) {
-	assert.Equal(rr, rr.Result, actual, "expected result")
+func (rr *runResult) result(actual Result) {
+	if assert.False(rr, rr.got, "expected singular result") {
+		assert.Equal(rr, rr.Result, actual, "expected result")
+		rr.got = true
+	}
 }
 
 // Results represents multiple expected results. It can be used as a
