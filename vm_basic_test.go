@@ -262,3 +262,36 @@ func TestMach_bitwise_ops(t *testing.T) {
 		},
 	}.Run(t)
 }
+
+func TestMach_queueSize(t *testing.T) {
+	TestCases{
+		{
+			Name: "exceeded",
+			Prog: MustAssemble(
+				".queueSize", 1,
+				":lol", "fork",
+				":wut", "fork",
+				0, "halt",
+				"lol:", 1, "halt",
+				"wut:", 2, "halt",
+				"halt",
+			),
+			Result: Result{
+				Err: "run queue full",
+			}.WithExpectedHaltCodes(1, 2),
+		},
+		{
+			Name: "sufficient",
+			Prog: MustAssemble(
+				".queueSize", 2,
+				":lol", "fork",
+				":wut", "fork",
+				0, "halt",
+				"lol:", 1, "halt",
+				"wut:", 2, "halt",
+				"halt",
+			),
+			Result: NoResult.WithExpectedHaltCodes(1, 2),
+		},
+	}.Run(t)
+}
