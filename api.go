@@ -1020,6 +1020,7 @@ func fixTracer(t Tracer, m *Mach) {
 	m.ctx.queue = mt
 }
 
+// TODO: lower to 1
 const defaultQueueSize = 10
 
 func (mt *machTracer) Enqueue(n *Mach) error {
