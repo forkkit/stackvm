@@ -368,8 +368,7 @@ type filteredResults struct {
 
 func (frs filteredResults) start(tb testing.TB, m *stackvm.Mach) finisher {
 	fin := frs.TestCaseResult.start(tb, m)
-	hndl, _ := fin.(handler)
-	return filteredRunResults{tb, fin, hndl, frs.cs}
+	return newFilteredRunResults(tb, fin, frs.cs)
 }
 
 type runResults struct {
@@ -419,7 +418,17 @@ type filteredRunResults struct {
 	cs []resultChecker
 }
 
-func (frrs filteredRunResults) Handle(m *stackvm.Mach) error {
+func newFilteredRunResults(tb testing.TB, fin finisher, cs []resultChecker) *filteredRunResults {
+	hndl, _ := fin.(handler)
+	return &filteredRunResults{
+		TB:       tb,
+		finisher: fin,
+		handler:  hndl,
+		cs:       cs,
+	}
+}
+
+func (frrs *filteredRunResults) Handle(m *stackvm.Mach) error {
 	for _, c := range frrs.cs {
 		if c.check(frrs.TB, m) {
 			return nil
@@ -431,7 +440,7 @@ func (frrs filteredRunResults) Handle(m *stackvm.Mach) error {
 	return nil
 }
 
-func (frrs filteredRunResults) finish(m *stackvm.Mach) {
+func (frrs *filteredRunResults) finish(m *stackvm.Mach) {
 	for _, c := range frrs.cs {
 		if c.check(frrs.TB, m) {
 			frrs.finisher.finish(nil)
