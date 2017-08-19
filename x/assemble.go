@@ -118,6 +118,18 @@ func (asm *assembler) scan() error {
 	return asm.buildRefs()
 }
 
+func (asm *assembler) handleQueueSize() error {
+	n, err := asm.expectInt("queueSize int")
+	if err != nil {
+		return err
+	}
+	if n < 0 {
+		return fmt.Errorf("invalid .queueSize %v, must be non-negative", n)
+	}
+	asm.opts.QueueSize = uint32(n)
+	return nil
+}
+
 func (asm *assembler) handleMaxOps() error {
 	n, err := asm.expectInt("maxOps int")
 	if err != nil {
@@ -200,6 +212,8 @@ func (asm *assembler) handleDirective(name string) error {
 		return asm.handleEntry()
 	case "stackSize":
 		return asm.handleStackSize()
+	case "queueSize":
+		return asm.handleQueueSize()
 	case "maxOps":
 		return asm.handleMaxOps()
 	case "data":
