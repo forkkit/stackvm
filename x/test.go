@@ -267,9 +267,11 @@ func (nr noResult) Handle(m *stackvm.Mach) error {
 }
 
 func (nr noResult) finish(m *stackvm.Mach) {
-	res, err := Result{}.take(m)
-	require.NoError(nr, err, "unexpected error taking final result")
-	assert.Equal(nr, Result{}, res, "expected empty result")
+	if m != nil {
+		res, err := Result{}.take(m)
+		require.NoError(nr, err, "unexpected error taking final result")
+		assert.Equal(nr, Result{}, res, "expected empty result")
+	}
 }
 
 // Result represents an expected or actual result within a TestCase. It can be
@@ -296,6 +298,7 @@ type runResult struct {
 }
 
 func (rr runResult) finish(m *stackvm.Mach) {
+	require.NotNil(rr, m, "must have a final machine")
 	actual, err := rr.Result.take(m)
 	require.NoError(rr, err, "unexpected error taking final result")
 	assert.Equal(rr, rr.Result, actual, "expected result")
@@ -409,6 +412,7 @@ func (frrs filteredRunResults) Handle(m *stackvm.Mach) error {
 func (frrs filteredRunResults) finish(m *stackvm.Mach) {
 	for _, c := range frrs.cs {
 		if c.check(frrs.TB, m) {
+			frrs.finisher.finish(nil)
 			return
 		}
 	}
