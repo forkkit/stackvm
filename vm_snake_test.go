@@ -182,7 +182,7 @@ func Test_snakeCube(t *testing.T) {
 		tc := TestCase{
 			Name:   fmt.Sprintf("snake %v", rows),
 			Prog:   MustAssemble(code...),
-			Result: NoResult{}.WithExpectedHaltCodes(1, 2, 3),
+			Result: NoResult.WithExpectedHaltCodes(1, 2, 3),
 		}
 		t.Run(tc.Name, tc.Run)
 	}
