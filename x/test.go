@@ -222,12 +222,8 @@ func (t testCaseRun) build() (m *stackvm.Mach, fin finisher, err error) {
 		t.logLines(hex.Dump(t.Prog))
 	}
 	fin = t.Result.start(t.TB)
-	m, err = stackvm.New(t.Prog)
-	if err == nil {
-		if h, ok := fin.(stackvm.Handler); ok {
-			m.SetHandler(h)
-		}
-	}
+	h, _ := fin.(stackvm.Handler)
+	m, err = stackvm.New(t.Prog, h)
 	return
 }
 

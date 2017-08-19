@@ -56,7 +56,7 @@ var defaultContext = context{
 // of popping a value from the parameter stack. Most control flow operations
 // use their immediate argument as an IP offset, however they will consume an
 // IP offset from the parameter stack if no immediate is given.
-func New(prog []byte) (*Mach, error) {
+func New(prog []byte, h Handler) (*Mach, error) {
 	opts := MachOptions{}
 
 	n, err := opts.read(prog)
@@ -73,6 +73,17 @@ func New(prog []byte) (*Mach, error) {
 		csp:   uint32(opts.StackSize) - 4,
 		ip:    uint32(opts.StackSize),
 		limit: uint(opts.MaxOps),
+	}
+
+	if h != nil {
+		const pagesPerMachineGuess = 4
+		n := int(opts.QueueSize)
+		m.ctx = context{
+			Handler:       h,
+			queue:         newRunq(n),
+			machAllocator: makeMachFreeList(n),
+			pageAllocator: makePageFreeList(n * pagesPerMachineGuess),
+		}
 	}
 
 	m.storeBytes(m.ip, prog[n:])
@@ -448,26 +459,6 @@ func fixTracer(t Tracer, m *Mach) {
 }
 
 const defaultQueueSize = 10
-
-// SetHandler sets a result handling function. Without a result handling
-// function, there's not much point to running more than one machine. If no
-// queue size has been set, a default 10-sized queue will be setup.
-func (m *Mach) SetHandler(h Handler) {
-	m.ctx.Handler = h
-	if m.ctx.queue == nil ||
-		m.ctx.queue == noQueue {
-		const pagesPerMachineGuess = 4
-		m.ctx.queue = newRunq(defaultQueueSize)
-		if m.ctx.machAllocator == nil ||
-			m.ctx.machAllocator == defaultMachAllocator {
-			m.ctx.machAllocator = makeMachFreeList(defaultQueueSize)
-		}
-		if m.ctx.pageAllocator == nil ||
-			m.ctx.pageAllocator == defaultPageAllocator {
-			m.ctx.pageAllocator = makePageFreeList(defaultQueueSize * pagesPerMachineGuess)
-		}
-	}
-}
 
 func (mt *machTracer) Enqueue(n *Mach) error {
 	mt.t.Queue(mt.m, n)
