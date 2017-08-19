@@ -305,7 +305,12 @@ type runResult struct {
 func (rr runResult) finish(m *stackvm.Mach) {
 	require.NotNil(rr, m, "must have a final machine")
 	actual, err := rr.Result.take(m)
-	require.NoError(rr, err, "unexpected error taking final result")
+	if assert.NoError(rr, err, "unexpected error taking final result") {
+		rr.result(actual)
+	}
+}
+
+func (rr runResult) result(actual Result) {
 	assert.Equal(rr, rr.Result, actual, "expected result")
 }
 
