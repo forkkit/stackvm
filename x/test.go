@@ -172,12 +172,8 @@ func (t *testCaseRun) init() {
 
 func (t testCaseRun) bench() {
 	t.init()
-	m, err := t.build()
+	m, fin, err := t.build()
 	require.NoError(t, err, "unexpected build error")
-	fin := t.Result.start(t.TB, m)
-	if h, ok := fin.(stackvm.Handler); ok {
-		m.SetHandler(h)
-	}
 	t.checkError(m.Run())
 	fin.finish(m)
 }
@@ -185,13 +181,9 @@ func (t testCaseRun) bench() {
 func (t testCaseRun) canaryFailed() bool {
 	t.init()
 	t.TB = &testing.T{}
-	m, err := t.build()
+	m, fin, err := t.build()
 	if err != nil {
 		return true
-	}
-	fin := t.Result.start(t.TB, m)
-	if h, ok := fin.(stackvm.Handler); ok {
-		m.SetHandler(h)
 	}
 	t.checkError(m.Run())
 	fin.finish(m)
@@ -211,13 +203,8 @@ func (t testCaseRun) trace() {
 			dumpMemFlag.Build(),
 		),
 	)
-
-	m, err := t.build()
+	m, fin, err := t.build()
 	require.NoError(t, err, "unexpected build error")
-	fin := t.Result.start(t.TB, m)
-	if h, ok := fin.(stackvm.Handler); ok {
-		m.SetHandler(h)
-	}
 	t.checkError(m.Trace(trc))
 	fin.finish(m)
 }
@@ -228,13 +215,20 @@ func (t testCaseRun) logLines(s string) {
 	}
 }
 
-func (t testCaseRun) build() (*stackvm.Mach, error) {
+func (t testCaseRun) build() (m *stackvm.Mach, fin finisher, err error) {
 	if dumpProgFlag {
 		// TODO: reconcile with stackvm/x/dumper
 		t.Logf("Program to Load:")
 		t.logLines(hex.Dump(t.Prog))
 	}
-	return stackvm.New(t.Prog)
+	m, err = stackvm.New(t.Prog)
+	if err == nil {
+		fin = t.Result.start(t.TB, m)
+		if h, ok := fin.(stackvm.Handler); ok {
+			m.SetHandler(h)
+		}
+	}
+	return
 }
 
 func (t testCaseRun) checkError(err error) {
