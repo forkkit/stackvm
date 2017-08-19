@@ -50,8 +50,7 @@ var defaultContext = context{
 //   unsupported.
 // - 0x01 stack size: its required parameter declares the amount of memory
 //   given to the parameter and control stacks (see below for details). The
-//   size must be a multiple of 4 (32-bit word size) and defaults to 0x40 (64
-//   bytes or 1 memory page).
+//   size must be a multiple of 4 (32-bit word size). Default: 0x40.
 // - 0x02 max ops: its optional parameter declares a limit on the number of
 //   program operations that can be executed by a single machine (the runtime
 //   operation count is not shared between machine copies).
@@ -295,10 +294,27 @@ func (o Op) Name() string {
 	return ops[o.Code].name
 }
 
+// Generates part of the New() documentation from the inline docs below.
+//go:generate python collect_docs.py -i api.go -o api.go optCode "^// Valid option codes:" "^//$"
+
 const (
-	optCodeVersion uint8 = iota
-	optCodeStackSize
-	optCodeMaxOps
+	// reserved for future use, where its parameter will be the required
+	// machine/program version; passing a version value is currently
+	// unsupported.
+	optCodeVersion uint8 = 0x00
+
+	// its required parameter declares the amount of memory given to the
+	// parameter and control stacks (see below for details). The size must be a
+	// multiple of 4 (32-bit word size). Default: 0x40.
+	optCodeStackSize = 0x01
+
+	// its optional parameter declares a limit on the number of program
+	// operations that can be executed by a single machine (the runtime
+	// operation count is not shared between machine copies).
+	optCodeMaxOps = 0x02
+
+	// indicates the end of options (beginning of program); must not have a
+	// parameter.
 	optCodeEnd = 0x7f
 )
 
