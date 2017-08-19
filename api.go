@@ -50,16 +50,13 @@ func (name NoSuchOpError) Error() string {
 // use their immediate argument as an IP offset, however they will consume an
 // IP offset from the parameter stack if no immediate is given.
 func New(prog []byte) (*Mach, error) {
-	p := prog
-
-	opts, n, err := readMachOptions(p)
+	opts, n, err := readMachOptions(prog)
 	if err != nil {
 		return nil, err
 	}
-	p = p[n:]
 
 	m := Mach{
-		opc:   makeOpCache(len(p)),
+		opc:   makeOpCache(len(prog) - n),
 		pbp:   0,
 		psp:   _pspInit,
 		cbp:   uint32(opts.StackSize) - 4,
@@ -69,7 +66,8 @@ func New(prog []byte) (*Mach, error) {
 	}
 
 	m.init()
-	m.storeBytes(m.ip, p)
+	m.storeBytes(m.ip, prog[n:])
+
 	// TODO mark code segment, update data
 
 	return &m, nil
