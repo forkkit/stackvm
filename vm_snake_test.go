@@ -42,9 +42,14 @@ func Test_snakeCube(t *testing.T) {
 			0, -1, 0,
 			0, 0, -1,
 
+			// occupied cube cell bool array
 			"occupied:", ".alloc", N * N * N, // TODO bitvector
-			"start:", 0, // starting index in the cube
-			"choices:", ".alloc", M, // chosen orientation for each fixed-chain head
+
+			// starting index in the cube
+			"start:", 0,
+
+			// chosen orientation for each fixed-chain head
+			"choices:", ".alloc", M,
 
 			".text",
 
