@@ -67,9 +67,20 @@ func New(prog []byte) (*Mach, error) {
 		limit: uint(opts.MaxOps),
 	}
 
-	m.init()
-	m.storeBytes(m.ip, prog[n:])
+	if m.ctx.Handler == nil {
+		m.ctx.Handler = defaultHandler
+	}
+	if m.ctx.queue == nil {
+		m.ctx.queue = noQueue
+	}
+	if m.ctx.machAllocator == nil {
+		m.ctx.machAllocator = defaultMachAllocator
+	}
+	if m.ctx.pageAllocator == nil {
+		m.ctx.pageAllocator = defaultPageAllocator
+	}
 
+	m.storeBytes(m.ip, prog[n:])
 	// TODO mark code segment, update data
 
 	return &m, nil

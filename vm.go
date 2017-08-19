@@ -118,21 +118,6 @@ func (m *Mach) halted() (uint32, bool) {
 	return 0, false
 }
 
-func (m *Mach) init() {
-	if m.ctx.Handler == nil {
-		m.ctx.Handler = defaultHandler
-	}
-	if m.ctx.queue == nil {
-		m.ctx.queue = noQueue
-	}
-	if m.ctx.machAllocator == nil {
-		m.ctx.machAllocator = defaultMachAllocator
-	}
-	if m.ctx.pageAllocator == nil {
-		m.ctx.pageAllocator = defaultPageAllocator
-	}
-}
-
 func (m *Mach) run() (*Mach, error) {
 repeat:
 	// live
