@@ -50,7 +50,9 @@ func (name NoSuchOpError) Error() string {
 // use their immediate argument as an IP offset, however they will consume an
 // IP offset from the parameter stack if no immediate is given.
 func New(prog []byte) (*Mach, error) {
-	opts, n, err := readMachOptions(prog)
+	opts := MachOptions{}
+
+	n, err := opts.read(prog)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +265,7 @@ type MachOptions struct {
 	MaxOps    uint32
 }
 
-func readMachOptions(buf []byte) (opts MachOptions, n int, err error) {
+func (opts *MachOptions) read(buf []byte) (n int, err error) {
 	for {
 		m, arg, code, ok := readVarCode(buf[n:])
 		n += m
