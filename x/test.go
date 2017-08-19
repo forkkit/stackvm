@@ -406,7 +406,10 @@ func (frrs filteredRunResults) Handle(m *stackvm.Mach) error {
 			return nil
 		}
 	}
-	return frrs.handler.Handle(m)
+	if frrs.handler != nil {
+		return frrs.handler.Handle(m)
+	}
+	return nil
 }
 
 func (frrs filteredRunResults) finish(m *stackvm.Mach) {
