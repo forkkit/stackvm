@@ -269,9 +269,14 @@ func (nr noResult) Handle(m *stackvm.Mach) error {
 func (nr noResult) finish(m *stackvm.Mach) {
 	if m != nil {
 		res, err := Result{}.take(m)
-		require.NoError(nr, err, "unexpected error taking final result")
-		assert.Equal(nr, Result{}, res, "expected empty result")
+		if assert.NoError(nr, err, "unexpected error taking final result") {
+			nr.result(res)
+		}
 	}
+}
+
+func (nr noResult) result(res Result) {
+	assert.Equal(nr, Result{}, res, "expected empty result")
 }
 
 // Result represents an expected or actual result within a TestCase. It can be
