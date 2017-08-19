@@ -461,24 +461,16 @@ func (m *Mach) SetHandler(h Handler) {
 	m.ctx.Handler = h
 	if m.ctx.queue == nil ||
 		m.ctx.queue == noQueue {
-		m.SetQueueSize(defaultQueueSize)
-	}
-}
-
-// SetQueueSize sets up a non-thread safe queue to support forking and
-// branching. Without a queue, the fork and branch instructions will fail. If
-// no machine or page allocators have yet been created, a couple freelist
-// allocators are created with initial capacities hinted from the queue size.
-func (m *Mach) SetQueueSize(n int) {
-	const pagesPerMachineGuess = 4
-	m.ctx.queue = newRunq(n)
-	if m.ctx.machAllocator == nil ||
-		m.ctx.machAllocator == defaultMachAllocator {
-		m.ctx.machAllocator = makeMachFreeList(n)
-	}
-	if m.ctx.pageAllocator == nil ||
-		m.ctx.pageAllocator == defaultPageAllocator {
-		m.ctx.pageAllocator = makePageFreeList(n * pagesPerMachineGuess)
+		const pagesPerMachineGuess = 4
+		m.ctx.queue = newRunq(defaultQueueSize)
+		if m.ctx.machAllocator == nil ||
+			m.ctx.machAllocator == defaultMachAllocator {
+			m.ctx.machAllocator = makeMachFreeList(defaultQueueSize)
+		}
+		if m.ctx.pageAllocator == nil ||
+			m.ctx.pageAllocator == defaultPageAllocator {
+			m.ctx.pageAllocator = makePageFreeList(defaultQueueSize * pagesPerMachineGuess)
+		}
 	}
 }
 
