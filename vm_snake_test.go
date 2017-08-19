@@ -2,6 +2,7 @@ package stackvm_test
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 
@@ -42,8 +43,8 @@ func Test_snakeCube(t *testing.T) {
 			0, -1, 0,
 			0, 0, -1,
 
-			// occupied cube cell bool array
-			"occupied:", ".alloc", N * N * N, // TODO bitvector
+			// occupied cube cell bitvector
+			"occupied:", ".alloc", int(math.Ceil(math.Log2(float64(N*N*N)) / 8 / 4)),
 
 			// starting index in the cube
 			"start:", 0,
@@ -166,12 +167,9 @@ func Test_snakeCube(t *testing.T) {
 				2, "hnz", // vi i :   -- halt if ...
 				"dup", N*N*N, "gte", // vi i i>=N^3 :
 				2, "hnz", // vi i :   -- halt if ...
-				"dup",                        // vi i i :
-				4, "mul", ":occupied", "add", // vi i &occupied[i] :
-				"dup",    // vi i &occupied[i] &occupied[i] :
-				"fetch",  // vi i &occupied[i] occupied[i] :
-				3, "hnz", // vi i &occupied[i] :   -- halt if ...
-				1, "store", // vi i :   -- occupied[i]=1
+				"dup",                  // vi i i :
+				":occupied", "bitseta", // vi i !occupied[i] :   -- set occupied[i] if it wasn't
+				3, "hz", // vi i :   -- halt if unable to set bit
 			)
 		}
 
