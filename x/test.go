@@ -162,7 +162,7 @@ func (t *testCaseRun) init() {
 		t.Logf = t.TB.Logf
 	}
 	if t.Result == nil {
-		t.Result = NoResult{}
+		t.Result = NoResult
 	}
 }
 
@@ -243,15 +243,17 @@ func (t testCaseRun) checkError(err error) {
 
 // NoResult is a TestCaseResult that expects no results from any number of
 // machine under a test.
-type NoResult struct{}
+var NoResult = _NoResult{}
+
+type _NoResult struct{}
 type noResult struct{ testing.TB }
 
-func (nr NoResult) start(tb testing.TB, m *stackvm.Mach) finisher { return noResult{tb} }
+func (nr _NoResult) start(tb testing.TB, m *stackvm.Mach) finisher { return noResult{tb} }
 
 // WithExpectedHaltCodes creates a TestCaseResult that expects any number of
 // non-zero halt codes in addition to expecting no result values. If a machine
 // exits with an unexpected non-zero halt code, the test still fails.
-func (nr NoResult) WithExpectedHaltCodes(codes ...uint32) TestCaseResult {
+func (nr _NoResult) WithExpectedHaltCodes(codes ...uint32) TestCaseResult {
 	return filteredResults{nr, []resultChecker{expectedHaltCodes(codes)}}
 }
 
