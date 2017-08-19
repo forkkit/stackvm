@@ -108,10 +108,9 @@ var smmTest = TestCase{
 		"dup", 2, "swap", "storeTo", // $X=i : retIp
 		"dup", // $X $X : retIP   -- dup as arg for fallsthrough to markUsed
 
-		"markUsed:",              // $X : retIp
-		"dup", ":used", "bitest", // $X used[$X] : retIp
-		2, "hnz", // $X : retIp
-		":used", "bitset", // : retIp   -- used[$X] = 1
+		"markUsed:",        // $X : retIp
+		":used", "bitseta", // !used[$x] : retIp   -- set used[$X] if it wasn't
+		2, "hz", // : retIp
 		"ret", // :
 	),
 
