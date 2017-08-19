@@ -290,6 +290,13 @@ type Result struct {
 	Values [][]uint32
 }
 
+// WithExpectedHaltCodes creates a TestCaseResult that expects any number of
+// non-zero halt codes in addition to expecting a final result value. If a
+// machine exits with an unexpected non-zero halt code, the test still fails.
+func (r Result) WithExpectedHaltCodes(codes ...uint32) TestCaseResult {
+	return filteredResults{r, []resultChecker{expectedHaltCodes(codes)}}
+}
+
 func (r Result) take(m *stackvm.Mach) (res Result, err error) {
 	if merr := m.Err(); merr != nil {
 		res.Err = errors.Cause(merr).Error()
