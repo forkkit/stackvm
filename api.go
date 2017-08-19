@@ -21,6 +21,13 @@ func (name NoSuchOpError) Error() string {
 	return fmt.Sprintf("no such operation %q", string(name))
 }
 
+var defaultContext = context{
+	Handler:       defaultHandler,
+	queue:         noQueue,
+	machAllocator: defaultMachAllocator,
+	pageAllocator: defaultPageAllocator,
+}
+
 // New creates a new stack machine with a given program loaded. The prog byte
 // array is a sequence of varint encoded unsigned integers (after fixed encoded
 // options).
@@ -58,6 +65,7 @@ func New(prog []byte) (*Mach, error) {
 	}
 
 	m := Mach{
+		ctx:   defaultContext,
 		opc:   makeOpCache(len(prog) - n),
 		pbp:   0,
 		psp:   _pspInit,
@@ -65,19 +73,6 @@ func New(prog []byte) (*Mach, error) {
 		csp:   uint32(opts.StackSize) - 4,
 		ip:    uint32(opts.StackSize),
 		limit: uint(opts.MaxOps),
-	}
-
-	if m.ctx.Handler == nil {
-		m.ctx.Handler = defaultHandler
-	}
-	if m.ctx.queue == nil {
-		m.ctx.queue = noQueue
-	}
-	if m.ctx.machAllocator == nil {
-		m.ctx.machAllocator = defaultMachAllocator
-	}
-	if m.ctx.pageAllocator == nil {
-		m.ctx.pageAllocator = defaultPageAllocator
 	}
 
 	m.storeBytes(m.ip, prog[n:])
