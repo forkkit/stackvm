@@ -59,6 +59,10 @@ type finisher interface {
 	finish(m *stackvm.Mach)
 }
 
+type resulter interface {
+	result(res Result)
+}
+
 type handler interface {
 	Handle(m *stackvm.Mach) error
 }
@@ -415,15 +419,19 @@ type filteredRunResults struct {
 	testing.TB
 	finisher
 	handler
-	cs []resultChecker
+	resulter
+	cs   []resultChecker
+	last Result
 }
 
 func newFilteredRunResults(tb testing.TB, fin finisher, cs []resultChecker) *filteredRunResults {
 	hndl, _ := fin.(handler)
+	res, _ := fin.(resulter)
 	return &filteredRunResults{
 		TB:       tb,
 		finisher: fin,
 		handler:  hndl,
+		resulter: res,
 		cs:       cs,
 	}
 }
@@ -437,12 +445,22 @@ func (frrs *filteredRunResults) Handle(m *stackvm.Mach) error {
 	if frrs.handler != nil {
 		return frrs.handler.Handle(m)
 	}
+	if frrs.resulter != nil {
+		res, err := Result{}.take(m)
+		if err == nil {
+			frrs.last = res
+		}
+		return err
+	}
 	return nil
 }
 
 func (frrs *filteredRunResults) finish(m *stackvm.Mach) {
 	for _, c := range frrs.cs {
 		if c.check(frrs.TB, m) {
+			if frrs.resulter != nil {
+				frrs.resulter.result(frrs.last)
+			}
 			frrs.finisher.finish(nil)
 			return
 		}
