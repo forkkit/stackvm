@@ -31,7 +31,7 @@ var smmTest = TestCase{
 		//   m o n e y
 
 		".data",
-		"used:", ".alloc", 10, // TODO use a bit vector
+		"used:", 0,
 		"values:", ".alloc", 8,
 		// 0 1 2 3 4 5 6 7
 		// d e y n r o s m
@@ -109,12 +109,10 @@ var smmTest = TestCase{
 		"dup", // $X $X : retIP   -- dup as arg for fallsthrough to markUsed
 
 		"markUsed:",              // $X : retIp
-		4, "mul", ":used", "add", // ... &used[$X]
-		"dup", "fetch", // ... &used[$X] used[$X]
-		2, "hnz", // ... &used[$X]
-		1, "store", // ... -- used[$X] = 1
+		"dup", ":used", "bitest", // $X used[$X] : retIp
+		2, "hnz", // $X : retIp
+		":used", "bitset", // : retIp   -- used[$X] = 1
 		"ret", // :
-
 	),
 
 	Result: Results{
