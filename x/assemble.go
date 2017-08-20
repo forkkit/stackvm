@@ -428,8 +428,21 @@ func (asm *assembler) defRef(name string, off int) {
 func (asm *assembler) encode() []byte {
 	var (
 		refs []ref
+		rfi  int
+		rf   = ref{site: -1, targ: -1}
 	)
 
+	buf := make([]byte, asm.maxBytes)
+	base := uint32(asm.opts.StackSize)
+	offsets := make([]uint32, len(asm.ops)+1)
+
+	var (
+		c uint32 // current op offset
+		i int    // current op index
+		n uint32 // length of actual encoded
+	)
+
+	// build refs
 	numRefs := 0
 	for _, rfs := range asm.refsBy {
 		numRefs += len(rfs)
@@ -443,22 +456,6 @@ func (asm *assembler) encode() []byte {
 				refs = append(refs, rf)
 			}
 		}
-	}
-
-	buf := make([]byte, asm.maxBytes)
-	base := uint32(asm.opts.StackSize)
-	offsets := make([]uint32, len(asm.ops)+1)
-
-	var (
-		c   uint32 // current op offset
-		i   int    // current op index
-		n   uint32 // length of actual encoded
-		rfi int
-		rf  = ref{site: -1, targ: -1}
-	)
-
-	// setup ref tracking state
-	if len(refs) > 0 {
 		sort.Slice(refs, func(i, j int) bool {
 			return refs[i].site < refs[j].site
 		})
