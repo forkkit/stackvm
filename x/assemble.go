@@ -117,10 +117,14 @@ func (asm *assembler) scan() error {
 
 	// check for undefined labels
 	if err == nil {
+		var undefined []string
 		for name := range asm.refsBy {
 			if _, defined := asm.labels[name]; !defined {
-				err = fmt.Errorf("undefined label %q", name)
+				undefined = append(undefined, name)
 			}
+		}
+		if len(undefined) > 0 {
+			err = fmt.Errorf("undefined labels: %q", undefined)
 		}
 	}
 
