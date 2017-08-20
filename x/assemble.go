@@ -111,12 +111,8 @@ func (asm *assembler) scan() error {
 			return fmt.Errorf("invalid assembler state %d", asm.state)
 		}
 	}
-	asm.maxBytes += asm.opts.NeededSize()
-	if err != nil {
-		return err
-	}
 	if err == nil {
-		err = asm.buildRefs()
+		err = asm.finish()
 	}
 	return err
 }
@@ -417,7 +413,9 @@ func (asm *assembler) defRef(name string, off int) {
 	}
 }
 
-func (asm *assembler) buildRefs() error {
+func (asm *assembler) finish() error {
+	asm.maxBytes += asm.opts.NeededSize()
+
 	n := 0
 	for name, refs := range asm.refsBy {
 		if _, defined := asm.labels[name]; !defined {
