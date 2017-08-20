@@ -101,6 +101,18 @@ func (asm *assembler) init() error {
 	return nil
 }
 
+func (asm *assembler) refOpt(name string, arg uint32, have bool) *stackvm.Op {
+	i := len(asm.optOps)
+	asm.addOpt(name, arg, have)
+	return &asm.optOps[i]
+}
+
+func (asm *assembler) addOpt(name string, arg uint32, have bool) {
+	op := stackvm.ResolveOption(name, arg, have)
+	asm.optOps = append(asm.optOps, op)
+	asm.maxBytes += op.NeededSize()
+}
+
 func (asm *assembler) scan() error {
 	err := asm.init()
 	for ; err == nil && asm.i < len(asm.in); asm.i++ {
@@ -115,24 +127,20 @@ func (asm *assembler) scan() error {
 	}
 
 	// finish options
-	asm.optOps = make([]stackvm.Op, 1, 6)
-	asm.optOps[0] = stackvm.ResolveOption("version", 0, false)
+	asm.addOpt("version", 0, false)
 	if asm.opts.StackSize != 0 {
-		asm.optOps = append(asm.optOps, stackvm.ResolveOption("stackSize", uint32(asm.opts.StackSize), true))
+		asm.addOpt("stackSize", uint32(asm.opts.StackSize), true)
 	}
 	if asm.opts.QueueSize != 0 {
-		asm.optOps = append(asm.optOps, stackvm.ResolveOption("queueSize", uint32(asm.opts.QueueSize), true))
+		asm.addOpt("queueSize", uint32(asm.opts.QueueSize), true)
 	}
 	if asm.opts.MaxOps != 0 {
-		asm.optOps = append(asm.optOps, stackvm.ResolveOption("maxOps", asm.opts.MaxOps, true))
+		asm.addOpt("maxOps", asm.opts.MaxOps, true)
 	}
 	if asm.opts.MaxCopies != 0 {
-		asm.optOps = append(asm.optOps, stackvm.ResolveOption("maxCopies", asm.opts.MaxCopies, true))
+		asm.addOpt("maxCopies", asm.opts.MaxCopies, true)
 	}
-	asm.optOps = append(asm.optOps, stackvm.ResolveOption("end", 0, false))
-	for _, op := range asm.optOps {
-		asm.maxBytes += op.NeededSize()
-	}
+	asm.addOpt("end", 0, false)
 
 	// check for undefined labels
 	if err == nil {
