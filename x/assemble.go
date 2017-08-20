@@ -60,6 +60,7 @@ type assembler struct {
 	in       []interface{}
 	state    assemblerState
 	opts     stackvm.MachOptions
+	optOps   []stackvm.Op
 	ops      []stackvm.Op
 	maxBytes int
 	labels   map[string]int
@@ -111,7 +112,8 @@ func (asm *assembler) scan() error {
 	}
 
 	// finish options
-	for _, op := range asm.opts.Ops() {
+	asm.optOps = asm.opts.Ops()
+	for _, op := range asm.optOps {
 		asm.maxBytes += op.NeededSize()
 	}
 
@@ -465,7 +467,7 @@ func (asm *assembler) encode() []byte {
 	}
 
 	// encode options
-	for _, op := range asm.opts.Ops() {
+	for _, op := range asm.optOps {
 		n += uint32(op.EncodeInto(buf[n:]))
 	}
 
