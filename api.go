@@ -402,35 +402,62 @@ func (opts *MachOptions) read(buf []byte) (n int, err error) {
 	}
 }
 
-// EncodeInto encodes machine optios for the header of a program.
-func (opts MachOptions) EncodeInto(p []byte) (n int) {
-	n += putVarCode(p[n:], 0, optCodeVersion)
+// ResolveOption constructs an option Op.
+func ResolveOption(name string, arg uint32, have bool) (op Op) {
+	switch name {
+	case "end":
+		op.Code = optCodeEnd
+	case "stackSize":
+		op.Code = optCodeStackSize
+	case "queueSize":
+		op.Code = optCodeQueueSize
+	case "maxOps":
+		op.Code = optCodeMaxOps
+	case "maxCopies":
+		op.Code = optCodeMaxCopies
+	case "version":
+		op.Code = optCodeVersion
+	default:
+		return
+	}
+	op.Arg = arg
+	op.Have = have
+	return
+}
+
+// Ops builds a list of encodable ops representing all non-default options set.
+func (opts MachOptions) Ops() []Op {
+	optOps := make([]Op, 1, 6)
+	optOps[0] = ResolveOption("version", 0, false)
 	if opts.StackSize != 0 {
-		n += putVarCode(p[n:], uint32(opts.StackSize), 0x80|optCodeStackSize)
+		optOps = append(optOps, ResolveOption("stackSize", uint32(opts.StackSize), true))
 	}
 	if opts.QueueSize != 0 {
-		n += putVarCode(p[n:], uint32(opts.QueueSize), 0x80|optCodeQueueSize)
+		optOps = append(optOps, ResolveOption("queueSize", uint32(opts.QueueSize), true))
 	}
 	if opts.MaxOps != 0 {
-		n += putVarCode(p[n:], opts.MaxOps, 0x80|optCodeMaxOps)
+		optOps = append(optOps, ResolveOption("maxOps", opts.MaxOps, true))
 	}
 	if opts.MaxCopies != 0 {
-		n += putVarCode(p[n:], opts.MaxCopies, 0x80|optCodeMaxCopies)
+		optOps = append(optOps, ResolveOption("maxCopies", opts.MaxCopies, true))
 	}
-	n += putVarCode(p[n:], 0, optCodeEnd)
+	optOps = append(optOps, ResolveOption("end", 0, false))
+	return optOps
+}
+
+// EncodeInto encodes machine optios for the header of a program.
+func (opts MachOptions) EncodeInto(p []byte) (n int) {
+	for _, op := range opts.Ops() {
+		n += op.EncodeInto(p[n:])
+	}
 	return
 }
 
 // NeededSize returns the number of bytes needed for EncodeInto.
 func (opts MachOptions) NeededSize() (n int) {
-	n += varCodeLength(0, optCodeVersion)
-	if opts.StackSize != 0 {
-		n += varCodeLength(uint32(opts.StackSize), 0x80|optCodeStackSize)
+	for _, op := range opts.Ops() {
+		n += op.NeededSize()
 	}
-	if opts.MaxOps != 0 {
-		n += varCodeLength(opts.MaxOps, 0x80|optCodeMaxOps)
-	}
-	n += varCodeLength(0, optCodeEnd)
 	return
 }
 
