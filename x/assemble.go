@@ -111,7 +111,9 @@ func (asm *assembler) scan() error {
 	}
 
 	// finish options
-	asm.maxBytes += asm.opts.NeededSize()
+	for _, op := range asm.opts.Ops() {
+		asm.maxBytes += op.NeededSize()
+	}
 
 	// check for undefined labels
 	if err == nil {
@@ -463,7 +465,9 @@ func (asm *assembler) encode() []byte {
 	}
 
 	// encode options
-	n += uint32(asm.opts.EncodeInto(buf))
+	for _, op := range asm.opts.Ops() {
+		n += uint32(op.EncodeInto(buf[n:]))
+	}
 
 	// encode program
 	if _, defined := asm.labels[".entry"]; !defined {

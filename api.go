@@ -445,22 +445,6 @@ func (opts MachOptions) Ops() []Op {
 	return optOps
 }
 
-// EncodeInto encodes machine optios for the header of a program.
-func (opts MachOptions) EncodeInto(p []byte) (n int) {
-	for _, op := range opts.Ops() {
-		n += op.EncodeInto(p[n:])
-	}
-	return
-}
-
-// NeededSize returns the number of bytes needed for EncodeInto.
-func (opts MachOptions) NeededSize() (n int) {
-	for _, op := range opts.Ops() {
-		n += op.NeededSize()
-	}
-	return
-}
-
 // EncodeInto encodes the operation into the given buffer, returning the number
 // of bytes encoded.
 func (o Op) EncodeInto(p []byte) int {
