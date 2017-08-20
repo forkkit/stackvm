@@ -115,7 +115,10 @@ func (asm *assembler) scan() error {
 	if err != nil {
 		return err
 	}
-	return asm.buildRefs()
+	if err == nil {
+		err = asm.buildRefs()
+	}
+	return err
 }
 
 func (asm *assembler) handleQueueSize() error {
