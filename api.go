@@ -45,9 +45,8 @@ var defaultContext = context{
 // then to encode the program that the machine will run.
 //
 // Valid option codes:
-// - 0x00 version: reserved for future use, where its parameter will be the
-//   required machine/program version; passing a version value is currently
-//   unsupported.
+// - 0x00 end: indicates the end of options (beginning of program); must not
+//   have a parameter.
 // - 0x01 stack size: its required parameter declares the amount of memory
 //   given to the parameter and control stacks (see below for details). The
 //   size must be a multiple of 4 (32-bit word size). Default: 0x40.
@@ -61,8 +60,9 @@ var defaultContext = context{
 //   of machine copies that may be made in total. Well behaved programs
 //   shouldn't need to specify this option, it should be mostly used for
 //   debugging. Default: 0.
-// - 0x7f end: indicates the end of options (beginning of program); must not
-//   have a parameter.
+// - 0x7f version: reserved for future use, where its parameter will be the
+//   required machine/program version; passing a version value is currently
+//   unsupported.
 //
 // The stack space, declared by above option or 0x40 default, is shared by the
 // Parameter Stack (PS) and Control Stack (CS) which grow towards each other:
@@ -310,10 +310,9 @@ func (o Op) Name() string {
 //go:generate python collect_docs.py -i api.go -o api.go optCode "^// Valid option codes:" "^//$"
 
 const (
-	// reserved for future use, where its parameter will be the required
-	// machine/program version; passing a version value is currently
-	// unsupported.
-	optCodeVersion uint8 = 0x00
+	// indicates the end of options (beginning of program); must not have a
+	// parameter.
+	optCodeEnd uint8 = 0x00
 
 	// its required parameter declares the amount of memory given to the
 	// parameter and control stacks (see below for details). The size must be a
@@ -335,9 +334,10 @@ const (
 	// specify this option, it should be mostly used for debugging. Default: 0.
 	optCodeMaxCopies = 0x04
 
-	// indicates the end of options (beginning of program); must not have a
-	// parameter.
-	optCodeEnd = 0x7f
+	// reserved for future use, where its parameter will be the required
+	// machine/program version; passing a version value is currently
+	// unsupported.
+	optCodeVersion = 0x7f
 )
 
 // MachOptions represents options for a machine, currently just stack size (see

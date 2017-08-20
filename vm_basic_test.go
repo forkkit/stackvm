@@ -59,7 +59,7 @@ func TestMach_operational_errors(t *testing.T) {
 			Name: "invalid op code",
 			Err:  "invalid op UNDEFINED<0x70>",
 			Prog: []byte{
-				0x7f, // end-of-options
+				0x00, // end-of-options
 				0x70, // undefined op code
 			},
 			Result: Result{Err: "invalid op UNDEFINED<0x70>"},
@@ -68,7 +68,7 @@ func TestMach_operational_errors(t *testing.T) {
 			Name: "crash: explicit",
 			Err:  "crashed",
 			Prog: []byte{
-				0x7f, // end-of-options
+				0x00, // end-of-options
 				0x00, // opCodeCrash=0
 			},
 			Result: Result{Err: "crashed"},
@@ -77,7 +77,7 @@ func TestMach_operational_errors(t *testing.T) {
 			Name: "crash: implicit",
 			Err:  "crashed",
 			Prog: []byte{
-				0x7f, // end-of-options
+				0x00, // end-of-options
 				// empty program, 0 by default
 			},
 			Result: Result{Err: "crashed"},
