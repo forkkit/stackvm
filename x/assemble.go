@@ -111,9 +111,19 @@ func (asm *assembler) scan() error {
 			return fmt.Errorf("invalid assembler state %d", asm.state)
 		}
 	}
+
+	// finish options
+	asm.maxBytes += asm.opts.NeededSize()
+
+	// check for undefined labels
 	if err == nil {
-		err = asm.finish()
+		for name := range asm.refsBy {
+			if _, defined := asm.labels[name]; !defined {
+				err = fmt.Errorf("undefined label %q", name)
+			}
+		}
 	}
+
 	return err
 }
 
@@ -413,18 +423,13 @@ func (asm *assembler) defRef(name string, off int) {
 	}
 }
 
-func (asm *assembler) finish() error {
-	asm.maxBytes += asm.opts.NeededSize()
-
-	n := 0
-	for name, refs := range asm.refsBy {
-		if _, defined := asm.labels[name]; !defined {
-			return fmt.Errorf("undefined label %q", name)
-		}
-		n += len(refs)
+func (asm *assembler) encode() []byte {
+	numRefs := 0
+	for _, refs := range asm.refsBy {
+		numRefs += len(refs)
 	}
-	if n > 0 {
-		asm.refs = make([]ref, 0, n)
+	if numRefs > 0 {
+		asm.refs = make([]ref, 0, numRefs)
 		for name, refs := range asm.refsBy {
 			targ := asm.labels[name]
 			for _, rf := range refs {
@@ -433,10 +438,7 @@ func (asm *assembler) finish() error {
 			}
 		}
 	}
-	return nil
-}
 
-func (asm *assembler) encode() []byte {
 	buf := make([]byte, asm.maxBytes)
 	base := uint32(asm.opts.StackSize)
 	offsets := make([]uint32, len(asm.ops)+1)
