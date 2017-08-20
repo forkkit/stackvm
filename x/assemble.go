@@ -427,19 +427,19 @@ func (asm *assembler) defRef(name string, off int) {
 
 func (asm *assembler) encode() []byte {
 	var (
+		base = uint32(asm.opts.StackSize)
+
+		ops = asm.ops
+		i   int // current op index
+
+		buf     = make([]byte, asm.maxBytes)
+		offsets = make([]uint32, len(asm.ops)+1)
+		c       uint32 // current op offset
+		n       uint32 // length of encoded output
+
 		refs []ref
 		rfi  int
 		rf   = ref{site: -1, targ: -1}
-	)
-
-	buf := make([]byte, asm.maxBytes)
-	base := uint32(asm.opts.StackSize)
-	offsets := make([]uint32, len(asm.ops)+1)
-
-	var (
-		c uint32 // current op offset
-		i int    // current op index
-		n uint32 // length of actual encoded
 	)
 
 	// build refs
@@ -470,13 +470,13 @@ func (asm *assembler) encode() []byte {
 		// skip unused entry jump
 		i++
 	}
-	for i < len(asm.ops) {
+	for i < len(ops) {
 		// fix a previously encoded ref's target
 		for 0 <= rf.site && rf.site < i && rf.targ <= i {
 			site := base + offsets[rf.site]
 			targ := base + offsets[rf.targ] + uint32(refs[rfi].off)
-			op := asm.ops[rf.site].ResolveRefArg(site, targ)
-			asm.ops[rf.site] = op
+			op := ops[rf.site].ResolveRefArg(site, targ)
+			ops[rf.site] = op
 			// re-encode the ref and rewind if arg size changed
 			lo, hi := offsets[rf.site], offsets[rf.site+1]
 			if end := lo + uint32(op.EncodeInto(buf[n+lo:])); end != hi {
@@ -499,7 +499,7 @@ func (asm *assembler) encode() []byte {
 			}
 		}
 
-		op := asm.ops[i]
+		op := ops[i]
 		if d, ok := opData(op); ok {
 			// encode a data word
 			stackvm.ByteOrder.PutUint32(buf[n+c:], d)
