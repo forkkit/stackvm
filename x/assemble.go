@@ -432,9 +432,20 @@ func (asm *assembler) buildRefs() error {
 }
 
 func (asm *assembler) encode() []byte {
+	buf := make([]byte, asm.maxBytes)
+	base := uint32(asm.opts.StackSize)
+	offsets := make([]uint32, len(asm.ops)+1)
+
+	var (
+		c   uint32 // current op offset
+		i   int    // current op index
+		n   uint32 // length of actual encoded
+		rfi int
+		rf  = ref{site: -1, targ: -1}
+	)
+
 	// setup ref tracking state
 	refs := asm.refs
-	rfi, rf := 0, ref{site: -1, targ: -1}
 	if len(refs) > 0 {
 		sort.Slice(refs, func(i, j int) bool {
 			return refs[i].site < refs[j].site
@@ -442,27 +453,24 @@ func (asm *assembler) encode() []byte {
 		rf = refs[rfi]
 	}
 
-	buf := make([]byte, asm.maxBytes)
+	// encode options
+	n += uint32(asm.opts.EncodeInto(buf))
 
-	n := asm.opts.EncodeInto(buf)
-	p := buf[n:]
-	base := uint32(asm.opts.StackSize)
-	offsets := make([]uint32, len(asm.ops)+1)
-	c, i := uint32(0), 0 // current op offset and index
+	// encode program
 	if _, defined := asm.labels[".entry"]; !defined {
-		// skip entry jump
+		// skip unused entry jump
 		i++
 	}
 	for i < len(asm.ops) {
 		// fix a previously encoded ref's target
 		for 0 <= rf.site && rf.site < i && rf.targ <= i {
-			op := asm.ops[rf.site].ResolveRefArg(
-				base+offsets[rf.site],
-				base+offsets[rf.targ]+uint32(refs[rfi].off))
+			site := base + offsets[rf.site]
+			targ := base + offsets[rf.targ] + uint32(refs[rfi].off)
+			op := asm.ops[rf.site].ResolveRefArg(site, targ)
 			asm.ops[rf.site] = op
 			// re-encode the ref and rewind if arg size changed
 			lo, hi := offsets[rf.site], offsets[rf.site+1]
-			if end := lo + uint32(op.EncodeInto(p[lo:])); end != hi {
+			if end := lo + uint32(op.EncodeInto(buf[n+lo:])); end != hi {
 				// rewind to prior ref
 				i, c = rf.site+1, end
 				offsets[i] = c
@@ -485,7 +493,7 @@ func (asm *assembler) encode() []byte {
 		op := asm.ops[i]
 		if d, ok := opData(op); ok {
 			// encode a data word
-			stackvm.ByteOrder.PutUint32(p[c:], d)
+			stackvm.ByteOrder.PutUint32(buf[n+c:], d)
 			c += 4
 			i++
 			offsets[i] = c
@@ -493,12 +501,11 @@ func (asm *assembler) encode() []byte {
 		}
 
 		// encode next operation
-		c += uint32(op.EncodeInto(p[c:]))
+		c += uint32(op.EncodeInto(buf[n+c:]))
 		i++
 		offsets[i] = c
 	}
-	n += int(c)
-	buf = buf[:n]
+	n += c
 
-	return buf
+	return buf[:n]
 }
