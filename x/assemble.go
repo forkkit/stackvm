@@ -234,14 +234,18 @@ func (asm *assembler) handleDirective(name string) error {
 	case "maxCopies":
 		return asm.handleMaxCopies()
 	case "data":
-		asm.state = assemblerData
+		asm.setState(assemblerData)
 		return nil
 	case "text":
-		asm.state = assemblerText
+		asm.setState(assemblerText)
 		return nil
 	default:
 		return fmt.Errorf("invalid directive .%s", name)
 	}
+}
+
+func (asm *assembler) setState(state assemblerState) {
+	asm.state = state
 }
 
 func (asm *assembler) handleEntry() error {
@@ -273,7 +277,7 @@ func (asm *assembler) handleEntry() error {
 	// back-fill the ref for the jump in ops[0]
 	asm.refsBy[name] = append(asm.refsBy[name], ref{site: 0})
 
-	asm.state = assemblerText
+	asm.setState(assemblerText)
 	return nil
 }
 
