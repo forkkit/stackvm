@@ -115,7 +115,21 @@ func (asm *assembler) scan() error {
 	}
 
 	// finish options
-	asm.optOps = asm.opts.Ops()
+	asm.optOps = make([]stackvm.Op, 1, 6)
+	asm.optOps[0] = stackvm.ResolveOption("version", 0, false)
+	if asm.opts.StackSize != 0 {
+		asm.optOps = append(asm.optOps, stackvm.ResolveOption("stackSize", uint32(asm.opts.StackSize), true))
+	}
+	if asm.opts.QueueSize != 0 {
+		asm.optOps = append(asm.optOps, stackvm.ResolveOption("queueSize", uint32(asm.opts.QueueSize), true))
+	}
+	if asm.opts.MaxOps != 0 {
+		asm.optOps = append(asm.optOps, stackvm.ResolveOption("maxOps", asm.opts.MaxOps, true))
+	}
+	if asm.opts.MaxCopies != 0 {
+		asm.optOps = append(asm.optOps, stackvm.ResolveOption("maxCopies", asm.opts.MaxCopies, true))
+	}
+	asm.optOps = append(asm.optOps, stackvm.ResolveOption("end", 0, false))
 	for _, op := range asm.optOps {
 		asm.maxBytes += op.NeededSize()
 	}

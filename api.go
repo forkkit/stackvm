@@ -425,26 +425,6 @@ func ResolveOption(name string, arg uint32, have bool) (op Op) {
 	return
 }
 
-// Ops builds a list of encodable ops representing all non-default options set.
-func (opts MachOptions) Ops() []Op {
-	optOps := make([]Op, 1, 6)
-	optOps[0] = ResolveOption("version", 0, false)
-	if opts.StackSize != 0 {
-		optOps = append(optOps, ResolveOption("stackSize", uint32(opts.StackSize), true))
-	}
-	if opts.QueueSize != 0 {
-		optOps = append(optOps, ResolveOption("queueSize", uint32(opts.QueueSize), true))
-	}
-	if opts.MaxOps != 0 {
-		optOps = append(optOps, ResolveOption("maxOps", opts.MaxOps, true))
-	}
-	if opts.MaxCopies != 0 {
-		optOps = append(optOps, ResolveOption("maxCopies", opts.MaxCopies, true))
-	}
-	optOps = append(optOps, ResolveOption("end", 0, false))
-	return optOps
-}
-
 // EncodeInto encodes the operation into the given buffer, returning the number
 // of bytes encoded.
 func (o Op) EncodeInto(p []byte) int {
