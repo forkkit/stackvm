@@ -136,7 +136,7 @@ func (asm *assembler) scan() error {
 	if err == nil {
 		var undefined []string
 		for name := range asm.refsBy {
-			if _, defined := asm.labels[name]; !defined {
+			if i, defined := asm.labels[name]; !defined || i < 0 {
 				undefined = append(undefined, name)
 			}
 		}
