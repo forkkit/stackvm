@@ -61,7 +61,6 @@ type assembler struct {
 	state    assemblerState
 	opts     stackvm.MachOptions
 	ops      []stackvm.Op
-	refs     []ref
 	maxBytes int
 	labels   map[string]int
 	refsBy   map[string][]ref
@@ -84,7 +83,6 @@ func (asm *assembler) init() error {
 	// TODO in
 	asm.state = assemblerText
 	asm.ops = nil
-	asm.refs = nil
 	asm.maxBytes = 0
 	asm.labels = make(map[string]int)
 	asm.refsBy = make(map[string][]ref)
@@ -428,17 +426,21 @@ func (asm *assembler) defRef(name string, off int) {
 }
 
 func (asm *assembler) encode() []byte {
+	var (
+		refs []ref
+	)
+
 	numRefs := 0
 	for _, rfs := range asm.refsBy {
 		numRefs += len(rfs)
 	}
 	if numRefs > 0 {
-		asm.refs = make([]ref, 0, numRefs)
+		refs = make([]ref, 0, numRefs)
 		for name, rfs := range asm.refsBy {
 			targ := asm.labels[name]
 			for _, rf := range rfs {
 				rf.targ = targ
-				asm.refs = append(asm.refs, rf)
+				refs = append(refs, rf)
 			}
 		}
 	}
@@ -456,7 +458,6 @@ func (asm *assembler) encode() []byte {
 	)
 
 	// setup ref tracking state
-	refs := asm.refs
 	if len(refs) > 0 {
 		sort.Slice(refs, func(i, j int) bool {
 			return refs[i].site < refs[j].site
