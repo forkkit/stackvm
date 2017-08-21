@@ -475,6 +475,7 @@ func (asm *assembler) encode() []byte {
 	if _, defined := asm.labels[".entry"]; !defined {
 		// skip unused entry jump
 		i++
+		offsets[i] = c
 	}
 	for i < len(ops) {
 		// fix a previously encoded ref's target
