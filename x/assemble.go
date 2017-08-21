@@ -82,9 +82,6 @@ const (
 const defaultStackSize = 0x40
 
 func (asm *assembler) init() error {
-	if asm.opts.StackSize == 0 {
-		asm.opts.StackSize = defaultStackSize
-	}
 	asm.i = 0
 	// TODO in
 	asm.state = assemblerText
@@ -202,7 +199,6 @@ func (asm *assembler) handleStackSize() error {
 	if n < +0 || n > 0xffff {
 		return fmt.Errorf("stackSize %d out of range, must be in (0x0000, 0xffff)", n)
 	}
-	asm.opts.StackSize = uint16(n)
 	asm.stackSize.Arg = uint32(n)
 	return nil
 }
@@ -457,7 +453,7 @@ func (asm *assembler) defRef(name string, off int) {
 
 func (asm *assembler) encode() []byte {
 	var (
-		base  = uint32(asm.opts.StackSize)
+		base  = asm.stackSize.Arg
 		boff  uint32 // position of encoded program
 		nopts = len(asm.optOps)
 
