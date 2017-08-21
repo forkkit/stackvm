@@ -34,6 +34,9 @@ func Assemble(in ...interface{}) ([]byte, error) {
 // zero op crash" should perhaps be the most stable part of the ISA.
 const opCodeCrash = 0x00
 
+// copied from api.go.
+const optCodeEnd = 0x00
+
 // dataOp returns an invalid Op that carries a data word. These invalid ops are
 // used temporarily between assembler.scan and assembler.encode. The ops are
 // "invalid" because they are a "crash with immediate", which will never be
@@ -431,20 +434,30 @@ func (asm *assembler) defRef(name string, off int) {
 
 func (asm *assembler) encode() []byte {
 	var (
-		base = uint32(asm.opts.StackSize)
+		base  = uint32(asm.opts.StackSize)
+		boff  uint32 // position of encoded program
+		nopts = len(asm.optOps)
 
-		ops = asm.ops
+		ops []stackvm.Op
 		i   int // current op index
 
 		buf     = make([]byte, asm.maxBytes)
-		offsets = make([]uint32, len(asm.ops)+1)
+		offsets = make([]uint32, nopts+len(asm.ops)+1)
 		c       uint32 // current op offset
-		n       uint32 // length of encoded output
 
 		refs []ref
 		rfi  int
 		rf   = ref{site: -1, targ: -1}
 	)
+
+	// collect option ops and program ops
+	if totalOps := len(asm.ops) + nopts; totalOps < cap(asm.ops) {
+		ops = asm.ops[:totalOps]
+	} else {
+		ops = make([]stackvm.Op, totalOps)
+	}
+	copy(ops[nopts:], asm.ops)
+	copy(ops, asm.optOps)
 
 	// build refs
 	numRefs := 0
@@ -456,7 +469,8 @@ func (asm *assembler) encode() []byte {
 		for name, rfs := range asm.refsBy {
 			targ := asm.labels[name]
 			for _, rf := range rfs {
-				rf.targ = targ
+				rf.site += nopts
+				rf.targ = targ + nopts
 				refs = append(refs, rf)
 			}
 		}
@@ -467,9 +481,17 @@ func (asm *assembler) encode() []byte {
 	}
 
 	// encode options
-	for _, op := range asm.optOps {
-		n += uint32(op.EncodeInto(buf[n:]))
+encodeOptions:
+	for i < len(ops) {
+		op := ops[i]
+		c += uint32(op.EncodeInto(buf[c:]))
+		i++
+		offsets[i] = c
+		if op.Code == optCodeEnd {
+			break
+		}
 	}
+	boff = c
 
 	// encode program
 	if _, defined := asm.labels[".entry"]; !defined {
@@ -480,13 +502,13 @@ func (asm *assembler) encode() []byte {
 	for i < len(ops) {
 		// fix a previously encoded ref's target
 		for 0 <= rf.site && rf.site < i && rf.targ <= i {
-			site := base + offsets[rf.site]
-			targ := base + offsets[rf.targ] + uint32(refs[rfi].off)
+			site := base + offsets[rf.site] - boff
+			targ := base + offsets[rf.targ] - boff + uint32(refs[rfi].off)
 			op := ops[rf.site].ResolveRefArg(site, targ)
 			ops[rf.site] = op
 			// re-encode the ref and rewind if arg size changed
 			lo, hi := offsets[rf.site], offsets[rf.site+1]
-			if end := lo + uint32(op.EncodeInto(buf[n+lo:])); end != hi {
+			if end := lo + uint32(op.EncodeInto(buf[lo:])); end != hi {
 				// rewind to prior ref
 				i, c = rf.site+1, end
 				offsets[i] = c
@@ -494,6 +516,9 @@ func (asm *assembler) encode() []byte {
 					if rf.site >= i || rf.targ >= i {
 						break
 					}
+				}
+				if i < nopts {
+					goto encodeOptions
 				}
 			} else {
 				// next ref
@@ -509,7 +534,7 @@ func (asm *assembler) encode() []byte {
 		op := ops[i]
 		if d, ok := opData(op); ok {
 			// encode a data word
-			stackvm.ByteOrder.PutUint32(buf[n+c:], d)
+			stackvm.ByteOrder.PutUint32(buf[c:], d)
 			c += 4
 			i++
 			offsets[i] = c
@@ -517,11 +542,10 @@ func (asm *assembler) encode() []byte {
 		}
 
 		// encode next operation
-		c += uint32(op.EncodeInto(buf[n+c:]))
+		c += uint32(op.EncodeInto(buf[c:]))
 		i++
 		offsets[i] = c
 	}
-	n += c
 
-	return buf[:n]
+	return buf[:c]
 }
