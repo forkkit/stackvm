@@ -24,7 +24,7 @@ import (
 
 var smmTest = TestCase{
 	Name: "send more money (bottom up)",
-	Prog: MustAssemble(
+	Prog: []interface{}{
 		//     s e n d
 		// +   m o r e
 		// -----------
@@ -38,63 +38,63 @@ var smmTest = TestCase{
 
 		".entry", "main:",
 
-		":values", "cpush", 4*8, ":values", "cpush", // : &values[0] &values[8]
+		":values", "cpush", 4 * 8, ":values", "cpush", // : &values[0] &values[8]
 
 		//// d + e = y  (mod 10)
 
-		4*0, ":values", "push", ":choose", "call", // $d :
-		4*1, ":values", "push", ":choose", "call", // $d $e :
+		4 * 0, ":values", "push", ":choose", "call", // $d :
+		4 * 1, ":values", "push", ":choose", "call", // $d $e :
 		"add", "dup", // $d+e $d+e :
 		10, "mod", // $d+e ($d+e)%10 :
-		"dup", 4*2, ":values", "storeTo", // $d+e $y :   -- $y=($d+e)%10
+		"dup", 4 * 2, ":values", "storeTo", // $d+e $y :   -- $y=($d+e)%10
 		":markUsed", "call", // $d+e :
 		10, "div", // carry :
 
 		//// carry + n + r = e  (mod 10)
 
-		"dup",                   // carry carry :
-		4*1, ":values", "fetch", // carry carry $e :
-		"swap",                                    // carry $e carry :
-		4*3, ":values", "push", ":choose", "call", // carry $e carry $n :
+		"dup",                     // carry carry :
+		4 * 1, ":values", "fetch", // carry carry $e :
+		"swap",                                      // carry $e carry :
+		4 * 3, ":values", "push", ":choose", "call", // carry $e carry $n :
 		"add", "sub", 10, "mod", // carry ($e-(carry+$n))%10 :
-		"dup", 4*4, ":values", "storeTo", // carry $r :   -- $r=($e-(carry+$n))%10
+		"dup", 4 * 4, ":values", "storeTo", // carry $r :   -- $r=($e-(carry+$n))%10
 		":markUsed", "call", // carry :
-		4*3, ":values", "fetch", // carry $n :
-		4*4, ":values", "fetch", // carry $n $r :
+		4 * 3, ":values", "fetch", // carry $n :
+		4 * 4, ":values", "fetch", // carry $n $r :
 		"add", "add", 10, "div", // carry :
 
 		//// carry + e + o = n  (mod 10)
 
-		"dup",                   // carry carry :
-		4*1, ":values", "fetch", // carry carry $e :
-		"add",                   // carry carry+$e :
-		4*3, ":values", "fetch", // carry carry+$e $n :
+		"dup",                     // carry carry :
+		4 * 1, ":values", "fetch", // carry carry $e :
+		"add",                     // carry carry+$e :
+		4 * 3, ":values", "fetch", // carry carry+$e $n :
 		"swap", "sub", // carry $n-(carry+$e) :
 		10, "mod", // carry ($n-(carry+$e))%10 :
-		"dup", 4*5, ":values", "storeTo", // carry $o :   -- $o=($n-(carry+$e))%10
+		"dup", 4 * 5, ":values", "storeTo", // carry $o :   -- $o=($n-(carry+$e))%10
 		":markUsed", "call", // carry :
-		4*1, ":values", "fetch", // carry $e :
-		4*5, ":values", "fetch", // carry $e $o :
+		4 * 1, ":values", "fetch", // carry $e :
+		4 * 5, ":values", "fetch", // carry $e $o :
 		"add", "add", 10, "div", // carry :
 
 		//// carry + s + m = o  (mod 10)
 
-		"dup",                                     // carry carry :
-		4*6, ":values", "push", ":choose", "call", // carry carry $s :
-		"add",                   // carry carry+$s :
-		4*5, ":values", "fetch", // carry carry+$s $o :
+		"dup",                                       // carry carry :
+		4 * 6, ":values", "push", ":choose", "call", // carry carry $s :
+		"add",                     // carry carry+$s :
+		4 * 5, ":values", "fetch", // carry carry+$s $o :
 		"swap", "sub", // carry $o-(carry+$s) :
 		10, "mod", // carry ($o-(carry+$s))%10 :
-		"dup", 4*7, ":values", "storeTo", // carry $m :   -- $m=($o-(carry+$s))%10
+		"dup", 4 * 7, ":values", "storeTo", // carry $m :   -- $m=($o-(carry+$s))%10
 		":markUsed", "call", // carry :
-		4*6, ":values", "fetch", // carry $s :
+		4 * 6, ":values", "fetch", // carry $s :
 		"dup", 1, "hz", // carry $s :   -- guard $s != 0
-		4*7, ":values", "fetch", // carry $s $m :
+		4 * 7, ":values", "fetch", // carry $s $m :
 		"dup", 1, "hz", // carry $s $m :   -- guard $m != 0
 		"add", "add", 10, "div", // carry :
 
 		//// carry = m  (mod 10)
-		4*7, ":values", "fetch", // carry $m
+		4 * 7, ":values", "fetch", // carry $m
 		"eq", 3, "hz",
 
 		//// Done
@@ -112,7 +112,7 @@ var smmTest = TestCase{
 		":used", "bitseta", // !used[$x] : retIp   -- set used[$X] if it wasn't
 		2, "hz", // : retIp
 		"ret", // :
-	),
+	},
 
 	Result: Result{Values: [][]uint32{{
 		7, // d

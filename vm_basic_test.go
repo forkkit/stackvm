@@ -18,10 +18,10 @@ func TestMach_misc_ops(t *testing.T) {
 	TestCases{
 		{
 			Name: "nuthin' doin'",
-			Prog: MustAssemble(
+			Prog: []interface{}{
 				"nop", "nop", "nop", "nop",
 				"halt",
-			),
+			},
 		},
 	}.Run(t)
 }
@@ -31,11 +31,11 @@ func TestMach_basic_math(t *testing.T) {
 		{
 			Name: "33addeq5 should fail",
 			Err:  "HALT(1)",
-			Prog: MustAssemble(
+			Prog: []interface{}{
 				3, "push", 3, "push", "add",
 				5, "push", "eq",
 				1, "hz", "halt",
-			),
+			},
 			Result: Result{
 				Err: "HALT(1)",
 			},
@@ -43,11 +43,11 @@ func TestMach_basic_math(t *testing.T) {
 
 		{
 			Name: "23addeq5 should succeed",
-			Prog: MustAssemble(
+			Prog: []interface{}{
 				2, "push", 3, "push", "add",
 				5, "push", "eq",
 				1, "hz", "halt",
-			),
+			},
 			Result: Result{},
 		},
 	}.Run(t)
@@ -85,42 +85,42 @@ func TestMach_operational_errors(t *testing.T) {
 		{
 			Name: "crash: jump out of program",
 			Err:  "crashed",
-			Prog: MustAssemble(
+			Prog: []interface{}{
 				96, "jump", "halt",
-			),
+			},
 			Result: Result{Err: "crashed"},
 		},
 		{
 			Name: "crash: implicit assembled",
 			Err:  "crashed",
-			Prog: MustAssemble(
+			Prog: []interface{}{
 				1, "push",
 				2, "add",
 				// and then?...
-			),
+			},
 			Result: Result{Err: "crashed"},
 		},
 		{
 			Name: "maxops stops an infinite loop",
 			Err:  "op count limit exceeded",
-			Prog: MustAssemble(
+			Prog: []interface{}{
 				".maxOps", 100,
 				1, "push",
 				"loop:",
 				1, "add",
 				":loop", "jump",
 				0, "halt",
-			),
+			},
 			Result: Result{Err: "op count limit exceeded"},
 		},
 		{
 			Name: "maxcopies stops an infinite copy loop",
-			Prog: MustAssemble(
+			Prog: []interface{}{
 				".maxCopies", 100,
 				"foo:", ":bar", "fork", 1, "halt",
 				"bar:", ":foo", "fork", 2, "halt",
 				3, "halt",
-			),
+			},
 			Result: Result{
 				Err: "max copies(100) exceeded",
 			}.WithExpectedHaltCodes(1, 2),
@@ -132,22 +132,22 @@ func TestMach_data_refs(t *testing.T) {
 	TestCases{
 		{
 			Name: "mod-10 check",
-			Prog: MustAssemble(
+			Prog: []interface{}{
 				".data",
 				"d:", 4, 2, 7, 9, 8,
 
 				".text",
 				".entry", "main:",
 				":d", "fetch", // d[0] :
-				4*1, ":d", "push", "fetch", // d[0] d[1] :
-				4*2, ":d", "push", "fetch", // d[0] d[1] d[2] :
-				4*3, ":d", "push", "fetch", // d[0] d[1] d[2] d[3] :
-				4*4, ":d", "push", "fetch", // d[0] d[1] d[2] d[3] d[4] :
+				4 * 1, ":d", "push", "fetch", // d[0] d[1] :
+				4 * 2, ":d", "push", "fetch", // d[0] d[1] d[2] :
+				4 * 3, ":d", "push", "fetch", // d[0] d[1] d[2] d[3] :
+				4 * 4, ":d", "push", "fetch", // d[0] d[1] d[2] d[3] d[4] :
 				"add", "add", "add", "add", // s=d[0]+d[1]+d[2]+d[3]+d[4] :
 				10, "mod", // s%10 :
 				1, "hnz", // : -- error halt if non-zero
 				"halt", // : normal halt
-			),
+			},
 		},
 	}.Run(t)
 }
@@ -156,7 +156,7 @@ func TestMach_bitwise_ops(t *testing.T) {
 	TestCases{
 		{
 			Name: "masking",
-			Prog: MustAssemble(
+			Prog: []interface{}{
 				0xdead, "push", 16, "shiftl",
 				0xbeef, "bitor",
 				"dup", 0xdeadbeef, "eq", 1, "hz",
@@ -170,38 +170,38 @@ func TestMach_bitwise_ops(t *testing.T) {
 				0xdead, "eq", 1, "hz",
 
 				"halt",
-			),
+			},
 		},
 
 		{
 			Name: "bitand",
-			Prog: MustAssemble(
+			Prog: []interface{}{
 				0xff, "push", 0x12, "push", "bitand",
 				0x12, "eq", 1, "hz",
 				0x0f, "push", 0x12, "bitand",
 				0x02, "eq", 1, "hz",
 				"halt",
-			),
+			},
 		},
 
 		{
 			Name: "bitor",
-			Prog: MustAssemble(
+			Prog: []interface{}{
 				1, "push", 2, "push", "bitor",
 				3, "eq", 1, "hz",
 				3, "push", 6, "bitor",
 				7, "eq", 1, "hz",
 				"halt",
-			),
+			},
 		},
 
 		{
 			Name: "bitxor",
-			Prog: MustAssemble(
+			Prog: []interface{}{
 				0x42, "push",
 				0x99, "push", "bitxor",
 				0xed, "bitxor",
-				"dup", 0x42^0x99^0xed, "eq", 1, "hz",
+				"dup", 0x42 ^ 0x99 ^ 0xed, "eq", 1, "hz",
 
 				"dup",
 				0x99, "bitxor",
@@ -219,12 +219,12 @@ func TestMach_bitwise_ops(t *testing.T) {
 				0xed, "eq", 1, "hz",
 
 				"halt",
-			),
+			},
 		},
 
 		{
 			Name: "bit set & test & clear",
-			Prog: MustAssemble(
+			Prog: []interface{}{
 				// set some bits
 				40, "push", ":vec", "bitset",
 				42, "push", ":vec", "push", "bitset",
@@ -264,7 +264,7 @@ func TestMach_bitwise_ops(t *testing.T) {
 
 				// 4 * 32 = 128 bits
 				"vec:", ".data", ".alloc", 4,
-			),
+			},
 		},
 	}.Run(t)
 }
@@ -273,7 +273,7 @@ func TestMach_queueSize(t *testing.T) {
 	TestCases{
 		{
 			Name: "exceeded",
-			Prog: MustAssemble(
+			Prog: []interface{}{
 				".queueSize", 1,
 				":lol", "fork",
 				":wut", "fork",
@@ -281,14 +281,14 @@ func TestMach_queueSize(t *testing.T) {
 				"lol:", 1, "halt",
 				"wut:", 2, "halt",
 				"halt",
-			),
+			},
 			Result: Result{
 				Err: "run queue full",
 			}.WithExpectedHaltCodes(1, 2),
 		},
 		{
 			Name: "sufficient",
-			Prog: MustAssemble(
+			Prog: []interface{}{
 				".queueSize", 2,
 				":lol", "fork",
 				":wut", "fork",
@@ -296,7 +296,7 @@ func TestMach_queueSize(t *testing.T) {
 				"lol:", 1, "halt",
 				"wut:", 2, "halt",
 				"halt",
-			),
+			},
 			Result: NoResult.WithExpectedHaltCodes(1, 2),
 		},
 	}.Run(t)

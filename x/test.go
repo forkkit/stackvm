@@ -42,7 +42,7 @@ type TestCases []TestCase
 type TestCase struct {
 	Logf    func(format string, args ...interface{})
 	Name    string
-	Prog    []byte
+	Prog    interface{}
 	Err     string
 	Handler func(*stackvm.Mach) ([]byte, error)
 	Result  TestCaseResult
@@ -216,14 +216,28 @@ func (t testCaseRun) logLines(s string) {
 }
 
 func (t testCaseRun) build() (m *stackvm.Mach, fin finisher, err error) {
+	var prog []byte
+	switch v := t.Prog.(type) {
+	case []byte:
+		prog = v
+	case []interface{}:
+		prog, err = Assemble(v...)
+		if err != nil {
+			return
+		}
+	default:
+		err = fmt.Errorf("invalid prog type %T", t.Prog)
+		return
+	}
+
 	if dumpProgFlag {
 		// TODO: reconcile with stackvm/x/dumper
 		t.Logf("Program to Load:")
-		t.logLines(hex.Dump(t.Prog))
+		t.logLines(hex.Dump(prog))
 	}
 	fin = t.Result.start(t.TB)
 	h, _ := fin.(stackvm.Handler)
-	m, err = stackvm.New(t.Prog, h)
+	m, err = stackvm.New(prog, h)
 	return
 }
 
