@@ -59,13 +59,14 @@ func opData(op stackvm.Op) (uint32, bool) {
 type ref struct{ site, targ, off int }
 
 type assembler struct {
-	i        int
-	in       []interface{}
-	state    assemblerState
+	i      int
+	in     []interface{}
+	state  assemblerState
+	labels map[string]int
+
 	optOps   []stackvm.Op
-	ops      []stackvm.Op
 	maxBytes int
-	labels   map[string]int
+	ops      []stackvm.Op
 	refsBy   map[string][]ref
 
 	stackSize *stackvm.Op
