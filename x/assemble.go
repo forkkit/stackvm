@@ -62,7 +62,6 @@ type assembler struct {
 	i        int
 	in       []interface{}
 	state    assemblerState
-	opts     stackvm.MachOptions
 	optOps   []stackvm.Op
 	ops      []stackvm.Op
 	maxBytes int
