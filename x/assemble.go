@@ -429,14 +429,14 @@ func (asm *assembler) defRef(name string, off int) {
 
 func (asm *assembler) encode() []byte {
 	numRefs := 0
-	for _, refs := range asm.refsBy {
-		numRefs += len(refs)
+	for _, rfs := range asm.refsBy {
+		numRefs += len(rfs)
 	}
 	if numRefs > 0 {
 		asm.refs = make([]ref, 0, numRefs)
-		for name, refs := range asm.refsBy {
+		for name, rfs := range asm.refsBy {
 			targ := asm.labels[name]
-			for _, rf := range refs {
+			for _, rf := range rfs {
 				rf.targ = targ
 				asm.refs = append(asm.refs, rf)
 			}
