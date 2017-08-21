@@ -104,10 +104,12 @@ func New(prog []byte, h Handler) (*Mach, error) {
 		opc:   makeOpCache(len(prog) - n),
 		pbp:   0,
 		psp:   _pspInit,
-		cbp:   uint32(opts.StackSize) - 4,
-		csp:   uint32(opts.StackSize) - 4,
-		ip:    uint32(opts.StackSize),
 		limit: uint(opts.MaxOps),
+	}
+	if opts.StackSize > 0 {
+		m.cbp = uint32(opts.StackSize) - 4
+		m.csp = uint32(opts.StackSize) - 4
+		m.ip = uint32(opts.StackSize)
 	}
 
 	if h != nil {
