@@ -96,13 +96,6 @@ func (asm assembler) Assemble(in ...interface{}) ([]byte, error) {
 	asm.addOpt("version", 0, false)
 	asm.stackSize = asm.refOpt("stackSize", defaultStackSize, true)
 
-	op, err := stackvm.ResolveOp("jump", 0, true)
-	if err != nil {
-		return nil, err
-	}
-	asm.prog.ops = append(asm.prog.ops, op)
-	asm.prog.maxBytes += 6
-
 	if err := asm.scan(in); err != nil {
 		return nil, err
 	}
@@ -259,6 +252,11 @@ func (asm *assembler) refOpt(name string, arg uint32, have bool) *stackvm.Op {
 
 func (asm *assembler) addOpt(name string, arg uint32, have bool) {
 	asm.opts.add(stackvm.ResolveOption(name, arg, have))
+}
+
+func (asm *assembler) addRefOpt(name string, targetName string, off int) {
+	op := stackvm.ResolveOption(name, 0, true)
+	asm.opts.addRef(op, targetName, off)
 }
 
 type scanner struct {
@@ -450,8 +448,7 @@ func (sc *scanner) handleEntry() error {
 	}
 	sc.prog.labels[".entry"] = len(sc.prog.ops)
 
-	// back-fill the ref for the jump in ops[0]
-	sc.prog.refsBy[name] = append(sc.prog.refsBy[name], ref{site: 0})
+	sc.addRefOpt("entry", name, 0)
 
 	sc.setState(assemblerText)
 	return nil
@@ -626,11 +623,6 @@ encodeOptions:
 	boff = c
 
 	// encode program
-	if _, defined := enc.labels[".entry"]; !defined {
-		// skip unused entry jump
-		i++
-		offsets[i] = c
-	}
 	for i < len(enc.ops) {
 		// fix a previously encoded ref's target
 		for 0 <= rf.site && rf.site < i && rf.targ <= i {
@@ -639,7 +631,11 @@ encodeOptions:
 			site := enc.base + offsets[rf.site] - boff
 			targ := enc.base + offsets[rf.targ] - boff + uint32(enc.refs[rfi].off)
 			op := enc.ops[rf.site]
-			op = op.ResolveRefArg(site, targ)
+			if rf.site < enc.nopts {
+				op.Arg = targ
+			} else {
+				op = op.ResolveRefArg(site, targ)
+			}
 			enc.ops[rf.site] = op
 			if end := lo + uint32(op.EncodeInto(buf[lo:])); end != hi {
 				// rewind to prior ref

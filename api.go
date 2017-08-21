@@ -60,6 +60,9 @@ var defaultContext = context{
 //   of machine copies that may be made in total. Well behaved programs
 //   shouldn't need to specify this option, it should be mostly used for
 //   debugging. Default: 0.
+// - 0x05 entry: its required parameter is the value for IP instead of
+//   starting execution at the top of the loaded program (right after the
+//   stack).
 // - 0x7f version: reserved for future use, where its parameter will be the
 //   required machine/program version; passing a version value is currently
 //   unsupported.
@@ -301,6 +304,10 @@ const (
 	// specify this option, it should be mostly used for debugging. Default: 0.
 	optCodeMaxCopies = 0x04
 
+	// its required parameter is the value for IP instead of starting execution
+	// at the top of the loaded program (right after the stack).
+	optCodeEntry = 0x05
+
 	// reserved for future use, where its parameter will be the required
 	// machine/program version; passing a version value is currently
 	// unsupported.
@@ -342,10 +349,14 @@ func (mb *machBuilder) build(buf []byte, h Handler) error {
 			if arg%4 != 0 {
 				return fmt.Errorf("invalid stacksize %#02x, not a word-multiple", arg)
 			}
+			oldBase := mb.Mach.cbp + 4
 			mb.base = uint32(arg)
 			if mb.base > 0 {
 				mb.Mach.cbp = mb.base - 4
 				mb.Mach.csp = mb.base - 4
+			}
+			// TODO: else support 0
+			if mb.Mach.ip == 0 || mb.Mach.ip == oldBase {
 				mb.Mach.ip = mb.base
 			}
 
@@ -363,6 +374,9 @@ func (mb *machBuilder) build(buf []byte, h Handler) error {
 
 		case 0x80 | optCodeMaxCopies:
 			mb.maxCopies = int(arg)
+
+		case 0x80 | optCodeEntry:
+			mb.Mach.ip = arg
 
 		case optCodeEnd:
 			return mb.finish(buf[n:], h)
@@ -409,6 +423,8 @@ func ResolveOption(name string, arg uint32, have bool) (op Op) {
 		op.Code = optCodeMaxOps
 	case "maxCopies":
 		op.Code = optCodeMaxCopies
+	case "entry":
+		op.Code = optCodeEntry
 	case "version":
 		op.Code = optCodeVersion
 	default:
