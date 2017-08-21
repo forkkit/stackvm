@@ -72,6 +72,7 @@ type assembler struct {
 	stackSize *stackvm.Op
 	queueSize *stackvm.Op
 	maxOps    *stackvm.Op
+	maxCopies *stackvm.Op
 }
 
 type assemblerState uint8
@@ -130,9 +131,6 @@ func (asm *assembler) scan() error {
 	}
 
 	// finish options
-	if asm.opts.MaxCopies != 0 {
-		asm.addOpt("maxCopies", asm.opts.MaxCopies, true)
-	}
 	asm.addOpt("end", 0, false)
 
 	// check for undefined labels
@@ -191,7 +189,11 @@ func (asm *assembler) handleMaxCopies() error {
 	if n < 0 {
 		return fmt.Errorf("invalid .maxCopies %v, must be non-negative", n)
 	}
-	asm.opts.MaxCopies = uint32(n)
+	if asm.maxCopies == nil {
+		asm.maxCopies = asm.refOpt("maxCopies", uint32(n), true)
+	} else {
+		asm.maxCopies.Arg = uint32(n)
+	}
 	return nil
 }
 
