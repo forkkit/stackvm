@@ -526,12 +526,13 @@ encodeOptions:
 	for i < len(ops) {
 		// fix a previously encoded ref's target
 		for 0 <= rf.site && rf.site < i && rf.targ <= i {
-			site := base + offsets[rf.site] - boff
-			targ := base + offsets[rf.targ] - boff + uint32(refs[rfi].off)
-			op := ops[rf.site].ResolveRefArg(site, targ)
-			ops[rf.site] = op
 			// re-encode the ref and rewind if arg size changed
 			lo, hi := offsets[rf.site], offsets[rf.site+1]
+			site := base + offsets[rf.site] - boff
+			targ := base + offsets[rf.targ] - boff + uint32(refs[rfi].off)
+			op := ops[rf.site]
+			op = op.ResolveRefArg(site, targ)
+			ops[rf.site] = op
 			if end := lo + uint32(op.EncodeInto(buf[lo:])); end != hi {
 				// rewind to prior ref
 				i, c = rf.site+1, end
