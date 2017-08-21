@@ -64,15 +64,58 @@ type assembler struct {
 	state  assemblerState
 	labels map[string]int
 
-	optOps   []stackvm.Op
-	maxBytes int
-
-	prog section
+	opts, prog section
 
 	stackSize *stackvm.Op
 	queueSize *stackvm.Op
 	maxOps    *stackvm.Op
 	maxCopies *stackvm.Op
+}
+
+func collectSections(
+	labels map[string]int, secs ...section,
+) (
+	refs []ref, ops []stackvm.Op, maxBytes int,
+) {
+	numRefs, numOps := 0, 0
+	for _, sec := range secs {
+		numOps += len(sec.ops)
+		for _, rfs := range sec.refsBy {
+			numRefs += len(rfs)
+		}
+		maxBytes += sec.maxBytes
+	}
+	if numOps > 0 {
+		ops = make([]stackvm.Op, 0, numOps)
+	}
+	if numRefs > 0 {
+		refs = make([]ref, 0, numRefs)
+	}
+
+	for _, sec := range secs {
+		base := len(ops)
+
+		// collect ops
+		ops = append(ops, sec.ops...)
+
+		// collect refs
+		for name, rfs := range sec.refsBy {
+			targ := labels[name]
+			for _, rf := range rfs {
+				rf.site += base
+				rf.targ = targ + base
+				refs = append(refs, rf)
+			}
+		}
+	}
+
+	if len(refs) > 0 {
+		sort.Slice(refs, func(i, j int) bool {
+			return refs[i].site < refs[j].site
+		})
+	}
+
+	return
 }
 
 type section struct {
@@ -117,6 +160,7 @@ func (asm *assembler) init() error {
 	// TODO in
 	asm.state = assemblerText
 	asm.labels = make(map[string]int)
+	asm.opts = makeSection()
 	asm.prog = makeSection()
 	asm.addOpt("version", 0, false)
 	asm.stackSize = asm.refOpt("stackSize", defaultStackSize, true)
@@ -132,15 +176,13 @@ func (asm *assembler) init() error {
 }
 
 func (asm *assembler) refOpt(name string, arg uint32, have bool) *stackvm.Op {
-	i := len(asm.optOps)
+	i := len(asm.opts.ops)
 	asm.addOpt(name, arg, have)
-	return &asm.optOps[i]
+	return &asm.opts.ops[i]
 }
 
 func (asm *assembler) addOpt(name string, arg uint32, have bool) {
-	op := stackvm.ResolveOption(name, arg, have)
-	asm.optOps = append(asm.optOps, op)
-	asm.maxBytes += op.NeededSize()
+	asm.opts.add(stackvm.ResolveOption(name, arg, have))
 }
 
 func (asm *assembler) scan() error {
@@ -162,7 +204,7 @@ func (asm *assembler) scan() error {
 	// check for undefined labels
 	if err == nil {
 		var undefined []string
-		for _, sec := range []section{asm.prog} {
+		for _, sec := range []section{asm.opts, asm.prog} {
 			for name := range sec.refsBy {
 				if i, defined := asm.labels[name]; !defined || i < 0 {
 					undefined = append(undefined, name)
@@ -483,43 +525,12 @@ func (asm *assembler) encode() []byte {
 	var (
 		base  = asm.stackSize.Arg
 		boff  uint32 // position of encoded program
-		nopts = len(asm.optOps)
-
-		ops  []stackvm.Op
-		refs []ref
-		rfi  int
-		rf   = ref{site: -1, targ: -1}
+		nopts = len(asm.opts.ops)
 	)
 
-	maxBytes := asm.maxBytes + asm.prog.maxBytes
-
-	// collect option ops and program ops
-	if totalOps := len(asm.prog.ops) + nopts; totalOps < cap(asm.prog.ops) {
-		ops = asm.prog.ops[:totalOps]
-	} else {
-		ops = make([]stackvm.Op, totalOps)
-	}
-	copy(ops[nopts:], asm.prog.ops)
-	copy(ops, asm.optOps)
-
-	// build refs
-	numRefs := 0
-	for _, rfs := range asm.prog.refsBy {
-		numRefs += len(rfs)
-	}
-	if numRefs > 0 {
-		refs = make([]ref, 0, numRefs)
-		for name, rfs := range asm.prog.refsBy {
-			targ := asm.labels[name]
-			for _, rf := range rfs {
-				rf.site += nopts
-				rf.targ = targ + nopts
-				refs = append(refs, rf)
-			}
-		}
-		sort.Slice(refs, func(i, j int) bool {
-			return refs[i].site < refs[j].site
-		})
+	refs, ops, maxBytes := collectSections(asm.labels, asm.opts, asm.prog)
+	rfi, rf := 0, ref{site: -1, targ: -1}
+	if len(refs) > 0 {
 		rf = refs[rfi]
 	}
 
