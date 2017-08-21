@@ -90,6 +90,7 @@ func (asm *assembler) init() error {
 	asm.maxBytes = 0
 	asm.labels = make(map[string]int)
 	asm.refsBy = make(map[string][]ref)
+	asm.addOpt("version", 0, false)
 	op, err := stackvm.ResolveOp("jump", 0, true)
 	if err != nil {
 		return err
@@ -127,7 +128,6 @@ func (asm *assembler) scan() error {
 	}
 
 	// finish options
-	asm.addOpt("version", 0, false)
 	if asm.opts.StackSize != 0 {
 		asm.addOpt("stackSize", uint32(asm.opts.StackSize), true)
 	}
