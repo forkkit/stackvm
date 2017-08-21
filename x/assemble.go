@@ -66,13 +66,41 @@ type assembler struct {
 
 	optOps   []stackvm.Op
 	maxBytes int
-	ops      []stackvm.Op
-	refsBy   map[string][]ref
+
+	prog section
 
 	stackSize *stackvm.Op
 	queueSize *stackvm.Op
 	maxOps    *stackvm.Op
 	maxCopies *stackvm.Op
+}
+
+type section struct {
+	ops      []stackvm.Op
+	refsBy   map[string][]ref
+	maxBytes int
+}
+
+func makeSection() section {
+	return section{
+		ops:      nil,
+		refsBy:   make(map[string][]ref),
+		maxBytes: 0,
+	}
+}
+
+func (sec *section) add(op stackvm.Op) {
+	sec.ops = append(sec.ops, op)
+	if _, isData := opData(op); !isData {
+		sec.maxBytes += op.NeededSize()
+	}
+}
+
+func (sec *section) addRef(op stackvm.Op, name string, off int) {
+	rf := ref{site: len(sec.ops), off: off}
+	sec.refsBy[name] = append(sec.refsBy[name], rf)
+	sec.ops = append(sec.ops, op)
+	sec.maxBytes += 6
 }
 
 type assemblerState uint8
@@ -88,10 +116,8 @@ func (asm *assembler) init() error {
 	asm.i = 0
 	// TODO in
 	asm.state = assemblerText
-	asm.ops = nil
-	asm.maxBytes = 0
 	asm.labels = make(map[string]int)
-	asm.refsBy = make(map[string][]ref)
+	asm.prog = makeSection()
 	asm.addOpt("version", 0, false)
 	asm.stackSize = asm.refOpt("stackSize", defaultStackSize, true)
 	op, err := stackvm.ResolveOp("jump", 0, true)
@@ -99,8 +125,8 @@ func (asm *assembler) init() error {
 		return err
 	}
 	if err == nil {
-		asm.ops = append(asm.ops, op)
-		asm.maxBytes += 6
+		asm.prog.ops = append(asm.prog.ops, op)
+		asm.prog.maxBytes += 6
 	}
 	return nil
 }
@@ -136,9 +162,11 @@ func (asm *assembler) scan() error {
 	// check for undefined labels
 	if err == nil {
 		var undefined []string
-		for name := range asm.refsBy {
-			if i, defined := asm.labels[name]; !defined || i < 0 {
-				undefined = append(undefined, name)
+		for _, sec := range []section{asm.prog} {
+			for name := range sec.refsBy {
+				if i, defined := asm.labels[name]; !defined || i < 0 {
+					undefined = append(undefined, name)
+				}
 			}
 		}
 		if len(undefined) > 0 {
@@ -312,10 +340,10 @@ func (asm *assembler) handleEntry() error {
 		}
 		return fmt.Errorf("duplicate .entry %q, already set to ???", name)
 	}
-	asm.labels[".entry"] = len(asm.ops)
+	asm.labels[".entry"] = len(asm.prog.ops)
 
 	// back-fill the ref for the jump in ops[0]
-	asm.refsBy[name] = append(asm.refsBy[name], ref{site: 0})
+	asm.prog.refsBy[name] = append(asm.prog.refsBy[name], ref{site: 0})
 
 	asm.setState(assemblerText)
 	return nil
@@ -325,7 +353,7 @@ func (asm *assembler) handleLabel(name string) error {
 	if i, defined := asm.labels[name]; defined && i >= 0 {
 		return fmt.Errorf("label %q already defined", name)
 	}
-	asm.labels[name] = len(asm.ops)
+	asm.labels[name] = len(asm.prog.ops)
 	return nil
 }
 
@@ -334,9 +362,8 @@ func (asm *assembler) handleRef(name string) error {
 	if err != nil {
 		return err
 	}
-	asm.maxBytes += 6
-	asm.defRef(name, 0)
-	asm.ops = append(asm.ops, op)
+	asm.prog.addRef(op, name, 0)
+	asm.refLabel(name)
 	return nil
 }
 
@@ -345,17 +372,15 @@ func (asm *assembler) handleOffRef(name string, n int) error {
 	if err != nil {
 		return err
 	}
-	asm.maxBytes += 6
-	asm.defRef(name, n)
-	asm.ops = append(asm.ops, op)
+	asm.prog.addRef(op, name, n)
+	asm.refLabel(name)
 	return nil
 }
 
 func (asm *assembler) handleOp(name string) error {
 	op, err := stackvm.ResolveOp(name, 0, false)
 	if err == nil {
-		asm.maxBytes += op.NeededSize()
-		asm.ops = append(asm.ops, op)
+		asm.prog.add(op)
 	}
 	return err
 }
@@ -370,8 +395,7 @@ func (asm *assembler) handleImm(n int) (err error) {
 		op, err = stackvm.ResolveOp(s, uint32(n), true)
 	}
 	if err == nil {
-		asm.maxBytes += op.NeededSize()
-		asm.ops = append(asm.ops, op)
+		asm.prog.add(op)
 	}
 	return err
 }
@@ -387,16 +411,16 @@ func (asm *assembler) handleAlloc() error {
 	// TODO: should be in bytes, not words
 	// TODO: would like to avoid N*append
 	do := dataOp(0)
-	asm.maxBytes += 4 * n
+	asm.prog.maxBytes += 4 * n
 	for i := 0; i < n; i++ {
-		asm.ops = append(asm.ops, do)
+		asm.prog.add(do)
 	}
 	return nil
 }
 
 func (asm *assembler) handleDataWord(d uint32) error {
-	asm.maxBytes += 4
-	asm.ops = append(asm.ops, dataOp(d))
+	asm.prog.maxBytes += 4
+	asm.prog.add(dataOp(d))
 	return nil
 }
 
@@ -449,11 +473,9 @@ func (asm *assembler) expect(desc string) (interface{}, error) {
 	return nil, fmt.Errorf("unexpected end of input, expected %s", desc)
 }
 
-func (asm *assembler) defRef(name string, off int) {
-	rf := ref{site: len(asm.ops), off: off}
-	asm.refsBy[name] = append(asm.refsBy[name], rf)
+func (asm *assembler) refLabel(name string) {
 	if _, defined := asm.labels[name]; !defined {
-		asm.labels[name] = -len(asm.ops) - 1
+		asm.labels[name] = -1
 	}
 }
 
@@ -463,35 +485,31 @@ func (asm *assembler) encode() []byte {
 		boff  uint32 // position of encoded program
 		nopts = len(asm.optOps)
 
-		ops []stackvm.Op
-		i   int // current op index
-
-		buf     = make([]byte, asm.maxBytes)
-		offsets = make([]uint32, nopts+len(asm.ops)+1)
-		c       uint32 // current op offset
-
+		ops  []stackvm.Op
 		refs []ref
 		rfi  int
 		rf   = ref{site: -1, targ: -1}
 	)
 
+	maxBytes := asm.maxBytes + asm.prog.maxBytes
+
 	// collect option ops and program ops
-	if totalOps := len(asm.ops) + nopts; totalOps < cap(asm.ops) {
-		ops = asm.ops[:totalOps]
+	if totalOps := len(asm.prog.ops) + nopts; totalOps < cap(asm.prog.ops) {
+		ops = asm.prog.ops[:totalOps]
 	} else {
 		ops = make([]stackvm.Op, totalOps)
 	}
-	copy(ops[nopts:], asm.ops)
+	copy(ops[nopts:], asm.prog.ops)
 	copy(ops, asm.optOps)
 
 	// build refs
 	numRefs := 0
-	for _, rfs := range asm.refsBy {
+	for _, rfs := range asm.prog.refsBy {
 		numRefs += len(rfs)
 	}
 	if numRefs > 0 {
 		refs = make([]ref, 0, numRefs)
-		for name, rfs := range asm.refsBy {
+		for name, rfs := range asm.prog.refsBy {
 			targ := asm.labels[name]
 			for _, rf := range rfs {
 				rf.site += nopts
@@ -504,6 +522,13 @@ func (asm *assembler) encode() []byte {
 		})
 		rf = refs[rfi]
 	}
+
+	var (
+		buf     = make([]byte, maxBytes)
+		offsets = make([]uint32, len(ops)+1)
+		c       uint32 // current op offset
+		i       int    // current op index
+	)
 
 	// encode options
 encodeOptions:
