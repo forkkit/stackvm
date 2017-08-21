@@ -70,6 +70,7 @@ type assembler struct {
 	refsBy   map[string][]ref
 
 	stackSize *stackvm.Op
+	queueSize *stackvm.Op
 }
 
 type assemblerState uint8
@@ -128,9 +129,6 @@ func (asm *assembler) scan() error {
 	}
 
 	// finish options
-	if asm.opts.QueueSize != 0 {
-		asm.addOpt("queueSize", uint32(asm.opts.QueueSize), true)
-	}
 	if asm.opts.MaxOps != 0 {
 		asm.addOpt("maxOps", asm.opts.MaxOps, true)
 	}
@@ -163,7 +161,11 @@ func (asm *assembler) handleQueueSize() error {
 	if n < 0 {
 		return fmt.Errorf("invalid .queueSize %v, must be non-negative", n)
 	}
-	asm.opts.QueueSize = uint32(n)
+	if asm.queueSize == nil {
+		asm.queueSize = asm.refOpt("queueSize", uint32(n), true)
+	} else {
+		asm.queueSize.Arg = uint32(n)
+	}
 	return nil
 }
 
