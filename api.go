@@ -90,46 +90,11 @@ var defaultContext = context{
 //
 // TODO: document operations.
 func New(prog []byte, h Handler) (*Mach, error) {
-	opts := MachOptions{
-		QueueSize: defaultQueueSize,
-	}
-
-	n, err := opts.read(prog)
-	if err != nil {
+	var mb machBuilder
+	if err := mb.build(prog, h); err != nil {
 		return nil, err
 	}
-
-	m := Mach{
-		ctx:   defaultContext,
-		opc:   makeOpCache(len(prog) - n),
-		pbp:   0,
-		psp:   _pspInit,
-		limit: uint(opts.MaxOps),
-	}
-	if opts.StackSize > 0 {
-		m.cbp = uint32(opts.StackSize) - 4
-		m.csp = uint32(opts.StackSize) - 4
-		m.ip = uint32(opts.StackSize)
-	}
-
-	if h != nil {
-		const pagesPerMachineGuess = 4
-		n := int(opts.QueueSize)
-		m.ctx = context{
-			Handler:       h,
-			queue:         newRunq(n),
-			machAllocator: makeMachFreeList(n),
-			pageAllocator: makePageFreeList(n * pagesPerMachineGuess),
-		}
-		if opts.MaxCopies > 0 {
-			m.ctx.machAllocator = maxMachCopiesAllocator(int(opts.MaxCopies), m.ctx.machAllocator)
-		}
-	}
-
-	m.storeBytes(m.ip, prog[n:])
-	// TODO mark code segment, update data
-
-	return &m, nil
+	return &mb.Mach, nil
 }
 
 func (m *Mach) String() string {
@@ -342,66 +307,93 @@ const (
 	optCodeVersion = 0x7f
 )
 
-// MachOptions represents options for a machine, currently just stack size (see
-// New).
-type MachOptions struct {
-	StackSize uint16
-	QueueSize uint32
-	MaxOps    uint32
-	MaxCopies uint32
+type machBuilder struct {
+	Mach
+	base      uint32
+	queueSize int
+	maxCopies int
 }
 
-func (opts *MachOptions) read(buf []byte) (n int, err error) {
+func (mb *machBuilder) build(buf []byte, h Handler) error {
+	mb.queueSize = defaultQueueSize
+
+	mb.Mach.ctx = defaultContext
+	mb.Mach.psp = _pspInit
+
+	n := 0
 	for {
 		m, arg, code, ok := readVarCode(buf[n:])
 		n += m
 		if !ok {
-			err = errVarOpts
-			return
+			return errVarOpts
 		}
 		switch code {
 
 		case optCodeVersion:
 		case 0x80 | optCodeVersion:
 			if arg != 0 {
-				err = fmt.Errorf("unsupported machine version %v", arg)
-				return
+				return fmt.Errorf("unsupported machine version %v", arg)
 			}
 
 		case 0x80 | optCodeStackSize:
 			if arg > 0xffff {
-				err = fmt.Errorf("invalid stacksize %#x", arg)
-				return
+				return fmt.Errorf("invalid stacksize %#x", arg)
 			}
 			if arg%4 != 0 {
-				err = fmt.Errorf("invalid stacksize %#02x, not a word-multiple", arg)
-				return
+				return fmt.Errorf("invalid stacksize %#02x, not a word-multiple", arg)
 			}
-			opts.StackSize = uint16(arg)
+			mb.base = uint32(arg)
+			if mb.base > 0 {
+				mb.Mach.cbp = mb.base - 4
+				mb.Mach.csp = mb.base - 4
+				mb.Mach.ip = mb.base
+			}
 
 		case 0x80 | optCodeQueueSize:
-			opts.QueueSize = arg
+			mb.queueSize = int(arg)
 
 		case optCodeMaxOps:
-			opts.MaxOps = 0
+			mb.Mach.limit = 0
 
 		case 0x80 | optCodeMaxOps:
-			opts.MaxOps = arg
+			mb.Mach.limit = uint(arg)
 
 		case optCodeMaxCopies:
-			opts.MaxCopies = 0
+			mb.maxCopies = 0
 
 		case 0x80 | optCodeMaxCopies:
-			opts.MaxCopies = arg
+			mb.maxCopies = int(arg)
 
 		case optCodeEnd:
-			return
+			return mb.finish(buf[n:], h)
 
 		default:
-			err = fmt.Errorf("invalid option code %#02x", code)
-			return
+			return fmt.Errorf("invalid option code %#02x", code)
 		}
 	}
+}
+
+func (mb *machBuilder) finish(prog []byte, h Handler) error {
+	if h != nil {
+		const pagesPerMachineGuess = 4
+		n := int(mb.queueSize)
+		mb.Mach.ctx = context{
+			Handler:       h,
+			queue:         newRunq(n),
+			machAllocator: makeMachFreeList(n),
+			pageAllocator: makePageFreeList(n * pagesPerMachineGuess),
+		}
+		if mb.maxCopies > 0 {
+			mb.Mach.ctx.machAllocator = maxMachCopiesAllocator(mb.maxCopies, mb.Mach.ctx.machAllocator)
+		}
+	}
+
+	mb.Mach.opc = makeOpCache(len(prog))
+
+	mb.Mach.storeBytes(mb.base, prog)
+	// TODO mark code segment, update data
+
+	return nil
 }
 
 // ResolveOption constructs an option Op.
