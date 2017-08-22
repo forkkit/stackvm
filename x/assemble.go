@@ -43,6 +43,13 @@ type Assembler interface {
 // with a machine option.
 type Option func(*assembler)
 
+// Logf sets a debug logging function to an Assembler.
+func Logf(f func(string, ...interface{})) Option {
+	return func(asm *assembler) {
+		asm.logff = f
+	}
+}
+
 // copied from generated op_codes.go, which isn't that bad since having "the
 // zero op crash" should perhaps be the most stable part of the ISA.
 const opCodeCrash = 0x00
@@ -72,6 +79,8 @@ func opData(op stackvm.Op) (uint32, bool) {
 type ref struct{ site, targ, off int }
 
 type assembler struct {
+	logff func(string, ...interface{})
+
 	labels     map[string]int
 	opts, prog section
 
@@ -115,6 +124,12 @@ func (asm assembler) With(opts ...Option) Assembler {
 		opt(&asm)
 	}
 	return asm
+}
+
+func (asm *assembler) logf(format string, args ...interface{}) {
+	if asm.logff != nil {
+		asm.logff(format, args...)
+	}
 }
 
 func (asm *assembler) setOption(pop **stackvm.Op, name string, v uint32) {
