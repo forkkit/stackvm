@@ -23,11 +23,19 @@ func MustAssemble(in ...interface{}) []byte {
 // reference string of the form ":name". Labels are defined with a string of
 // the form "name:".
 func Assemble(in ...interface{}) ([]byte, error) {
-	asm := assembler{in: in}
-	if err := asm.scan(); err != nil {
-		return nil, err
-	}
-	return asm.encode(), nil
+	return NewAssembler().Assemble(in...)
+}
+
+// NewAssembler creates a new Assembler.
+func NewAssembler() Assembler {
+	asm := assembler{}
+	return asm
+}
+
+// Assembler will assemble a stream of generic tokens into machine code in a
+// byte slice.
+type Assembler interface {
+	Assemble(in ...interface{}) ([]byte, error)
 }
 
 // copied from generated op_codes.go, which isn't that bad since having "the
@@ -70,6 +78,17 @@ type assembler struct {
 	queueSize *stackvm.Op
 	maxOps    *stackvm.Op
 	maxCopies *stackvm.Op
+}
+
+func (asm assembler) Assemble(in ...interface{}) (buf []byte, err error) {
+	asm.in = in
+	err = asm.scan()
+
+	if err == nil {
+		buf = asm.encode()
+	}
+
+	return
 }
 
 func collectSections(
