@@ -8,7 +8,6 @@ import (
 )
 
 var (
-	errRunning = errors.New("machine running")
 	errNoArg   = errors.New("operation does not accept an argument")
 	errVarOpts = errors.New("truncated options")
 )
@@ -177,31 +176,38 @@ func (m *Mach) CSP() uint32 { return m.csp }
 // more pairs of memory address ranges. If so, then Values will extract all
 // such ranged values, and return them as a slice-of-slices.
 func (m *Mach) Values() ([][]uint32, error) {
-	if m.err == nil {
-		return nil, errRunning
-	}
-
-	if arg, ok := m.halted(); !ok || arg != 0 {
-		if m.err != nil {
+	done := false
+	if m.err != nil {
+		if arg, ok := m.halted(); !ok || arg != 0 {
 			return nil, m.err
 		}
-		return nil, errRunning
+		done = true
 	}
 
-	cs, err := m.fetchCS()
-	if err != nil {
-		return nil, err
+	var outputs [][2]uint32
+	if done {
+		cs, err := m.fetchCS()
+		if err != nil {
+			return nil, err
+		}
+		if len(cs) > 0 {
+			if len(cs)%2 != 0 {
+				return nil, fmt.Errorf("invalid control stack length %d", len(cs))
+			}
+			outputs = append(make([][2]uint32, 0, len(outputs)+len(cs)/2), outputs...)
+			for i := 0; i < len(cs); i += 2 {
+				outputs = append(outputs, [2]uint32{cs[i], cs[i+1]})
+			}
+		}
 	}
-	if len(cs)%2 != 0 {
-		return nil, fmt.Errorf("invalid control stack length %d", len(cs))
-	}
-	if len(cs) == 0 {
+
+	if len(outputs) == 0 {
 		return nil, nil
 	}
 
-	res := make([][]uint32, 0, len(cs)/2)
-	for i := 0; i < len(cs); i += 2 {
-		ns, err := m.fetchMany(cs[i], cs[i+1])
+	res := make([][]uint32, 0, len(outputs))
+	for _, out := range outputs {
+		ns, err := m.fetchMany(out[0], out[1])
 		if err != nil {
 			return nil, err
 		}
