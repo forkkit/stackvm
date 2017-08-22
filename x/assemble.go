@@ -676,5 +676,19 @@ encodeOptions:
 		offsets[i] = c
 	}
 
+	if rf.site >= 0 {
+		op := enc.ops[rf.site]
+		name := "???"
+		for n, targ := range enc.labels {
+			if targ == rf.targ {
+				name = n
+			}
+		}
+		if rf.off != 0 {
+			return nil, fmt.Errorf("unresolved reference for `%d, \":%s\", %q`", rf.off, name, op.Name())
+		}
+		return nil, fmt.Errorf("unresolved reference for `\":%s\", %q`", name, op.Name())
+	}
+
 	return buf[:c], nil
 }
