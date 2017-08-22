@@ -109,9 +109,7 @@ func (asm assembler) Assemble(in ...interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	if err := asm.finish(); err != nil {
-		return nil, err
-	}
+	asm.finish()
 
 	enc, err := collectSections(asm.labels, asm.opts, asm.prog)
 	if err != nil {
@@ -286,10 +284,9 @@ func (asm *assembler) scan(in []interface{}) error {
 	return nil
 }
 
-func (asm *assembler) finish() error {
+func (asm *assembler) finish() {
 	// finish options
 	asm.addOpt("end", 0, false)
-	return nil
 }
 
 func (sc *scanner) handleQueueSize() error {
