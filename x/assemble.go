@@ -81,7 +81,6 @@ type ref struct{ site, targ, off int }
 type assembler struct {
 	logff func(string, ...interface{})
 
-	labels     map[string]int
 	opts, prog section
 
 	stackSize *stackvm.Op
@@ -91,7 +90,6 @@ type assembler struct {
 }
 
 func (asm assembler) Assemble(in ...interface{}) ([]byte, error) {
-	asm.labels = make(map[string]int)
 	asm.opts = makeSection()
 	asm.prog = makeSection()
 
@@ -111,7 +109,7 @@ func (asm assembler) Assemble(in ...interface{}) ([]byte, error) {
 
 	asm.finish()
 
-	enc, err := collectSections(asm.labels, asm.opts, asm.prog)
+	enc, err := collectSections(asm.opts, asm.prog)
 	if err != nil {
 		return nil, err
 	}
@@ -143,16 +141,19 @@ func (asm *assembler) setOption(pop **stackvm.Op, name string, v uint32) {
 	}
 }
 
-func collectSections(labels map[string]int, secs ...section) (enc encoder, err error) {
-	numRefs, numOps := 0, 0
+func collectSections(secs ...section) (enc encoder, err error) {
+	numLabels, numRefs, numOps := 0, 0, 0
 	for _, sec := range secs {
+		numLabels += len(sec.labels)
 		numOps += len(sec.ops)
 		for _, rfs := range sec.refsBy {
 			numRefs += len(rfs)
 		}
 		enc.maxBytes += sec.maxBytes
 	}
-	enc.labels = labels
+	if numLabels > 0 {
+		enc.labels = make(map[string]int)
+	}
 	if numOps > 0 {
 		enc.ops = make([]stackvm.Op, 0, numOps)
 	}
@@ -162,6 +163,11 @@ func collectSections(labels map[string]int, secs ...section) (enc encoder, err e
 
 	base := 0
 	for _, sec := range secs {
+		// collect labels
+		for name, off := range sec.labels {
+			enc.labels[name] = base + off
+		}
+
 		// collect ops
 		enc.ops = append(enc.ops, sec.ops...)
 
@@ -172,7 +178,7 @@ func collectSections(labels map[string]int, secs ...section) (enc encoder, err e
 	var undefined []string
 	for _, sec := range secs {
 		for name := range sec.refsBy {
-			if i, defined := labels[name]; !defined || i < 0 {
+			if i, defined := enc.labels[name]; !defined || i < 0 {
 				undefined = append(undefined, name)
 			}
 		}
@@ -186,10 +192,10 @@ func collectSections(labels map[string]int, secs ...section) (enc encoder, err e
 	base = 0
 	for _, sec := range secs {
 		for name, rfs := range sec.refsBy {
-			targ := labels[name]
+			targ := enc.labels[name]
 			for _, rf := range rfs {
 				rf.site += base
-				rf.targ = targ + base
+				rf.targ = targ
 				enc.refs = append(enc.refs, rf)
 			}
 		}
@@ -209,6 +215,7 @@ func collectSections(labels map[string]int, secs ...section) (enc encoder, err e
 type section struct {
 	ops      []stackvm.Op
 	refsBy   map[string][]ref
+	labels   map[string]int
 	maxBytes int
 }
 
@@ -216,6 +223,7 @@ func makeSection() section {
 	return section{
 		ops:      nil,
 		refsBy:   make(map[string][]ref),
+		labels:   make(map[string]int),
 		maxBytes: 0,
 	}
 }
@@ -432,15 +440,15 @@ func (sc *scanner) handleEntry() error {
 	}
 
 	// dupe check .entry
-	if i, defined := sc.labels[".entry"]; defined && i >= 0 {
-		for dupName, j := range sc.labels {
+	if i, defined := sc.prog.labels[".entry"]; defined && i >= 0 {
+		for dupName, j := range sc.prog.labels {
 			if j == i {
 				return fmt.Errorf("duplicate .entry %q, already set to %q", name, dupName)
 			}
 		}
 		return fmt.Errorf("duplicate .entry %q, already set to ???", name)
 	}
-	sc.labels[".entry"] = len(sc.prog.ops)
+	sc.prog.labels[".entry"] = len(sc.prog.ops)
 
 	// back-fill the ref for the jump in ops[0]
 	sc.prog.refsBy[name] = append(sc.prog.refsBy[name], ref{site: 0})
@@ -450,10 +458,10 @@ func (sc *scanner) handleEntry() error {
 }
 
 func (sc *scanner) handleLabel(name string) error {
-	if i, defined := sc.labels[name]; defined && i >= 0 {
+	if i, defined := sc.prog.labels[name]; defined && i >= 0 {
 		return fmt.Errorf("label %q already defined", name)
 	}
-	sc.labels[name] = len(sc.prog.ops)
+	sc.prog.labels[name] = len(sc.prog.ops)
 	return nil
 }
 
@@ -574,8 +582,8 @@ func (sc *scanner) expect(desc string) (interface{}, error) {
 }
 
 func (asm *assembler) refLabel(name string) {
-	if _, defined := asm.labels[name]; !defined {
-		asm.labels[name] = -1
+	if _, defined := asm.prog.labels[name]; !defined {
+		asm.prog.labels[name] = -1
 	}
 }
 
