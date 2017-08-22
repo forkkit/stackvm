@@ -81,7 +81,24 @@ type assembler struct {
 }
 
 func (asm assembler) Assemble(in ...interface{}) (buf []byte, err error) {
+	asm.labels = make(map[string]int)
+	asm.opts = makeSection()
+	asm.prog = makeSection()
+
+	asm.addOpt("version", 0, false)
+	asm.stackSize = asm.refOpt("stackSize", defaultStackSize, true)
+
+	var op stackvm.Op
+	op, err = stackvm.ResolveOp("jump", 0, true)
+	if err != nil {
+		return
+	}
+	asm.prog.ops = append(asm.prog.ops, op)
+	asm.prog.maxBytes += 6
+
+	asm.i = 0
 	asm.in = in
+	asm.state = assemblerText
 	err = asm.scan()
 
 	if err == nil {
@@ -174,26 +191,6 @@ const (
 
 const defaultStackSize = 0x40
 
-func (asm *assembler) init() error {
-	asm.i = 0
-	// TODO in
-	asm.state = assemblerText
-	asm.labels = make(map[string]int)
-	asm.opts = makeSection()
-	asm.prog = makeSection()
-	asm.addOpt("version", 0, false)
-	asm.stackSize = asm.refOpt("stackSize", defaultStackSize, true)
-	op, err := stackvm.ResolveOp("jump", 0, true)
-	if err != nil {
-		return err
-	}
-	if err == nil {
-		asm.prog.ops = append(asm.prog.ops, op)
-		asm.prog.maxBytes += 6
-	}
-	return nil
-}
-
 func (asm *assembler) refOpt(name string, arg uint32, have bool) *stackvm.Op {
 	i := len(asm.opts.ops)
 	asm.addOpt(name, arg, have)
@@ -205,7 +202,7 @@ func (asm *assembler) addOpt(name string, arg uint32, have bool) {
 }
 
 func (asm *assembler) scan() error {
-	err := asm.init()
+	var err error
 	for ; err == nil && asm.i < len(asm.in); asm.i++ {
 		switch asm.state {
 		case assemblerData:
