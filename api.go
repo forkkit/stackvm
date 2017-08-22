@@ -171,10 +171,10 @@ func (m *Mach) CBP() uint32 { return m.cbp }
 // CSP returns the current control stack pointer.
 func (m *Mach) CSP() uint32 { return m.csp }
 
-// Values returns any recorded result values from a finished machine. After a
-// machine halts with 0 status code, the control stack may contain zero or
-// more pairs of memory address ranges. If so, then Values will extract all
-// such ranged values, and return them as a slice-of-slices.
+// Values returns any output values from the machine. Output values may be
+// statically declared via the output option. Additionally, once the machine
+// has halted with 0 status code, 0 or more pairs of output ranges may be left
+// on the control stack.
 func (m *Mach) Values() ([][]uint32, error) {
 	done := false
 	if m.err != nil {
@@ -184,7 +184,7 @@ func (m *Mach) Values() ([][]uint32, error) {
 		done = true
 	}
 
-	var outputs [][2]uint32
+	outputs := m.ctx.outputs
 	if done {
 		cs, err := m.fetchCS()
 		if err != nil {

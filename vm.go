@@ -56,6 +56,7 @@ type context struct {
 	machAllocator
 	pageAllocator
 	queue
+	outputs [][2]uint32
 }
 
 // Mach is a stack machine.
