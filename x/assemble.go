@@ -112,8 +112,11 @@ func (asm assembler) Assemble(in ...interface{}) (buf []byte, err error) {
 		err = asm.finish()
 	}
 
-	if err == nil {
-		buf = asm.encode()
+	if enc := collectSections(asm.labels, asm.opts, asm.prog); err == nil {
+		enc.logf = asm.logf
+		enc.base = asm.stackSize.Arg
+		enc.nopts = len(asm.opts.ops)
+		buf = enc.encode()
 	}
 
 	return
@@ -140,31 +143,28 @@ func (asm *assembler) setOption(pop **stackvm.Op, name string, v uint32) {
 	}
 }
 
-func collectSections(
-	labels map[string]int, secs ...section,
-) (
-	refs []ref, ops []stackvm.Op, maxBytes int,
-) {
+func collectSections(labels map[string]int, secs ...section) (enc encoder) {
 	numRefs, numOps := 0, 0
 	for _, sec := range secs {
 		numOps += len(sec.ops)
 		for _, rfs := range sec.refsBy {
 			numRefs += len(rfs)
 		}
-		maxBytes += sec.maxBytes
+		enc.maxBytes += sec.maxBytes
 	}
+	enc.labels = labels
 	if numOps > 0 {
-		ops = make([]stackvm.Op, 0, numOps)
+		enc.ops = make([]stackvm.Op, 0, numOps)
 	}
 	if numRefs > 0 {
-		refs = make([]ref, 0, numRefs)
+		enc.refs = make([]ref, 0, numRefs)
 	}
 
 	for _, sec := range secs {
-		base := len(ops)
+		base := len(enc.ops)
 
 		// collect ops
-		ops = append(ops, sec.ops...)
+		enc.ops = append(enc.ops, sec.ops...)
 
 		// collect refs
 		for name, rfs := range sec.refsBy {
@@ -172,14 +172,14 @@ func collectSections(
 			for _, rf := range rfs {
 				rf.site += base
 				rf.targ = targ + base
-				refs = append(refs, rf)
+				enc.refs = append(enc.refs, rf)
 			}
 		}
 	}
 
-	if len(refs) > 0 {
-		sort.Slice(refs, func(i, j int) bool {
-			return refs[i].site < refs[j].site
+	if len(enc.refs) > 0 {
+		sort.Slice(enc.refs, func(i, j int) bool {
+			return enc.refs[i].site < enc.refs[j].site
 		})
 	}
 
@@ -574,30 +574,35 @@ func (asm *assembler) refLabel(name string) {
 	}
 }
 
-func (asm *assembler) encode() []byte {
+type encoder struct {
+	logf     func(string, ...interface{})
+	nopts    int
+	base     uint32
+	labels   map[string]int
+	refs     []ref
+	ops      []stackvm.Op
+	maxBytes int
+}
+
+func (enc encoder) encode() []byte {
 	var (
-		base  = asm.stackSize.Arg
-		boff  uint32 // position of encoded program
-		nopts = len(asm.opts.ops)
+		buf     = make([]byte, enc.maxBytes)
+		offsets = make([]uint32, len(enc.ops)+1)
+		boff    uint32           // offset of encoded program
+		c       uint32           // current op offset
+		i       int              // current op index
+		rfi     int              // index of next ref
+		rf      = ref{-1, -1, 0} // next ref
 	)
 
-	refs, ops, maxBytes := collectSections(asm.labels, asm.opts, asm.prog)
-	rfi, rf := 0, ref{site: -1, targ: -1}
-	if len(refs) > 0 {
-		rf = refs[rfi]
+	if len(enc.refs) > 0 {
+		rf = enc.refs[rfi]
 	}
-
-	var (
-		buf     = make([]byte, maxBytes)
-		offsets = make([]uint32, len(ops)+1)
-		c       uint32 // current op offset
-		i       int    // current op index
-	)
 
 	// encode options
 encodeOptions:
-	for i < len(ops) {
-		op := ops[i]
+	for i < len(enc.ops) {
+		op := enc.ops[i]
 		c += uint32(op.EncodeInto(buf[c:]))
 		i++
 		offsets[i] = c
@@ -608,45 +613,45 @@ encodeOptions:
 	boff = c
 
 	// encode program
-	if _, defined := asm.labels[".entry"]; !defined {
+	if _, defined := enc.labels[".entry"]; !defined {
 		// skip unused entry jump
 		i++
 		offsets[i] = c
 	}
-	for i < len(ops) {
+	for i < len(enc.ops) {
 		// fix a previously encoded ref's target
 		for 0 <= rf.site && rf.site < i && rf.targ <= i {
 			// re-encode the ref and rewind if arg size changed
 			lo, hi := offsets[rf.site], offsets[rf.site+1]
-			site := base + offsets[rf.site] - boff
-			targ := base + offsets[rf.targ] - boff + uint32(refs[rfi].off)
-			op := ops[rf.site]
+			site := enc.base + offsets[rf.site] - boff
+			targ := enc.base + offsets[rf.targ] - boff + uint32(enc.refs[rfi].off)
+			op := enc.ops[rf.site]
 			op = op.ResolveRefArg(site, targ)
-			ops[rf.site] = op
+			enc.ops[rf.site] = op
 			if end := lo + uint32(op.EncodeInto(buf[lo:])); end != hi {
 				// rewind to prior ref
 				i, c = rf.site+1, end
 				offsets[i] = c
-				for rfi, rf = range refs {
+				for rfi, rf = range enc.refs {
 					if rf.site >= i || rf.targ >= i {
 						break
 					}
 				}
-				if i < nopts {
+				if i < enc.nopts {
 					goto encodeOptions
 				}
 			} else {
 				// next ref
 				rfi++
-				if rfi >= len(refs) {
+				if rfi >= len(enc.refs) {
 					rf = ref{site: -1, targ: -1}
 				} else {
-					rf = refs[rfi]
+					rf = enc.refs[rfi]
 				}
 			}
 		}
 
-		op := ops[i]
+		op := enc.ops[i]
 		if d, ok := opData(op); ok {
 			// encode a data word
 			stackvm.ByteOrder.PutUint32(buf[c:], d)
