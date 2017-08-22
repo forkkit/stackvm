@@ -528,6 +528,15 @@ func (asm *assembler) finish() (encoder, error) {
 	if err == nil {
 		enc.refs = enc.resolveRefs()
 	}
+
+	// dump if we have a logging func
+	if asm.logff != nil {
+		for i, tok := range enc.section.toks {
+			asm.logff("toks[%d] %v", i, tok)
+		}
+		asm.logff("")
+	}
+
 	return enc, err
 }
 
@@ -1120,6 +1129,7 @@ func (enc encoder) encode() ([]byte, error) {
 	if len(enc.refs) > 0 {
 		rf = enc.refs[rfi]
 	}
+	enc.logf("next ref[%d/%d] %+v", rfi, len(enc.refs), rf)
 
 	// encode options
 encodeOptions:
@@ -1133,6 +1143,8 @@ encodeOptions:
 	}
 	nopts, boff = enc.i, enc.c
 
+	enc.logf("encoded nopts=%v offset=%#04x", nopts, boff)
+
 	// encode program
 	for enc.i < len(enc.toks) {
 		// fix a previously encoded ref's target
@@ -1143,6 +1155,7 @@ encodeOptions:
 			targ := enc.base + enc.offsets[rf.targ] - boff + uint32(enc.refs[rfi].off)
 			tok := enc.toks[rf.site]
 			tok = tok.ResolveRefArg(site, targ)
+			enc.logf("recode toks[%d] @%#04x %v (for %+v site@%#04x targ@%#04x)", rf.site, lo, tok, rf, site, targ)
 			enc.toks[rf.site] = tok
 			p := enc.buf[lo:]
 			n := tok.EncodeInto(p)
@@ -1153,6 +1166,7 @@ encodeOptions:
 			if end := lo + uint32(n); end != hi {
 				// rewind to prior ref
 				enc.i, enc.c = rf.site+1, end
+				enc.logf("rewind toks[%d] @%#04x <-- because %+v", enc.i, enc.c, rf)
 				enc.offsets[enc.i] = enc.c
 				for rfi, rf = range enc.refs {
 					if rf.site >= enc.i || rf.targ >= enc.i {
@@ -1170,6 +1184,7 @@ encodeOptions:
 				} else {
 					rf = enc.refs[rfi]
 				}
+				enc.logf("next ref[%d/%d] %+v", rfi, len(enc.refs), rf)
 			}
 		}
 
@@ -1177,6 +1192,7 @@ encodeOptions:
 			return nil, err
 		}
 	}
+	enc.logf("")
 
 	if rf.site >= 0 {
 		tok := enc.toks[rf.site]
@@ -1205,6 +1221,7 @@ func (enc *encoder) encodeTok() (token, error) {
 	if n <= 0 {
 		return tok, fmt.Errorf("failed to encode toks[%d]=%v", enc.i, tok)
 	}
+	enc.logf("encode toks[%d] @%#04x %v", enc.i, enc.c, tok)
 	enc.c += uint32(n)
 	enc.i++
 	enc.offsets[enc.i] = enc.c
