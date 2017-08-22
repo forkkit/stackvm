@@ -160,9 +160,8 @@ func collectSections(labels map[string]int, secs ...section) (enc encoder) {
 		enc.refs = make([]ref, 0, numRefs)
 	}
 
+	base := 0
 	for _, sec := range secs {
-		base := len(enc.ops)
-
 		// collect ops
 		enc.ops = append(enc.ops, sec.ops...)
 
@@ -175,6 +174,8 @@ func collectSections(labels map[string]int, secs ...section) (enc encoder) {
 				enc.refs = append(enc.refs, rf)
 			}
 		}
+
+		base += len(sec.ops)
 	}
 
 	if len(enc.refs) > 0 {
