@@ -341,10 +341,9 @@ func (mb *machBuilder) build(buf []byte, h Handler) error {
 
 func (mb *machBuilder) handleOpts() error {
 	for {
-		m, arg, code, ok := readVarCode(mb.buf[mb.n:])
-		mb.n += m
-		if !ok {
-			return errVarOpts
+		code, arg, err := mb.readOptCode()
+		if err != nil {
+			return err
 		}
 		if done, err := mb.handleOpt(code, arg); err != nil {
 			return err
@@ -352,6 +351,15 @@ func (mb *machBuilder) handleOpts() error {
 			return nil
 		}
 	}
+}
+
+func (mb *machBuilder) readOptCode() (uint8, uint32, error) {
+	n, arg, code, ok := readVarCode(mb.buf[mb.n:])
+	mb.n += n
+	if !ok {
+		return 0, 0, errVarOpts
+	}
+	return code, arg, nil
 }
 
 func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
