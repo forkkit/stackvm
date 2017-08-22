@@ -33,6 +33,9 @@ For bleeding edge, see the [`dev`][dev] branch.
 
 # TODO
 
+- yield?
+- score?
+
 - make op definitions more self-documenting
 - breakup the Tracer interface:
   - Observer factors out for just lifecycle (Begin,End,Queue,Handle)
