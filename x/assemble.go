@@ -102,6 +102,10 @@ func (asm assembler) Assemble(in ...interface{}) (buf []byte, err error) {
 	err = asm.scan()
 
 	if err == nil {
+		err = asm.finish()
+	}
+
+	if err == nil {
 		buf = asm.encode()
 	}
 
@@ -213,26 +217,27 @@ func (asm *assembler) scan() error {
 			return fmt.Errorf("invalid assembler state %d", asm.state)
 		}
 	}
+	return nil
+}
 
+func (asm *assembler) finish() error {
 	// finish options
 	asm.addOpt("end", 0, false)
 
 	// check for undefined labels
-	if err == nil {
-		var undefined []string
-		for _, sec := range []section{asm.opts, asm.prog} {
-			for name := range sec.refsBy {
-				if i, defined := asm.labels[name]; !defined || i < 0 {
-					undefined = append(undefined, name)
-				}
+	var undefined []string
+	for _, sec := range []section{asm.opts, asm.prog} {
+		for name := range sec.refsBy {
+			if i, defined := asm.labels[name]; !defined || i < 0 {
+				undefined = append(undefined, name)
 			}
 		}
-		if len(undefined) > 0 {
-			err = fmt.Errorf("undefined labels: %q", undefined)
-		}
+	}
+	if len(undefined) > 0 {
+		return fmt.Errorf("undefined labels: %q", undefined)
 	}
 
-	return err
+	return nil
 }
 
 func (asm *assembler) handleQueueSize() error {
