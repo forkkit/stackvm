@@ -96,10 +96,7 @@ func (asm assembler) Assemble(in ...interface{}) (buf []byte, err error) {
 	asm.prog.ops = append(asm.prog.ops, op)
 	asm.prog.maxBytes += 6
 
-	asm.i = 0
-	asm.in = in
-	asm.state = assemblerText
-	err = asm.scan()
+	err = asm.scan(in)
 
 	if err == nil {
 		err = asm.finish()
@@ -205,7 +202,11 @@ func (asm *assembler) addOpt(name string, arg uint32, have bool) {
 	asm.opts.add(stackvm.ResolveOption(name, arg, have))
 }
 
-func (asm *assembler) scan() error {
+func (asm *assembler) scan(in []interface{}) error {
+	asm.i = 0
+	asm.in = in
+	asm.state = assemblerText
+
 	var err error
 	for ; err == nil && asm.i < len(asm.in); asm.i++ {
 		switch asm.state {
