@@ -319,6 +319,9 @@ type machBuilder struct {
 	base      uint32
 	queueSize int
 	maxCopies int
+
+	buf []byte
+	n   int
 }
 
 func (mb *machBuilder) build(buf []byte, h Handler) error {
@@ -327,10 +330,19 @@ func (mb *machBuilder) build(buf []byte, h Handler) error {
 	mb.Mach.ctx = defaultContext
 	mb.Mach.psp = _pspInit
 
-	n := 0
+	mb.buf = buf
+
+	if err := mb.handleOpts(); err != nil {
+		return err
+	}
+
+	return mb.finish(h)
+}
+
+func (mb *machBuilder) handleOpts() error {
 	for {
-		m, arg, code, ok := readVarCode(buf[n:])
-		n += m
+		m, arg, code, ok := readVarCode(mb.buf[mb.n:])
+		mb.n += m
 		if !ok {
 			return errVarOpts
 		}
@@ -379,7 +391,7 @@ func (mb *machBuilder) build(buf []byte, h Handler) error {
 			mb.Mach.ip = arg
 
 		case optCodeEnd:
-			return mb.finish(buf[n:], h)
+			return nil
 
 		default:
 			return fmt.Errorf("invalid option code %#02x", code)
@@ -387,7 +399,7 @@ func (mb *machBuilder) build(buf []byte, h Handler) error {
 	}
 }
 
-func (mb *machBuilder) finish(prog []byte, h Handler) error {
+func (mb *machBuilder) finish(h Handler) error {
 	if h != nil {
 		const pagesPerMachineGuess = 4
 		n := int(mb.queueSize)
@@ -402,8 +414,8 @@ func (mb *machBuilder) finish(prog []byte, h Handler) error {
 		}
 	}
 
+	prog := mb.buf[mb.n:]
 	mb.Mach.opc = makeOpCache(len(prog))
-
 	mb.Mach.storeBytes(mb.base, prog)
 	// TODO mark code segment, update data
 
