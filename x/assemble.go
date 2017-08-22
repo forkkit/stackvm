@@ -110,7 +110,7 @@ func (asm assembler) Assemble(in ...interface{}) ([]byte, error) {
 	enc.logf = asm.logf
 	enc.base = asm.stackSize.Arg
 	enc.nopts = len(asm.opts.ops)
-	return enc.encode(), nil
+	return enc.encode()
 }
 
 func (asm assembler) With(opts ...Option) Assembler {
@@ -594,7 +594,7 @@ type encoder struct {
 	maxBytes int
 }
 
-func (enc encoder) encode() []byte {
+func (enc encoder) encode() ([]byte, error) {
 	var (
 		buf     = make([]byte, enc.maxBytes)
 		offsets = make([]uint32, len(enc.ops)+1)
@@ -676,5 +676,5 @@ encodeOptions:
 		offsets[i] = c
 	}
 
-	return buf[:c]
+	return buf[:c], nil
 }
