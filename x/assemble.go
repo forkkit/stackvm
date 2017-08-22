@@ -67,11 +67,7 @@ func opData(op stackvm.Op) (uint32, bool) {
 type ref struct{ site, targ, off int }
 
 type assembler struct {
-	i      int
-	in     []interface{}
-	state  assemblerState
-	labels map[string]int
-
+	labels     map[string]int
 	opts, prog section
 
 	stackSize *stackvm.Op
@@ -210,23 +206,32 @@ func (asm *assembler) addOpt(name string, arg uint32, have bool) {
 	asm.opts.add(stackvm.ResolveOption(name, arg, have))
 }
 
-func (asm *assembler) scan(in []interface{}) error {
-	asm.i = 0
-	asm.in = in
-	asm.state = assemblerText
+type scanner struct {
+	*assembler
+	i     int
+	in    []interface{}
+	state assemblerState
+}
 
-	for ; asm.i < len(asm.in); asm.i++ {
-		switch asm.state {
+func (asm *assembler) scan(in []interface{}) error {
+	sc := scanner{
+		assembler: asm,
+		i:         0,
+		in:        in,
+		state:     assemblerText,
+	}
+	for ; sc.i < len(sc.in); sc.i++ {
+		switch sc.state {
 		case assemblerData:
-			if err := asm.handleData(asm.in[asm.i]); err != nil {
+			if err := sc.handleData(sc.in[sc.i]); err != nil {
 				return err
 			}
 		case assemblerText:
-			if err := asm.handleText(asm.in[asm.i]); err != nil {
+			if err := sc.handleText(sc.in[sc.i]); err != nil {
 				return err
 			}
 		default:
-			return fmt.Errorf("invalid assembler state %d", asm.state)
+			return fmt.Errorf("invalid assembler state %d", sc.state)
 		}
 	}
 	return nil
@@ -252,135 +257,135 @@ func (asm *assembler) finish() error {
 	return nil
 }
 
-func (asm *assembler) handleQueueSize() error {
-	n, err := asm.expectInt("queueSize int")
+func (sc *scanner) handleQueueSize() error {
+	n, err := sc.expectInt("queueSize int")
 	if err != nil {
 		return err
 	}
 	if n < 0 {
 		return fmt.Errorf("invalid .queueSize %v, must be non-negative", n)
 	}
-	asm.setOption(&asm.queueSize, "queueSize", uint32(n))
+	sc.setOption(&sc.queueSize, "queueSize", uint32(n))
 	return nil
 }
 
-func (asm *assembler) handleMaxOps() error {
-	n, err := asm.expectInt("maxOps int")
+func (sc *scanner) handleMaxOps() error {
+	n, err := sc.expectInt("maxOps int")
 	if err != nil {
 		return err
 	}
 	if n < 0 {
 		return fmt.Errorf("invalid .maxOps %v, must be non-negative", n)
 	}
-	asm.setOption(&asm.maxOps, "maxOps", uint32(n))
+	sc.setOption(&sc.maxOps, "maxOps", uint32(n))
 	return nil
 }
 
-func (asm *assembler) handleMaxCopies() error {
-	n, err := asm.expectInt("maxCopies int")
+func (sc *scanner) handleMaxCopies() error {
+	n, err := sc.expectInt("maxCopies int")
 	if err != nil {
 		return err
 	}
 	if n < 0 {
 		return fmt.Errorf("invalid .maxCopies %v, must be non-negative", n)
 	}
-	asm.setOption(&asm.maxCopies, "maxCopies", uint32(n))
+	sc.setOption(&sc.maxCopies, "maxCopies", uint32(n))
 	return nil
 }
 
-func (asm *assembler) handleStackSize() error {
-	n, err := asm.expectInt("stackSize int")
+func (sc *scanner) handleStackSize() error {
+	n, err := sc.expectInt("stackSize int")
 	if err != nil {
 		return err
 	}
 	if n < +0 || n > 0xffff {
 		return fmt.Errorf("stackSize %d out of range, must be in (0x0000, 0xffff)", n)
 	}
-	asm.stackSize.Arg = uint32(n)
+	sc.stackSize.Arg = uint32(n)
 	return nil
 }
 
-func (asm *assembler) handleData(val interface{}) error {
+func (sc *scanner) handleData(val interface{}) error {
 	switch v := val.(type) {
 	case string:
 		switch {
 		case len(v) > 1 && v[0] == '.':
 			switch s := v[1:]; s {
 			case "alloc":
-				return asm.handleAlloc()
+				return sc.handleAlloc()
 			default:
-				return asm.handleDirective(s)
+				return sc.handleDirective(s)
 			}
 
 		case len(v) > 1 && v[len(v)-1] == ':':
-			return asm.handleLabel(v[:len(v)-1])
+			return sc.handleLabel(v[:len(v)-1])
 
 		default:
 			return fmt.Errorf("unexpected string %q", v)
 		}
 
 	case int:
-		return asm.handleDataWord(uint32(v))
+		return sc.handleDataWord(uint32(v))
 
 	default:
 		return fmt.Errorf(`invalid token %T(%v); expected ".directive", "label:", or an int`, val, val)
 	}
 }
 
-func (asm *assembler) handleText(val interface{}) error {
+func (sc *scanner) handleText(val interface{}) error {
 	switch v := val.(type) {
 	case string:
 		switch {
 		case len(v) > 1 && v[0] == '.':
-			return asm.handleDirective(v[1:])
+			return sc.handleDirective(v[1:])
 
 		case len(v) > 1 && v[len(v)-1] == ':':
-			return asm.handleLabel(v[:len(v)-1])
+			return sc.handleLabel(v[:len(v)-1])
 
 		case len(v) > 1 && v[0] == ':':
-			return asm.handleRef(v[1:])
+			return sc.handleRef(v[1:])
 
 		default:
-			return asm.handleOp(v)
+			return sc.handleOp(v)
 		}
 
 	case int:
-		return asm.handleImm(v)
+		return sc.handleImm(v)
 
 	default:
 		return fmt.Errorf(`invalid token %T(%v); expected ".directive", "label:", ":ref", "opName", or an int`, val, val)
 	}
 }
 
-func (asm *assembler) handleDirective(name string) error {
+func (sc *scanner) handleDirective(name string) error {
 	switch name {
 	case "entry":
-		return asm.handleEntry()
+		return sc.handleEntry()
 	case "stackSize":
-		return asm.handleStackSize()
+		return sc.handleStackSize()
 	case "queueSize":
-		return asm.handleQueueSize()
+		return sc.handleQueueSize()
 	case "maxOps":
-		return asm.handleMaxOps()
+		return sc.handleMaxOps()
 	case "maxCopies":
-		return asm.handleMaxCopies()
+		return sc.handleMaxCopies()
 	case "data":
-		asm.setState(assemblerData)
+		sc.setState(assemblerData)
 		return nil
 	case "text":
-		asm.setState(assemblerText)
+		sc.setState(assemblerText)
 		return nil
 	default:
 		return fmt.Errorf("invalid directive .%s", name)
 	}
 }
 
-func (asm *assembler) setState(state assemblerState) {
-	asm.state = state
+func (sc *scanner) setState(state assemblerState) {
+	sc.state = state
 }
 
-func (asm *assembler) handleEntry() error {
-	s, err := asm.expectString(`"label:"`)
+func (sc *scanner) handleEntry() error {
+	s, err := sc.expectString(`"label:"`)
 	if err != nil {
 		return err
 	}
@@ -390,81 +395,81 @@ func (asm *assembler) handleEntry() error {
 		return fmt.Errorf("unexpected string %q, expected .entry label", s)
 	}
 	name := s[:len(s)-1]
-	if err := asm.handleLabel(name); err != nil {
+	if err := sc.handleLabel(name); err != nil {
 		return err
 	}
 
 	// dupe check .entry
-	if i, defined := asm.labels[".entry"]; defined && i >= 0 {
-		for dupName, j := range asm.labels {
+	if i, defined := sc.labels[".entry"]; defined && i >= 0 {
+		for dupName, j := range sc.labels {
 			if j == i {
 				return fmt.Errorf("duplicate .entry %q, already set to %q", name, dupName)
 			}
 		}
 		return fmt.Errorf("duplicate .entry %q, already set to ???", name)
 	}
-	asm.labels[".entry"] = len(asm.prog.ops)
+	sc.labels[".entry"] = len(sc.prog.ops)
 
 	// back-fill the ref for the jump in ops[0]
-	asm.prog.refsBy[name] = append(asm.prog.refsBy[name], ref{site: 0})
+	sc.prog.refsBy[name] = append(sc.prog.refsBy[name], ref{site: 0})
 
-	asm.setState(assemblerText)
+	sc.setState(assemblerText)
 	return nil
 }
 
-func (asm *assembler) handleLabel(name string) error {
-	if i, defined := asm.labels[name]; defined && i >= 0 {
+func (sc *scanner) handleLabel(name string) error {
+	if i, defined := sc.labels[name]; defined && i >= 0 {
 		return fmt.Errorf("label %q already defined", name)
 	}
-	asm.labels[name] = len(asm.prog.ops)
+	sc.labels[name] = len(sc.prog.ops)
 	return nil
 }
 
-func (asm *assembler) handleRef(name string) error {
-	op, err := asm.expectRefOp(0, true, name)
+func (sc *scanner) handleRef(name string) error {
+	op, err := sc.expectRefOp(0, true, name)
 	if err != nil {
 		return err
 	}
-	asm.prog.addRef(op, name, 0)
-	asm.refLabel(name)
+	sc.prog.addRef(op, name, 0)
+	sc.refLabel(name)
 	return nil
 }
 
-func (asm *assembler) handleOffRef(name string, n int) error {
-	op, err := asm.expectRefOp(0, true, name)
+func (sc *scanner) handleOffRef(name string, n int) error {
+	op, err := sc.expectRefOp(0, true, name)
 	if err != nil {
 		return err
 	}
-	asm.prog.addRef(op, name, n)
-	asm.refLabel(name)
+	sc.prog.addRef(op, name, n)
+	sc.refLabel(name)
 	return nil
 }
 
-func (asm *assembler) handleOp(name string) error {
+func (sc *scanner) handleOp(name string) error {
 	op, err := stackvm.ResolveOp(name, 0, false)
 	if err == nil {
-		asm.prog.add(op)
+		sc.prog.add(op)
 	}
 	return err
 }
 
-func (asm *assembler) handleImm(n int) (err error) {
+func (sc *scanner) handleImm(n int) (err error) {
 	var op stackvm.Op
-	s, err := asm.expectString(`":ref" or "opName"`)
+	s, err := sc.expectString(`":ref" or "opName"`)
 	if err == nil {
 		if len(s) > 1 && s[0] == ':' {
-			return asm.handleOffRef(s[1:], n)
+			return sc.handleOffRef(s[1:], n)
 		}
 		op, err = stackvm.ResolveOp(s, uint32(n), true)
 	}
 	if err == nil {
-		asm.prog.add(op)
+		sc.prog.add(op)
 	}
 	return err
 }
 
-func (asm *assembler) handleAlloc() error {
-	n, err := asm.expectInt(`int`)
+func (sc *scanner) handleAlloc() error {
+	n, err := sc.expectInt(`int`)
 	if err != nil {
 		return err
 	}
@@ -474,21 +479,21 @@ func (asm *assembler) handleAlloc() error {
 	// TODO: should be in bytes, not words
 	// TODO: would like to avoid N*append
 	do := dataOp(0)
-	asm.prog.maxBytes += 4 * n
+	sc.prog.maxBytes += 4 * n
 	for i := 0; i < n; i++ {
-		asm.prog.add(do)
+		sc.prog.add(do)
 	}
 	return nil
 }
 
-func (asm *assembler) handleDataWord(d uint32) error {
-	asm.prog.maxBytes += 4
-	asm.prog.add(dataOp(d))
+func (sc *scanner) handleDataWord(d uint32) error {
+	sc.prog.maxBytes += 4
+	sc.prog.add(dataOp(d))
 	return nil
 }
 
-func (asm *assembler) expectRefOp(arg uint32, have bool, name string) (op stackvm.Op, err error) {
-	opName, err := asm.expectString(`"opName"`)
+func (sc *scanner) expectRefOp(arg uint32, have bool, name string) (op stackvm.Op, err error) {
+	opName, err := sc.expectString(`"opName"`)
 	if err == nil {
 		op, err = stackvm.ResolveOp(opName, arg, have)
 	}
@@ -498,16 +503,16 @@ func (asm *assembler) expectRefOp(arg uint32, have bool, name string) (op stackv
 	return
 }
 
-func (asm *assembler) expectOp(arg uint32, have bool) (op stackvm.Op, err error) {
-	opName, err := asm.expectString(`"opName"`)
+func (sc *scanner) expectOp(arg uint32, have bool) (op stackvm.Op, err error) {
+	opName, err := sc.expectString(`"opName"`)
 	if err == nil {
 		op, err = stackvm.ResolveOp(opName, arg, have)
 	}
 	return
 }
 
-func (asm *assembler) expectString(desc string) (string, error) {
-	val, err := asm.expect(desc)
+func (sc *scanner) expectString(desc string) (string, error) {
+	val, err := sc.expect(desc)
 	if err == nil {
 		if s, ok := val.(string); ok {
 			return s, nil
@@ -517,8 +522,8 @@ func (asm *assembler) expectString(desc string) (string, error) {
 	return "", err
 }
 
-func (asm *assembler) expectInt(desc string) (int, error) {
-	val, err := asm.expect(desc)
+func (sc *scanner) expectInt(desc string) (int, error) {
+	val, err := sc.expect(desc)
 	if err == nil {
 		if n, ok := val.(int); ok {
 			return n, nil
@@ -528,10 +533,10 @@ func (asm *assembler) expectInt(desc string) (int, error) {
 	return 0, err
 }
 
-func (asm *assembler) expect(desc string) (interface{}, error) {
-	asm.i++
-	if asm.i < len(asm.in) {
-		return asm.in[asm.i], nil
+func (sc *scanner) expect(desc string) (interface{}, error) {
+	sc.i++
+	if sc.i < len(sc.in) {
+		return sc.in[sc.i], nil
 	}
 	return nil, fmt.Errorf("unexpected end of input, expected %s", desc)
 }
