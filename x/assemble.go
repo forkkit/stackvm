@@ -408,18 +408,17 @@ func (sc *scanner) handleDirective(name string) error {
 	case "maxCopies":
 		return sc.handleMaxCopies()
 	case "data":
-		sc.setState(assemblerData)
-		return nil
+		return sc.setState(assemblerData)
 	case "text":
-		sc.setState(assemblerText)
-		return nil
+		return sc.setState(assemblerText)
 	default:
 		return fmt.Errorf("invalid directive .%s", name)
 	}
 }
 
-func (sc *scanner) setState(state assemblerState) {
+func (sc *scanner) setState(state assemblerState) error {
 	sc.state = state
+	return nil
 }
 
 func (sc *scanner) handleEntry() error {
@@ -450,8 +449,7 @@ func (sc *scanner) handleEntry() error {
 
 	sc.addRefOpt("entry", name, 0)
 
-	sc.setState(assemblerText)
-	return nil
+	return sc.setState(assemblerText)
 }
 
 func (sc *scanner) handleLabel(name string) error {
