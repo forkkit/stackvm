@@ -403,7 +403,7 @@ func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
 		return true, nil
 
 	default:
-		return false, fmt.Errorf("invalid option code %#02x", code)
+		return false, fmt.Errorf("invalid option code=%#02x have=%v arg=%#x", code&0x7f, code&0x80 != 0, arg)
 	}
 
 	return false, nil
