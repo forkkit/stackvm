@@ -207,13 +207,16 @@ func (asm *assembler) scan(in []interface{}) error {
 	asm.in = in
 	asm.state = assemblerText
 
-	var err error
-	for ; err == nil && asm.i < len(asm.in); asm.i++ {
+	for ; asm.i < len(asm.in); asm.i++ {
 		switch asm.state {
 		case assemblerData:
-			err = asm.handleData(asm.in[asm.i])
+			if err := asm.handleData(asm.in[asm.i]); err != nil {
+				return err
+			}
 		case assemblerText:
-			err = asm.handleText(asm.in[asm.i])
+			if err := asm.handleText(asm.in[asm.i]); err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("invalid assembler state %d", asm.state)
 		}
