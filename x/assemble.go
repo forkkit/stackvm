@@ -90,7 +90,7 @@ type assembler struct {
 	maxCopies *stackvm.Op
 }
 
-func (asm assembler) Assemble(in ...interface{}) (buf []byte, err error) {
+func (asm assembler) Assemble(in ...interface{}) ([]byte, error) {
 	asm.labels = make(map[string]int)
 	asm.opts = makeSection()
 	asm.prog = makeSection()
@@ -98,28 +98,27 @@ func (asm assembler) Assemble(in ...interface{}) (buf []byte, err error) {
 	asm.addOpt("version", 0, false)
 	asm.stackSize = asm.refOpt("stackSize", defaultStackSize, true)
 
-	var op stackvm.Op
-	op, err = stackvm.ResolveOp("jump", 0, true)
+	op, err := stackvm.ResolveOp("jump", 0, true)
 	if err != nil {
-		return
+		return nil, err
 	}
 	asm.prog.ops = append(asm.prog.ops, op)
 	asm.prog.maxBytes += 6
 
-	err = asm.scan(in)
-
-	if err == nil {
-		err = asm.finish()
+	if err := asm.scan(in); err != nil {
+		return nil, err
 	}
 
-	if enc := collectSections(asm.labels, asm.opts, asm.prog); err == nil {
-		enc.logf = asm.logf
-		enc.base = asm.stackSize.Arg
-		enc.nopts = len(asm.opts.ops)
-		buf = enc.encode()
+	if err := asm.finish(); err != nil {
+		return nil, err
 	}
 
-	return
+	enc := collectSections(asm.labels, asm.opts, asm.prog)
+
+	enc.logf = asm.logf
+	enc.base = asm.stackSize.Arg
+	enc.nopts = len(asm.opts.ops)
+	return enc.encode(), nil
 }
 
 func (asm assembler) With(opts ...Option) Assembler {
