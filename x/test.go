@@ -22,6 +22,7 @@ import (
 var (
 	traceFlag    bool
 	traceTo      string
+	debugAsm     bool
 	dumpProgFlag bool
 	dumpMemFlag  action.PredicateFlag
 
@@ -31,6 +32,8 @@ var (
 )
 
 func init() {
+	flag.BoolVar(&debugAsm, "stackvm.test.debugasm", false,
+		"pass debug logger to assembler")
 	flag.BoolVar(&traceFlag, "stackvm.test.trace", false,
 		"run any stackvm tests with tracing on, even if they pass")
 	flag.StringVar(&traceTo, "stackvm.test.traceTo", "",
@@ -248,7 +251,11 @@ func (t *testCaseRun) build() (m *stackvm.Mach, fin finisher, err error) {
 	case []byte:
 		prog = v
 	case []interface{}:
-		prog, err = Assemble(v...)
+		asm := NewAssembler()
+		if debugAsm {
+			asm = asm.With(Logf(t.Logf))
+		}
+		prog, err = asm.Assemble(v...)
 		if err != nil {
 			return
 		}
