@@ -109,6 +109,14 @@ func (asm assembler) Assemble(in ...interface{}) (buf []byte, err error) {
 	return
 }
 
+func (asm *assembler) setOption(pop **stackvm.Op, name string, v uint32) {
+	if *pop == nil {
+		*pop = asm.refOpt(name, v, true)
+	} else {
+		(*pop).Arg = v
+	}
+}
+
 func collectSections(
 	labels map[string]int, secs ...section,
 ) (
@@ -252,11 +260,7 @@ func (asm *assembler) handleQueueSize() error {
 	if n < 0 {
 		return fmt.Errorf("invalid .queueSize %v, must be non-negative", n)
 	}
-	if asm.queueSize == nil {
-		asm.queueSize = asm.refOpt("queueSize", uint32(n), true)
-	} else {
-		asm.queueSize.Arg = uint32(n)
-	}
+	asm.setOption(&asm.queueSize, "queueSize", uint32(n))
 	return nil
 }
 
@@ -268,11 +272,7 @@ func (asm *assembler) handleMaxOps() error {
 	if n < 0 {
 		return fmt.Errorf("invalid .maxOps %v, must be non-negative", n)
 	}
-	if asm.maxOps == nil {
-		asm.maxOps = asm.refOpt("maxOps", uint32(n), true)
-	} else {
-		asm.maxOps.Arg = uint32(n)
-	}
+	asm.setOption(&asm.maxOps, "maxOps", uint32(n))
 	return nil
 }
 
@@ -284,11 +284,7 @@ func (asm *assembler) handleMaxCopies() error {
 	if n < 0 {
 		return fmt.Errorf("invalid .maxCopies %v, must be non-negative", n)
 	}
-	if asm.maxCopies == nil {
-		asm.maxCopies = asm.refOpt("maxCopies", uint32(n), true)
-	} else {
-		asm.maxCopies.Arg = uint32(n)
-	}
+	asm.setOption(&asm.maxCopies, "maxCopies", uint32(n))
 	return nil
 }
 
