@@ -346,57 +346,67 @@ func (mb *machBuilder) handleOpts() error {
 		if !ok {
 			return errVarOpts
 		}
-		switch code {
-
-		case optCodeVersion:
-		case 0x80 | optCodeVersion:
-			if arg != 0 {
-				return fmt.Errorf("unsupported machine version %v", arg)
-			}
-
-		case 0x80 | optCodeStackSize:
-			if arg > 0xffff {
-				return fmt.Errorf("invalid stacksize %#x", arg)
-			}
-			if arg%4 != 0 {
-				return fmt.Errorf("invalid stacksize %#02x, not a word-multiple", arg)
-			}
-			oldBase := mb.Mach.cbp + 4
-			mb.base = uint32(arg)
-			if mb.base > 0 {
-				mb.Mach.cbp = mb.base - 4
-				mb.Mach.csp = mb.base - 4
-			}
-			// TODO: else support 0
-			if mb.Mach.ip == 0 || mb.Mach.ip == oldBase {
-				mb.Mach.ip = mb.base
-			}
-
-		case 0x80 | optCodeQueueSize:
-			mb.queueSize = int(arg)
-
-		case optCodeMaxOps:
-			mb.Mach.limit = 0
-
-		case 0x80 | optCodeMaxOps:
-			mb.Mach.limit = uint(arg)
-
-		case optCodeMaxCopies:
-			mb.maxCopies = 0
-
-		case 0x80 | optCodeMaxCopies:
-			mb.maxCopies = int(arg)
-
-		case 0x80 | optCodeEntry:
-			mb.Mach.ip = arg
-
-		case optCodeEnd:
+		if done, err := mb.handleOpt(code, arg); err != nil {
+			return err
+		} else if done {
 			return nil
-
-		default:
-			return fmt.Errorf("invalid option code %#02x", code)
 		}
 	}
+}
+
+func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
+	switch code {
+
+	case optCodeVersion:
+	case 0x80 | optCodeVersion:
+		if arg != 0 {
+			return false, fmt.Errorf("unsupported machine version %v", arg)
+		}
+
+	case 0x80 | optCodeStackSize:
+		if arg > 0xffff {
+			return false, fmt.Errorf("invalid stacksize %#x", arg)
+		}
+		if arg%4 != 0 {
+			return false, fmt.Errorf("invalid stacksize %#02x, not a word-multiple", arg)
+		}
+		oldBase := mb.Mach.cbp + 4
+		mb.base = uint32(arg)
+		if mb.base > 0 {
+			mb.Mach.cbp = mb.base - 4
+			mb.Mach.csp = mb.base - 4
+		}
+		// TODO: else support 0
+		if mb.Mach.ip == 0 || mb.Mach.ip == oldBase {
+			mb.Mach.ip = mb.base
+		}
+
+	case 0x80 | optCodeQueueSize:
+		mb.queueSize = int(arg)
+
+	case optCodeMaxOps:
+		mb.Mach.limit = 0
+
+	case 0x80 | optCodeMaxOps:
+		mb.Mach.limit = uint(arg)
+
+	case optCodeMaxCopies:
+		mb.maxCopies = 0
+
+	case 0x80 | optCodeMaxCopies:
+		mb.maxCopies = int(arg)
+
+	case 0x80 | optCodeEntry:
+		mb.Mach.ip = arg
+
+	case optCodeEnd:
+		return true, nil
+
+	default:
+		return false, fmt.Errorf("invalid option code %#02x", code)
+	}
+
+	return false, nil
 }
 
 func (mb *machBuilder) finish(h Handler) error {
