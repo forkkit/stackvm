@@ -87,32 +87,32 @@ var collatzExplore = TestCase{
 		6, "push", // d :
 		0x100, "push", // d i :
 		0x100, "push", // d i b :
-		3, "p2c", // : i d i
+		3, "p2c", // : b i d
 		1, "push", // v=1 : b i d
 
-		"round:", // v : i d
+		"round:", // v : b i d
 
-		"dup", 1, "sub", 3, "mod", // v (v-1)%3 : i d
-		":third", "fz", // v : i d
-		"double:", 2, "mul", // v=2*v : i d
+		"dup", 1, "sub", 3, "mod", // v (v-1)%3 : b i d
+		":third", "fz", // v : b i d
+		"double:", 2, "mul", // v=2*v : b i d
 		":next", "jump", // ...
-		"third:", 1, "sub", 3, "div", // v=(v-1)/3 : i d
+		"third:", 1, "sub", 3, "div", // v=(v-1)/3 : b i d
 
-		"next:",        // v : i d
-		"dup", 1, "hz", // v : i d
+		"next:",        // v : b i d
+		"dup", 1, "hz", // v : b i d
 
-		"dup",    // v v : i d
-		2, "c2p", // v v d i :
-		"dup", 4, "add", "p2c", // v v d i : i+=4
-		"swap",    // v v i d : i
-		"p2c",     // v v i : i d
-		"storeTo", // v : i d
+		"dup",    // v v : b i d
+		2, "c2p", // v v d i : b
+		"dup", 4, "add", "p2c", // v v d i : b i+=4
+		"swap",    // v v i d : b i
+		"p2c",     // v v i : b i d
+		"storeTo", // v : b i d
 
-		"c2p", 1, "sub", // v d-- : i
-		"dup", "p2c", 0, "gt", // v d>0 : i d
-		":round", "jnz", // v : i d
+		"c2p", 1, "sub", // v d-- : b i
+		"dup", "p2c", 0, "gt", // v d>0 : b i d
+		":round", "jnz", // v : b i d
 
-		"pop", "cpop", "halt", // : i
+		"pop", "cpop", "halt", // : b i
 	},
 
 	Result: Results{
