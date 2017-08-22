@@ -314,6 +314,10 @@ const (
 	// at the top of the loaded program (right after the stack).
 	optCodeEntry = 0x05
 
+	// its required parameter is an endpoint of an output range; must appear
+	// in start/end pairs.
+	optCodeOutput = 0x06
+
 	// reserved for future use, where its parameter will be the required
 	// machine/program version; passing a version value is currently
 	// unsupported.
@@ -415,6 +419,17 @@ func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
 	case 0x80 | optCodeEntry:
 		mb.Mach.ip = arg
 
+	case 0x80 | optCodeOutput:
+		start := arg
+		code, end, err := mb.readOptCode()
+		if err != nil {
+			return false, err
+		}
+		if code != 0x80|optCodeOutput {
+			return false, fmt.Errorf("unpaired output opt code, got %#02x instead", code)
+		}
+		mb.Mach.ctx.outputs = append(mb.Mach.ctx.outputs, region{start, end})
+
 	case optCodeEnd:
 		return true, nil
 
@@ -461,6 +476,8 @@ func ResolveOption(name string, arg uint32, have bool) (op Op) {
 		op.Code = optCodeMaxCopies
 	case "entry":
 		op.Code = optCodeEntry
+	case "output":
+		op.Code = optCodeOutput
 	case "version":
 		op.Code = optCodeVersion
 	default:
