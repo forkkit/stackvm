@@ -113,7 +113,10 @@ func (asm assembler) Assemble(in ...interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	enc := collectSections(asm.labels, asm.opts, asm.prog)
+	enc, err := collectSections(asm.labels, asm.opts, asm.prog)
+	if err != nil {
+		return nil, err
+	}
 
 	enc.logf = asm.logf
 	enc.base = asm.stackSize.Arg
@@ -142,7 +145,7 @@ func (asm *assembler) setOption(pop **stackvm.Op, name string, v uint32) {
 	}
 }
 
-func collectSections(labels map[string]int, secs ...section) (enc encoder) {
+func collectSections(labels map[string]int, secs ...section) (enc encoder, err error) {
 	numRefs, numOps := 0, 0
 	for _, sec := range secs {
 		numOps += len(sec.ops)
@@ -164,7 +167,26 @@ func collectSections(labels map[string]int, secs ...section) (enc encoder) {
 		// collect ops
 		enc.ops = append(enc.ops, sec.ops...)
 
-		// collect refs
+		base += len(sec.ops)
+	}
+
+	// check for undefined label refs
+	var undefined []string
+	for _, sec := range secs {
+		for name := range sec.refsBy {
+			if i, defined := labels[name]; !defined || i < 0 {
+				undefined = append(undefined, name)
+			}
+		}
+	}
+	if len(undefined) > 0 {
+		err = fmt.Errorf("undefined labels: %q", undefined)
+		return
+	}
+
+	// resolve and collect refs
+	base = 0
+	for _, sec := range secs {
 		for name, rfs := range sec.refsBy {
 			targ := labels[name]
 			for _, rf := range rfs {
@@ -267,20 +289,6 @@ func (asm *assembler) scan(in []interface{}) error {
 func (asm *assembler) finish() error {
 	// finish options
 	asm.addOpt("end", 0, false)
-
-	// check for undefined labels
-	var undefined []string
-	for _, sec := range []section{asm.opts, asm.prog} {
-		for name := range sec.refsBy {
-			if i, defined := asm.labels[name]; !defined || i < 0 {
-				undefined = append(undefined, name)
-			}
-		}
-	}
-	if len(undefined) > 0 {
-		return fmt.Errorf("undefined labels: %q", undefined)
-	}
-
 	return nil
 }
 
