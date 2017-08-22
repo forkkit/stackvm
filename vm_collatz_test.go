@@ -34,7 +34,7 @@ func TestMach_collatz_sequence(t *testing.T) {
 			Name: fmt.Sprintf("collatz(%d)", n),
 			Prog: []interface{}{
 				n, "push", "dup", // v v :
-				0x100, "push", // v v i :
+				":seq", "push", // v v i :
 				"dup", 4, "add", "p2c", // v v i : i=i+4
 				"storeTo", // v : i
 
@@ -61,10 +61,13 @@ func TestMach_collatz_sequence(t *testing.T) {
 				1, "eq",   // v v==1 : i
 				":loop", "jz", // v : i
 
-				"c2p",         // v i :
-				0x100, "push", // v i base :
+				"c2p",          // v i :
+				":seq", "push", // v i base :
 				2, "p2c", // v : i base
 				"halt",
+
+				".data",
+				"seq:", ".alloc", 16,
 			},
 			Result: Result{
 				Values: [][]uint32{vals},
@@ -85,8 +88,8 @@ var collatzExplore = TestCase{
 	Name: "gen collatz",
 	Prog: []interface{}{
 		6, "push", // d :
-		0x100, "push", // d i :
-		0x100, "push", // d i b :
+		":seq", "push", // d i :
+		":seq", "push", // d i b :
 		3, "p2c", // : b i d
 		1, "push", // v=1 : b i d
 
@@ -113,6 +116,9 @@ var collatzExplore = TestCase{
 		":round", "jnz", // v : b i d
 
 		"pop", "cpop", "halt", // : b i
+
+		".data",
+		"seq:", ".alloc", 6,
 	},
 
 	Result: Results{
