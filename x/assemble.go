@@ -26,17 +26,22 @@ func Assemble(in ...interface{}) ([]byte, error) {
 	return NewAssembler().Assemble(in...)
 }
 
-// NewAssembler creates a new Assembler.
-func NewAssembler() Assembler {
+// NewAssembler creates a new Assembler with optional options.
+func NewAssembler(opts ...Option) Assembler {
 	asm := assembler{}
-	return asm
+	return asm.With(opts...)
 }
 
 // Assembler will assemble a stream of generic tokens into machine code in a
 // byte slice.
 type Assembler interface {
+	With(opts ...Option) Assembler
 	Assemble(in ...interface{}) ([]byte, error)
 }
+
+// Option is an opaque customization for an Assembler; it is not to be confused
+// with a machine option.
+type Option func(*assembler)
 
 // copied from generated op_codes.go, which isn't that bad since having "the
 // zero op crash" should perhaps be the most stable part of the ISA.
@@ -103,6 +108,13 @@ func (asm assembler) Assemble(in ...interface{}) (buf []byte, err error) {
 	}
 
 	return
+}
+
+func (asm assembler) With(opts ...Option) Assembler {
+	for _, opt := range opts {
+		opt(&asm)
+	}
+	return asm
 }
 
 func (asm *assembler) setOption(pop **stackvm.Op, name string, v uint32) {
