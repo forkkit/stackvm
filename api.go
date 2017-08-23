@@ -427,12 +427,10 @@ func (mb *machBuilder) finish(h Handler) error {
 	if h != nil {
 		const pagesPerMachineGuess = 4
 		n := int(mb.queueSize)
-		mb.Mach.ctx = context{
-			Handler:       h,
-			queue:         newRunq(n),
-			machAllocator: makeMachFreeList(n),
-			pageAllocator: makePageFreeList(n * pagesPerMachineGuess),
-		}
+		mb.Mach.ctx.Handler = h
+		mb.Mach.ctx.queue = newRunq(n)
+		mb.Mach.ctx.machAllocator = makeMachFreeList(n)
+		mb.Mach.ctx.pageAllocator = makePageFreeList(n * pagesPerMachineGuess)
 		if mb.maxCopies > 0 {
 			mb.Mach.ctx.machAllocator = maxMachCopiesAllocator(mb.maxCopies, mb.Mach.ctx.machAllocator)
 		}
