@@ -55,6 +55,10 @@ func (name NoSuchOpError) Error() string {
 // - 0x05 entry: its required parameter is the value for IP instead of
 //   starting execution at the top of the loaded program (right after the
 //   stack).
+// - 0x06 input: its required parameter is an endpoint of an input region;
+//   must appear in star/end pairs.
+// - 0x07 output: its required parameter is an endpoint of an output region;
+//   must appear in start/end pairs.
 // - 0x7f version: reserved for future use, where its parameter will be the
 //   required machine/program version; passing a version value is currently
 //   unsupported.
@@ -112,6 +116,29 @@ func Handler(h MachHandler) MachBuildOpt {
 		if mb.maxCopies > 0 {
 			mb.Mach.ctx.machAllocator = maxMachCopiesAllocator(mb.maxCopies, mb.Mach.ctx.machAllocator)
 		}
+		return nil
+	}
+}
+
+// Input passes a collection of input values to a New()ly built machine. For
+// each Input(...) the loaded program must have defined an input region.
+// Furthermore the number of values must fit with the corresponding input
+// region, but do not have to fill it.
+func Input(vals []uint32) MachBuildOpt {
+	return func(mb *machBuilder) error {
+		if mb.nextIn >= len(mb.inputs) {
+			return fmt.Errorf("unsupported input[%d], only %d are defined", mb.nextIn+1, mb.inputs)
+		}
+		rg := mb.inputs[mb.nextIn]
+		mb.nextIn++
+		if n := rg.to - rg.from; len(vals) > int(n) {
+			return fmt.Errorf("too many values for input[%d], max is %d", len(vals), n)
+		}
+		buf := make([]byte, len(vals)*4)
+		for i, val := range vals {
+			ByteOrder.PutUint32(buf[4*i:], val)
+		}
+		mb.Mach.storeBytes(rg.from, buf)
 		return nil
 	}
 }
@@ -331,9 +358,13 @@ const (
 	// at the top of the loaded program (right after the stack).
 	optCodeEntry = 0x05
 
-	// its required parameter is an endpoint of an output range; must appear
+	// its required parameter is an endpoint of an input region; must appear in
+	// star/end pairs.
+	optCodeInput = 0x06
+
+	// its required parameter is an endpoint of an output region; must appear
 	// in start/end pairs.
-	optCodeOutput = 0x06
+	optCodeOutput = 0x07
 
 	// reserved for future use, where its parameter will be the required
 	// machine/program version; passing a version value is currently
@@ -346,6 +377,8 @@ type machBuilder struct {
 	base      uint32
 	queueSize int
 	maxCopies int
+	inputs    []region
+	nextIn    int
 
 	buf []byte
 	h   MachHandler
@@ -438,6 +471,17 @@ func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
 	case 0x80 | optCodeEntry:
 		mb.Mach.ip = arg
 
+	case 0x80 | optCodeInput:
+		start := arg
+		code, end, err := mb.readOptCode()
+		if err != nil {
+			return false, err
+		}
+		if code != 0x80|optCodeInput {
+			return false, fmt.Errorf("unpaired input opt code, got %#02x instead", code)
+		}
+		mb.inputs = append(mb.inputs, region{start, end})
+
 	case 0x80 | optCodeOutput:
 		start := arg
 		code, end, err := mb.readOptCode()
@@ -482,6 +526,8 @@ func ResolveOption(name string, arg uint32, have bool) (op Op) {
 		op.Code = optCodeMaxCopies
 	case "entry":
 		op.Code = optCodeEntry
+	case "input":
+		op.Code = optCodeInput
 	case "output":
 		op.Code = optCodeOutput
 	case "version":
