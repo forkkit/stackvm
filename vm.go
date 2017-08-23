@@ -60,7 +60,7 @@ func (rg region) String() string {
 }
 
 type context struct {
-	Handler
+	MachHandler
 	machAllocator
 	pageAllocator
 	queue

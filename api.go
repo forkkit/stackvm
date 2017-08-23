@@ -84,7 +84,7 @@ func (name NoSuchOpError) Error() string {
 // is "crash") or halt with a decode error.
 //
 // TODO: document operations.
-func New(prog []byte, h Handler) (*Mach, error) {
+func New(prog []byte, h MachHandler) (*Mach, error) {
 	var mb machBuilder
 	if err := mb.build(prog, h); err != nil {
 		return nil, err
@@ -324,14 +324,14 @@ type machBuilder struct {
 	maxCopies int
 
 	buf []byte
-	h   Handler
+	h   MachHandler
 	n   int
 }
 
-func (mb *machBuilder) build(buf []byte, h Handler) error {
+func (mb *machBuilder) build(buf []byte, h MachHandler) error {
 	mb.queueSize = defaultQueueSize
 
-	mb.Mach.ctx.Handler = defaultHandler
+	mb.Mach.ctx.MachHandler = defaultHandler
 	mb.Mach.ctx.queue = noQueue
 	mb.Mach.ctx.machAllocator = defaultMachAllocator
 	mb.Mach.ctx.pageAllocator = defaultPageAllocator
@@ -440,7 +440,7 @@ func (mb *machBuilder) finish() error {
 	if mb.h != nil {
 		const pagesPerMachineGuess = 4
 		n := int(mb.queueSize)
-		mb.Mach.ctx.Handler = mb.h
+		mb.Mach.ctx.MachHandler = mb.h
 		mb.Mach.ctx.queue = newRunq(n)
 		mb.Mach.ctx.machAllocator = makeMachFreeList(n)
 		mb.Mach.ctx.pageAllocator = makePageFreeList(n * pagesPerMachineGuess)
@@ -558,7 +558,7 @@ func (o Op) String() string {
 
 // Tracer returns the current Tracer that the machine is running under, if any.
 func (m *Mach) Tracer() Tracer {
-	mt1, ok1 := m.ctx.Handler.(*machTracer)
+	mt1, ok1 := m.ctx.MachHandler.(*machTracer)
 	mt2, ok2 := m.ctx.queue.(*machTracer)
 	if !ok1 && !ok2 {
 		return nil
@@ -570,23 +570,23 @@ func (m *Mach) Tracer() Tracer {
 }
 
 type machTracer struct {
-	Handler
+	MachHandler
 	queue
 	t Tracer
 	m *Mach
 }
 
 func fixTracer(t Tracer, m *Mach) {
-	h := m.ctx.Handler
+	h := m.ctx.MachHandler
 	for mt, ok := h.(*machTracer); ok; mt, ok = h.(*machTracer) {
-		h = mt.Handler
+		h = mt.MachHandler
 	}
 	q := m.ctx.queue
 	for mt, ok := q.(*machTracer); ok; mt, ok = q.(*machTracer) {
 		q = mt.queue
 	}
 	mt := &machTracer{h, q, t, m}
-	m.ctx.Handler = mt
+	m.ctx.MachHandler = mt
 	m.ctx.queue = mt
 }
 

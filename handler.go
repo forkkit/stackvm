@@ -1,15 +1,15 @@
 package stackvm
 
-// Handler is implemented to handle multiple results during a machine run;
+// MachHandler is implemented to handle multiple results during a machine run;
 // without a handler being set, any fork operation will fail.
-type Handler interface {
+type MachHandler interface {
 	Handle(*Mach) error
 }
 
-// HandlerFunc is a conveniente way to implement a simple Handler.
-type HandlerFunc func(m *Mach) error
+// MachHandlerFunc is a convenient way to implement a simple Handler.
+type MachHandlerFunc func(m *Mach) error
 
 // Handle calls the function.
-func (f HandlerFunc) Handle(m *Mach) error { return f(m) }
+func (f MachHandlerFunc) Handle(m *Mach) error { return f(m) }
 
-var defaultHandler Handler = HandlerFunc((*Mach).Err)
+var defaultHandler MachHandler = MachHandlerFunc((*Mach).Err)
