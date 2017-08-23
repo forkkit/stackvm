@@ -194,9 +194,9 @@ func (m *Mach) Values() ([][]uint32, error) {
 			if len(cs)%2 != 0 {
 				return nil, fmt.Errorf("invalid control stack length %d", len(cs))
 			}
-			outputs = append(make([][2]uint32, 0, len(outputs)+len(cs)/2), outputs...)
+			outputs = append(make([]region, 0, len(outputs)+len(cs)/2), outputs...)
 			for i := 0; i < len(cs); i += 2 {
-				outputs = append(outputs, [2]uint32{cs[i], cs[i+1]})
+				outputs = append(outputs, region{cs[i], cs[i+1]})
 			}
 		}
 	}
@@ -206,8 +206,8 @@ func (m *Mach) Values() ([][]uint32, error) {
 	}
 
 	res := make([][]uint32, 0, len(outputs))
-	for _, out := range outputs {
-		ns, err := m.fetchMany(out[0], out[1])
+	for _, rg := range outputs {
+		ns, err := m.fetchMany(rg)
 		if err != nil {
 			return nil, err
 		}
