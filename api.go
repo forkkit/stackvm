@@ -327,6 +327,7 @@ type machBuilder struct {
 	maxCopies int
 
 	buf []byte
+	h   Handler
 	n   int
 }
 
@@ -337,12 +338,13 @@ func (mb *machBuilder) build(buf []byte, h Handler) error {
 	mb.Mach.psp = _pspInit
 
 	mb.buf = buf
+	mb.h = h
 
 	if err := mb.handleOpts(); err != nil {
 		return err
 	}
 
-	return mb.finish(h)
+	return mb.finish()
 }
 
 func (mb *machBuilder) handleOpts() error {
@@ -423,11 +425,11 @@ func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
 	return false, nil
 }
 
-func (mb *machBuilder) finish(h Handler) error {
-	if h != nil {
+func (mb *machBuilder) finish() error {
+	if mb.h != nil {
 		const pagesPerMachineGuess = 4
 		n := int(mb.queueSize)
-		mb.Mach.ctx.Handler = h
+		mb.Mach.ctx.Handler = mb.h
 		mb.Mach.ctx.queue = newRunq(n)
 		mb.Mach.ctx.machAllocator = makeMachFreeList(n)
 		mb.Mach.ctx.pageAllocator = makePageFreeList(n * pagesPerMachineGuess)
