@@ -81,7 +81,7 @@ type ref struct{ site, targ, off int }
 type assembler struct {
 	logff func(string, ...interface{})
 
-	pendOut string
+	pendIn, pendOut string
 
 	opts, prog section
 
@@ -353,6 +353,8 @@ func (sc *scanner) handleData(val interface{}) error {
 			switch s := v[1:]; s {
 			case "alloc":
 				return sc.handleAlloc()
+			case "in":
+				return sc.handleInput()
 			case "out":
 				return sc.handleOutput()
 			default:
@@ -427,6 +429,10 @@ func (sc *scanner) setState(state assemblerState) error {
 	sc.state = state
 	switch state {
 	case assemblerText:
+		if sc.pendIn != "" {
+			// define a label to end a pending .in label
+			return sc.handleLabel("." + sc.pendIn + "_end")
+		}
 		if sc.pendOut != "" {
 			// define a label to end a pending .out label
 			return sc.handleLabel("." + sc.pendOut + "_end")
@@ -467,6 +473,12 @@ func (sc *scanner) handleEntry() error {
 }
 
 func (sc *scanner) handleLabel(name string) error {
+	if sc.pendIn != "" {
+		sc.addRefOpt("input", sc.pendIn, 0)
+		sc.addRefOpt("input", name, 0)
+		sc.pendIn = ""
+	}
+
 	if sc.pendOut != "" {
 		sc.addRefOpt("output", sc.pendOut, 0)
 		sc.addRefOpt("output", name, 0)
@@ -538,6 +550,26 @@ func (sc *scanner) handleAlloc() error {
 	for i := 0; i < n; i++ {
 		sc.prog.add(do)
 	}
+	return nil
+}
+
+func (sc *scanner) handleInput() error {
+	s, err := sc.expectString(`"label:"`)
+	if err != nil {
+		return err
+	}
+
+	// expect and define label
+	if len(s) < 2 || s[len(s)-1] != ':' {
+		return fmt.Errorf("unexpected string %q, expected .in label", s)
+	}
+	name := s[:len(s)-1]
+	if err := sc.handleLabel(name); err != nil {
+		return err
+	}
+
+	// stash name to be flushed by handleLabel
+	sc.pendIn = name
 	return nil
 }
 
