@@ -84,12 +84,36 @@ func (name NoSuchOpError) Error() string {
 // is "crash") or halt with a decode error.
 //
 // TODO: document operations.
-func New(prog []byte, h MachHandler) (*Mach, error) {
+func New(prog []byte, mbos ...MachBuildOpt) (*Mach, error) {
 	var mb machBuilder
-	if err := mb.build(prog, h); err != nil {
+	if err := mb.build(prog); err != nil {
 		return nil, err
 	}
+	for _, mbo := range mbos {
+		if err := mbo(&mb); err != nil {
+			return nil, err
+		}
+	}
 	return &mb.Mach, nil
+}
+
+// MachBuildOpt is an opaque option to build a New() machine.
+type MachBuildOpt func(*machBuilder) error
+
+// Handler passes a MachHandler to New()ly built machine.
+func Handler(h MachHandler) MachBuildOpt {
+	return func(mb *machBuilder) error {
+		const pagesPerMachineGuess = 4
+		n := int(mb.queueSize)
+		mb.Mach.ctx.MachHandler = h
+		mb.Mach.ctx.queue = newRunq(n)
+		mb.Mach.ctx.machAllocator = makeMachFreeList(n)
+		mb.Mach.ctx.pageAllocator = makePageFreeList(n * pagesPerMachineGuess)
+		if mb.maxCopies > 0 {
+			mb.Mach.ctx.machAllocator = maxMachCopiesAllocator(mb.maxCopies, mb.Mach.ctx.machAllocator)
+		}
+		return nil
+	}
 }
 
 func (m *Mach) String() string {
@@ -328,7 +352,7 @@ type machBuilder struct {
 	n   int
 }
 
-func (mb *machBuilder) build(buf []byte, h MachHandler) error {
+func (mb *machBuilder) build(buf []byte) error {
 	mb.queueSize = defaultQueueSize
 
 	mb.Mach.ctx.MachHandler = defaultHandler
@@ -338,7 +362,6 @@ func (mb *machBuilder) build(buf []byte, h MachHandler) error {
 	mb.Mach.psp = _pspInit
 
 	mb.buf = buf
-	mb.h = h
 
 	if err := mb.handleOpts(); err != nil {
 		return err
@@ -437,23 +460,10 @@ func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
 }
 
 func (mb *machBuilder) finish() error {
-	if mb.h != nil {
-		const pagesPerMachineGuess = 4
-		n := int(mb.queueSize)
-		mb.Mach.ctx.MachHandler = mb.h
-		mb.Mach.ctx.queue = newRunq(n)
-		mb.Mach.ctx.machAllocator = makeMachFreeList(n)
-		mb.Mach.ctx.pageAllocator = makePageFreeList(n * pagesPerMachineGuess)
-		if mb.maxCopies > 0 {
-			mb.Mach.ctx.machAllocator = maxMachCopiesAllocator(mb.maxCopies, mb.Mach.ctx.machAllocator)
-		}
-	}
-
 	prog := mb.buf[mb.n:]
 	mb.Mach.opc = makeOpCache(len(prog))
 	mb.Mach.storeBytes(mb.base, prog)
 	// TODO mark code segment, update data
-
 	return nil
 }
 
