@@ -421,6 +421,9 @@ func (sc *scanner) handleDirective(name string) error {
 }
 
 func (sc *scanner) setState(state assemblerState) error {
+	if sc.state == state {
+		return nil
+	}
 	sc.state = state
 	switch state {
 	case assemblerText:
