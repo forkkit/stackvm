@@ -111,9 +111,106 @@ var (
 		`)|(` +
 		`^=== +Handle` +
 		`)`)
-
-	kvPat = regexp.MustCompile(`^(\w+)=(.+)`)
 )
+
+func scanKVs(s string, each func(k, v string)) {
+	ks, ke, vs, ve := 0, 0, 0, 0
+	bc, cc, pc := 0, 0, 0
+
+seekKey:
+	for ; ks < len(s); ks++ {
+		switch s[ks] {
+		case ' ', '\t', '\n':
+		default:
+			goto scanKey
+		}
+	}
+	return
+
+scanKey:
+	for ke = ks; ke < len(s); ke++ {
+		switch s[ke] {
+		case ' ', '\t', '\n':
+			ks = ke
+			goto seekKey
+		case '=':
+			goto seekVal
+		}
+	}
+	return
+
+seekVal:
+	vs = ke + 1
+	ve = vs
+
+scanVal:
+	for ; ve < len(s); ve++ {
+		switch s[ve] {
+		case '"':
+			goto scanDQ
+		case '\'':
+			goto scanSQ
+
+		case '[':
+			bc++
+		case ']':
+			if bc > 0 {
+				bc--
+			}
+
+		case '{':
+			cc++
+		case '}':
+			if cc > 0 {
+				cc--
+			}
+
+		case '(':
+			pc++
+		case ')':
+			if pc > 0 {
+				pc--
+			}
+
+		case ' ', '\t', '\n':
+			if bc+cc+pc <= 0 {
+				goto emit
+			}
+		}
+	}
+	goto emit
+
+scanDQ:
+	for ; ve < len(s); ve++ {
+		switch s[ve] {
+		case '\\':
+			ve++
+		case '"':
+			ve++
+			goto scanVal
+		}
+	}
+	goto emit
+
+scanSQ:
+	for ; ve < len(s); ve++ {
+		switch s[ve] {
+		case '\\':
+			ve++
+		case '\'':
+			ve++
+			goto scanVal
+		}
+	}
+	goto emit
+
+emit:
+	each(s[ks:ke], s[vs:ve])
+	ks = ve + 1
+	if ks < len(s) {
+		goto scanKey
+	}
+}
 
 func (sess *session) add(rec record) record {
 	switch amatch := actPat.FindStringSubmatch(rec.act); {
@@ -129,16 +226,16 @@ func (sess *session) add(rec record) record {
 
 	case amatch[6] != "": // end
 		rec.kind = endLine
-		if match := kvPat.FindStringSubmatch(rec.rest); match != nil {
-			switch string(match[1]) {
+		scanKVs(rec.rest, func(k, v string) {
+			switch k {
 			case "err":
-				sess.err = string(match[2])
+				sess.err = v
 			case "values":
-				sess.values = string(match[2])
+				sess.values = v
 			default:
-				log.Printf("UNKNOWN End key/val: %q = %q\n", match[1], match[2])
+				log.Printf("UNKNOWN End key/val: %q = %q\n", k, v)
 			}
-		}
+		})
 
 	case amatch[7] != "": // handle
 		rec.kind = hndlLine
