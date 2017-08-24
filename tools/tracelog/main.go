@@ -111,6 +111,8 @@ var (
 		`)|(` +
 		`^=== +Handle` +
 		`)`)
+
+	midPat = regexp.MustCompile(`(\d+)\((\d+):(\d+)\)`)
 )
 
 func scanKVs(s string, each func(k, v string)) {
@@ -223,6 +225,12 @@ func (sess *session) add(rec record) record {
 		var parts []string
 		scanKVs(rec.rest, func(k, v string) {
 			switch k {
+			case "child":
+				if match := midPat.FindStringSubmatch(v); match != nil {
+					rec.cid[0], _ = strconv.Atoi(match[1])
+					rec.cid[1], _ = strconv.Atoi(match[2])
+					rec.cid[2], _ = strconv.Atoi(match[3])
+				}
 			default:
 				parts = append(parts, fmt.Sprintf("%s=%q", k, v))
 			}
