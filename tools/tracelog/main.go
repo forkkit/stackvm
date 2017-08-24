@@ -342,7 +342,7 @@ func (ss sessions) fullID(sess *session) string {
 	return buf.String()
 }
 
-func (ss sessions) sessionLog(sess *session, logf func(string, ...interface{})) {
+func (ss sessions) sessionLog(sess *session, logf func(string, ...interface{}) error) error {
 	ids := ss.idPath(sess)
 	for i, j := 0, 1; j < len(ids); i, j = i+1, j+1 {
 		sess := ss[ids[i]]
@@ -350,15 +350,22 @@ func (ss sessions) sessionLog(sess *session, logf func(string, ...interface{})) 
 			if rec.kind == copyLine && rec.cid == ids[j] {
 				break
 			}
-			logf("%v", rec)
+			if err := logf("%v", rec); err != nil {
+				return err
+			}
 		}
 	}
 	for _, rec := range sess.recs {
-		logf("%v", rec)
+		if err := logf("%v", rec); err != nil {
+			return err
+		}
 	}
 	for _, line := range sess.extra {
-		logf("%s", line)
+		if err := logf("%s", line); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func parseSessions(r io.Reader) (sessions, error) {
@@ -421,8 +428,9 @@ func main() {
 			fmt.Printf("%s\tvalues=%v\n", sessions.fullID(sess), sess.values)
 		}
 		if !terse {
-			sessions.sessionLog(sess, func(format string, args ...interface{}) {
-				fmt.Printf("	"+format+"\n", args...)
+			sessions.sessionLog(sess, func(format string, args ...interface{}) error {
+				_, err := fmt.Printf("	"+format+"\n", args...)
+				return err
 			})
 			fmt.Println()
 		}
