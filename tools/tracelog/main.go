@@ -220,6 +220,14 @@ func (sess *session) add(rec record) record {
 		sess.pid[0], _ = strconv.Atoi(amatch[2])
 		sess.pid[1], _ = strconv.Atoi(amatch[3])
 		sess.pid[2], _ = strconv.Atoi(amatch[4])
+		var parts []string
+		scanKVs(rec.rest, func(k, v string) {
+			switch k {
+			default:
+				parts = append(parts, fmt.Sprintf("%s=%q", k, v))
+			}
+		})
+		rec.rest = strings.Join(parts, " ")
 
 	case amatch[5] != "": // begin
 		rec.kind = beginLine
