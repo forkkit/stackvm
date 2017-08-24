@@ -20,13 +20,6 @@ func (name NoSuchOpError) Error() string {
 	return fmt.Sprintf("no such operation %q", string(name))
 }
 
-var defaultContext = context{
-	Handler:       defaultHandler,
-	queue:         noQueue,
-	machAllocator: defaultMachAllocator,
-	pageAllocator: defaultPageAllocator,
-}
-
 // New creates a new stack machine with a given program loaded. It takes a
 // varcoded (more on that below) program, and an optional handler.
 //
@@ -338,7 +331,10 @@ type machBuilder struct {
 func (mb *machBuilder) build(buf []byte, h Handler) error {
 	mb.queueSize = defaultQueueSize
 
-	mb.Mach.ctx = defaultContext
+	mb.Mach.ctx.Handler = defaultHandler
+	mb.Mach.ctx.queue = noQueue
+	mb.Mach.ctx.machAllocator = defaultMachAllocator
+	mb.Mach.ctx.pageAllocator = defaultPageAllocator
 	mb.Mach.psp = _pspInit
 
 	mb.buf = buf
