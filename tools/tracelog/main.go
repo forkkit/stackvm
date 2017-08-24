@@ -390,6 +390,27 @@ func (ns intsetFlag) Set(s string) error {
 
 var haltPat = regexp.MustCompile(`HALT\((\d+)\)`)
 
+func printSession(sessions sessions, mid machID) (err error) {
+	sess := sessions[mid]
+	if sess.err != "" {
+		_, err = fmt.Printf("%s\terr=%v\n", sessions.fullID(sess), sess.err)
+	} else {
+		_, err = fmt.Printf("%s\tvalues=%v\n", sessions.fullID(sess), sess.values)
+	}
+	return
+}
+
+func printFullSession(sessions sessions, mid machID) (err error) {
+	err = printSession(sessions, mid)
+	if err == nil {
+		err = sessions.sessionLog(sessions[mid], indentPrintf("	").Printf)
+	}
+	if err == nil {
+		_, err = fmt.Println()
+	}
+	return
+}
+
 type indentPrintf string
 
 func (s indentPrintf) Printf(format string, args ...interface{}) error {
@@ -406,6 +427,13 @@ func main() {
 	flag.BoolVar(&terse, "terse", false, "don't print full session logs")
 	flag.Var(ignCodes, "ignoreHaltCodes", "skip printing logs for session that halted with these non-zero codes")
 	flag.Parse()
+
+	var out func(sessions, machID) error
+	if terse {
+		out = printSession
+	} else {
+		out = printFullSession
+	}
 
 	sessions, err := parseSessions(os.Stdin)
 	if err != nil {
@@ -427,16 +455,10 @@ func main() {
 			mids[i][1] < mids[j][1] ||
 			mids[i][2] < mids[j][2]
 	})
+
 	for _, mid := range mids {
-		sess := sessions[mid]
-		if sess.err != "" {
-			fmt.Printf("%s\terr=%v\n", sessions.fullID(sess), sess.err)
-		} else {
-			fmt.Printf("%s\tvalues=%v\n", sessions.fullID(sess), sess.values)
-		}
-		if !terse {
-			sessions.sessionLog(sess, indentPrintf("	").Printf)
-			fmt.Println()
+		if err := out(sessions, mid); err != nil {
+			log.Fatal(err)
 		}
 	}
 }
