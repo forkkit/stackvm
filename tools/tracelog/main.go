@@ -230,7 +230,7 @@ func (sess *session) add(rec record) record {
 					parts = append(parts, fmt.Sprintf("child=%v", rec.cid))
 				}
 			default:
-				parts = append(parts, fmt.Sprintf("%s=%q", k, v))
+				parts = append(parts, fmt.Sprintf("%s=%s", k, v))
 			}
 		})
 		rec.rest = strings.Join(parts, " ")
@@ -269,7 +269,7 @@ func (sess *session) addCoCopyRec(rec record) {
 		case "child":
 			parts = append(parts, fmt.Sprintf("parent=%v", rec.mid))
 		default:
-			parts = append(parts, fmt.Sprintf("%s=%q", k, v))
+			parts = append(parts, fmt.Sprintf("%s=%s", k, v))
 		}
 	})
 	rec.mid, rec.cid = rec.cid, zeroMachID
