@@ -263,6 +263,7 @@ func (sess *session) add(rec record) record {
 }
 
 func (sess *session) addCoCopyRec(rec record) {
+	sess.pid = rec.mid
 	var parts []string
 	scanKVs(rec.rest, func(k, v string) {
 		switch k {
