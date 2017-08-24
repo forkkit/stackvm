@@ -249,13 +249,9 @@ func (sess *session) add(rec record) record {
 }
 
 func (sess *session) addCoCopyRec(rec record) {
-	sess.recs = append(sess.recs, record{
-		kind:  copyLine,
-		mid:   sess.pid,
-		cid:   rec.mid,
-		count: rec.count,
-		act:   fmt.Sprintf("+++ %*v", 15, fmt.Sprintf("%v copy", rec.mid)),
-	})
+	rec.mid, rec.cid = sess.pid, rec.mid
+	rec.act = fmt.Sprintf("+++ %*v", 15, fmt.Sprintf("%v copy", rec.mid))
+	sess.recs = append(sess.recs, rec)
 }
 
 type sessions map[machID]*session
