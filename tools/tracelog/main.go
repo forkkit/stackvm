@@ -390,6 +390,13 @@ func (ns intsetFlag) Set(s string) error {
 
 var haltPat = regexp.MustCompile(`HALT\((\d+)\)`)
 
+type indentPrintf string
+
+func (s indentPrintf) Printf(format string, args ...interface{}) error {
+	_, err := fmt.Printf(string(s)+format+"\n", args...)
+	return err
+}
+
 func main() {
 	var (
 		terse    bool
@@ -428,10 +435,7 @@ func main() {
 			fmt.Printf("%s\tvalues=%v\n", sessions.fullID(sess), sess.values)
 		}
 		if !terse {
-			sessions.sessionLog(sess, func(format string, args ...interface{}) error {
-				_, err := fmt.Printf("	"+format+"\n", args...)
-				return err
-			})
+			sessions.sessionLog(sess, indentPrintf("	").Printf)
 			fmt.Println()
 		}
 	}
