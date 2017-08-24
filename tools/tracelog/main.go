@@ -39,6 +39,27 @@ const (
 	noteLine
 )
 
+func (rk recordKind) String() string {
+	switch rk {
+	case unknownLine:
+		return "unknown"
+	case genericLine:
+		return "generic"
+	case copyLine:
+		return "copy"
+	case beginLine:
+		return "begin"
+	case endLine:
+		return "end"
+	case hndlLine:
+		return "hndl"
+	case noteLine:
+		return "note"
+	default:
+		return ""
+	}
+}
+
 func (ss sessions) parseAll(r io.Reader) error {
 	var cur machID
 	sc := bufio.NewScanner(r)
