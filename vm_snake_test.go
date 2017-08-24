@@ -44,13 +44,13 @@ func Test_snakeCube(t *testing.T) {
 			0, 0, -1,
 
 			// occupied cube cell bitvector
-			"occupied:", ".alloc", int(math.Ceil(math.Log2(float64(N*N*N)) / 8 / 4)),
+			".out", "occupied:", ".alloc", int(math.Ceil(math.Log2(float64(N*N*N)) / 8 / 4)),
 
 			// starting index in the cube
-			"start:", 0,
+			".out", "start:", 0,
 
 			// chosen orientation for each fixed-chain head
-			"choices:", ".alloc", M,
+			".out", "choices:", ".alloc", M,
 
 			".text",
 
