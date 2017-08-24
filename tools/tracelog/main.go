@@ -227,6 +227,7 @@ func (sess *session) add(rec record) record {
 					rec.cid[0], _ = strconv.Atoi(match[1])
 					rec.cid[1], _ = strconv.Atoi(match[2])
 					rec.cid[2], _ = strconv.Atoi(match[3])
+					parts = append(parts, fmt.Sprintf("child=%v", rec.cid))
 				}
 			default:
 				parts = append(parts, fmt.Sprintf("%s=%q", k, v))
@@ -262,7 +263,17 @@ func (sess *session) add(rec record) record {
 }
 
 func (sess *session) addCoCopyRec(rec record) {
+	var parts []string
+	scanKVs(rec.rest, func(k, v string) {
+		switch k {
+		case "child":
+			parts = append(parts, fmt.Sprintf("parent=%v", rec.mid))
+		default:
+			parts = append(parts, fmt.Sprintf("%s=%q", k, v))
+		}
+	})
 	rec.mid, rec.cid = rec.cid, zeroMachID
+	rec.rest = strings.Join(parts, " ")
 	sess.recs = append(sess.recs, rec)
 }
 
