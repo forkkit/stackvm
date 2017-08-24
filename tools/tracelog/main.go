@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -132,6 +133,8 @@ var (
 		`)|(` +
 		`^=== +Handle` +
 		`)`)
+
+	markPat = regexp.MustCompile(`^(\+\+\+|===|\.\.\.|>>>)\s+`)
 
 	midPat = regexp.MustCompile(`(\d+)\((\d+):(\d+)\)`)
 )
@@ -439,18 +442,89 @@ func (s indentPrintf) Printf(format string, args ...interface{}) error {
 	return err
 }
 
+type jsonDumper struct {
+	*json.Encoder
+}
+
+func (jd jsonDumper) dump(sessions sessions, mid machID) error {
+	type recDat struct {
+		Kind   string                 `json:"kind"`
+		Action string                 `json:"action"`
+		Count  int                    `json:"count"`
+		IP     int                    `json:"ip"`
+		Extra  map[string]interface{} `json:"extra"`
+	}
+
+	type sessDat struct {
+		ID       string   `json:"id"`
+		ParentID *string  `json:"parent_id"`
+		Error    string   `json:"error"`
+		Values   string   `json:"values"`
+		Records  []recDat `json:"records"`
+		Extra    []string `json:"extra"`
+	}
+
+	if mid == zeroMachID {
+		return nil
+	}
+
+	sess := sessions[mid]
+
+	dat := sessDat{
+		ID:      sess.mid.String(),
+		Error:   sess.err,
+		Values:  sess.values,
+		Records: make([]recDat, len(sess.recs)),
+		Extra:   sess.extra,
+	}
+
+	if sess.pid != zeroMachID {
+		pidStr := sess.pid.String()
+		dat.ParentID = &pidStr
+	}
+
+	for i, rec := range sess.recs {
+		act := rec.act
+		if m := markPat.FindStringIndex(act); m != nil {
+			act = act[m[1]:]
+		}
+		act = strings.TrimSpace(act)
+
+		rd := recDat{
+			Kind:   rec.kind.String(),
+			Action: act,
+			Count:  rec.count,
+			IP:     int(rec.ip),
+			Extra:  make(map[string]interface{}),
+		}
+		if rec.cid != zeroMachID {
+			rd.Extra["child"] = rec.cid.String()
+		}
+		scanKVs(rec.rest, func(k, v string) {
+			rd.Extra[k] = v
+		})
+		dat.Records[i] = rd
+	}
+
+	return jd.Encode(dat)
+}
+
 func main() {
 	var (
 		terse    bool
+		fmtJSON  bool
 		ignCodes = make(intsetFlag)
 	)
 
 	flag.BoolVar(&terse, "terse", false, "don't print full session logs")
 	flag.Var(ignCodes, "ignoreHaltCodes", "skip printing logs for session that halted with these non-zero codes")
+	flag.BoolVar(&fmtJSON, "json", false, "output json")
 	flag.Parse()
 
 	var out func(sessions, machID) error
-	if terse {
+	if fmtJSON {
+		out = jsonDumper{json.NewEncoder(os.Stdout)}.dump
+	} else if terse {
 		out = printSession
 	} else {
 		out = printFullSession
