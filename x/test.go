@@ -43,6 +43,7 @@ type TestCase struct {
 	Logf    func(format string, args ...interface{})
 	Name    string
 	Prog    interface{}
+	Input   [][]uint32
 	Err     string
 	Handler func(*stackvm.Mach) ([]byte, error)
 	Result  TestCaseResult
@@ -237,6 +238,9 @@ func (t testCaseRun) build() (m *stackvm.Mach, fin finisher, err error) {
 	}
 	fin = t.Result.start(t.TB)
 	var opts []stackvm.MachBuildOpt
+	for _, in := range t.Input {
+		opts = append(opts, stackvm.Input(in))
+	}
 	if h, ok := fin.(stackvm.MachHandler); ok {
 		opts = append(opts, stackvm.Handler(h))
 	}
