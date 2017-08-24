@@ -54,7 +54,7 @@ func (ss sessions) parseAll(r io.Reader) error {
 		sess := ss.session(rec.mid)
 		rec = sess.add(rec)
 		if rec.kind == copyLine {
-			ss.session(sess.pid).addCoCopyRec(rec)
+			ss.session(rec.cid).addCoCopyRec(rec)
 		}
 
 		switch rec.kind {
@@ -103,7 +103,7 @@ func parseRecord(mid machID, rest []byte) (rec record) {
 
 var (
 	actPat = regexp.MustCompile(`(` +
-		`^\+\+\+ +(\d+)\((\d+):(\d+)\) +copy` +
+		`^\+\+\+ +Copy` +
 		`)|(` +
 		`=== +Begin` + // @0x00ce stacks=[0x0000:0x003c]
 		`)|(` +
@@ -219,9 +219,6 @@ func (sess *session) add(rec record) record {
 	case amatch == nil:
 	case amatch[1] != "": // copy
 		rec.kind = copyLine
-		sess.pid[0], _ = strconv.Atoi(amatch[2])
-		sess.pid[1], _ = strconv.Atoi(amatch[3])
-		sess.pid[2], _ = strconv.Atoi(amatch[4])
 		var parts []string
 		scanKVs(rec.rest, func(k, v string) {
 			switch k {
@@ -237,10 +234,10 @@ func (sess *session) add(rec record) record {
 		})
 		rec.rest = strings.Join(parts, " ")
 
-	case amatch[5] != "": // begin
+	case amatch[2] != "": // begin
 		rec.kind = beginLine
 
-	case amatch[6] != "": // end
+	case amatch[3] != "": // end
 		rec.kind = endLine
 		scanKVs(rec.rest, func(k, v string) {
 			switch k {
@@ -253,7 +250,7 @@ func (sess *session) add(rec record) record {
 			}
 		})
 
-	case amatch[7] != "": // handle
+	case amatch[4] != "": // handle
 		rec.kind = hndlLine
 
 	default:
@@ -265,8 +262,7 @@ func (sess *session) add(rec record) record {
 }
 
 func (sess *session) addCoCopyRec(rec record) {
-	rec.mid, rec.cid = sess.pid, rec.mid
-	rec.act = fmt.Sprintf("+++ %*v", 15, fmt.Sprintf("%v copy", rec.mid))
+	rec.mid, rec.cid = rec.cid, zeroMachID
 	sess.recs = append(sess.recs, rec)
 }
 
