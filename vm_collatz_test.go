@@ -5,11 +5,55 @@ import (
 	"testing"
 
 	. "github.com/jcorbin/stackvm/x"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMach_collatz_sequence(t *testing.T) {
 	// Test that the vm can generate the collatz sequence from a given starting
 	// point.
+
+	prog, err := Assemble(
+		".data",
+		".in", "N:", 0,
+
+		".entry", "main:",
+		":N", "fetch", "dup", // v v :
+		":seq", "push", // v v i :
+		"dup", 4, "add", "p2c", // v v i : i=i+4
+		"storeTo", // v : i
+
+		"loop:",         // v : i
+		"dup", 2, "mod", // v v%2 : ...
+
+		":odd", "jnz",
+
+		"even:",
+		2, "div", // v/2 : ...
+		":next", "jump",
+
+		"odd:",
+		3, "mul", 1, "add", // 3*v+1 : ...
+
+		"next:",
+		"dup",    // v v : i
+		"c2p",    // v v i :
+		"dup",    // v v i i :
+		4, "add", // v v i i+4 :
+		"p2c",     // v v i : i=i+4
+		"storeTo", // v : i
+		"dup",     // v v : i
+		1, "eq",   // v v==1 : i
+		":loop", "jz", // v : i
+
+		"c2p",          // v i :
+		":seq", "push", // v i base :
+		2, "p2c", // v : i base
+		"halt",
+
+		".data",
+		"seq:", ".alloc", 16,
+	)
+	require.NoError(t, err, "unexpected assembler error")
 
 	tcs := make(TestCases, 0, 9)
 	for n := 1; n < 10; n++ {
@@ -32,42 +76,9 @@ func TestMach_collatz_sequence(t *testing.T) {
 		// build the test case for n
 		tcs = append(tcs, TestCase{
 			Name: fmt.Sprintf("collatz(%d)", n),
-			Prog: []interface{}{
-				n, "push", "dup", // v v :
-				":seq", "push", // v v i :
-				"dup", 4, "add", "p2c", // v v i : i=i+4
-				"storeTo", // v : i
-
-				"loop:",         // v : i
-				"dup", 2, "mod", // v v%2 : ...
-
-				":odd", "jnz",
-
-				"even:",
-				2, "div", // v/2 : ...
-				":next", "jump",
-
-				"odd:",
-				3, "mul", 1, "add", // 3*v+1 : ...
-
-				"next:",
-				"dup",    // v v : i
-				"c2p",    // v v i :
-				"dup",    // v v i i :
-				4, "add", // v v i i+4 :
-				"p2c",     // v v i : i=i+4
-				"storeTo", // v : i
-				"dup",     // v v : i
-				1, "eq",   // v v==1 : i
-				":loop", "jz", // v : i
-
-				"c2p",          // v i :
-				":seq", "push", // v i base :
-				2, "p2c", // v : i base
-				"halt",
-
-				".data",
-				"seq:", ".alloc", 16,
+			Prog: prog,
+			Input: [][]uint32{
+				[]uint32{uint32(n)},
 			},
 			Result: Result{
 				Values: [][]uint32{vals},
