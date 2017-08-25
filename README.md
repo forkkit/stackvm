@@ -45,10 +45,6 @@ For bleeding edge, see the [`dev`][dev] branch.
   - require calling an "allocate" operation
   - would also allow shared pages
 - provide some sort of static program verification; at least "can I decode it?"
-- add input:
-  - stack priming
-  - assembler placeholders
-  - loading values into memory
 - ops:
   - consolidate dispatch in Mach.step; fix latent bug around mutating invalid
     m.pa, when it should be an underflow
