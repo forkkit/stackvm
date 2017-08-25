@@ -57,24 +57,86 @@ const opCodeCrash = 0x00
 // copied from api.go.
 const optCodeEnd = 0x00
 
-// dataOp returns an invalid Op that carries a data word. These invalid ops are
-// used temporarily between assembler.scan and assembler.encode. The ops are
-// "invalid" because they are a "crash with immediate", which will never be
-// represented by a valid combination of immediate and op name.
-func dataOp(d uint32) stackvm.Op {
-	return stackvm.Op{
-		Code: opCodeCrash,
-		Have: true,
-		Arg:  d,
+type tokenKind uint8
+
+const (
+	optTK tokenKind = iota + 1
+	opTK
+	dataTK
+)
+
+type token struct {
+	kind tokenKind
+	stackvm.Op
+}
+
+func (tok token) ResolveRefArg(site, targ uint32) token {
+	switch tok.kind {
+	case optTK:
+		tok.Arg = targ
+	case opTK:
+		tok.Op = tok.Op.ResolveRefArg(site, targ)
+	}
+	return tok
+}
+
+func (tok token) Name() string {
+	switch tok.kind {
+	case optTK:
+		return stackvm.NameOption(tok.Code)
+	case opTK:
+		return tok.Op.Name()
+	case dataTK:
+		return ".data"
+	default:
+		return fmt.Sprintf("UNKNOWN<%v>", tok.kind)
 	}
 }
 
-func opData(op stackvm.Op) (uint32, bool) {
-	if op.Code == opCodeCrash && op.Have {
-		return op.Arg, true
+func (tok token) String() string {
+	switch tok.kind {
+	case optTK:
+		if tok.Have {
+			return fmt.Sprintf(".%s %v", stackvm.NameOption(tok.Code), tok.Arg)
+		}
+		return fmt.Sprintf(".%s", stackvm.NameOption(tok.Code))
+	case opTK:
+		return tok.Op.String()
+	case dataTK:
+		return fmt.Sprintf(".data %d", tok.Arg)
+	default:
+		return fmt.Sprintf("UNKNOWN<%v>", tok.kind)
 	}
-	return 0, false
 }
+
+func (tok token) EncodeInto(p []byte) int {
+	switch tok.kind {
+	case dataTK:
+		stackvm.ByteOrder.PutUint32(p, tok.Arg)
+		return 4
+	default:
+		return tok.Op.EncodeInto(p)
+	}
+}
+
+func (tok token) NeededSize() int {
+	switch tok.kind {
+	case dataTK:
+		return 4
+	default:
+		return tok.Op.NeededSize()
+	}
+}
+
+func optToken(name string, arg uint32, have bool) token {
+	return token{
+		kind: optTK,
+		Op:   stackvm.ResolveOption(name, arg, have),
+	}
+}
+
+func opToken(op stackvm.Op) token { return token{kind: opTK, Op: op} }
+func dataToken(d uint32) token    { return token{kind: dataTK, Op: stackvm.Op{Arg: d}} }
 
 type ref struct{ site, targ, off int }
 
@@ -85,10 +147,10 @@ type assembler struct {
 
 	opts, prog section
 
-	stackSize *stackvm.Op
-	queueSize *stackvm.Op
-	maxOps    *stackvm.Op
-	maxCopies *stackvm.Op
+	stackSize *token
+	queueSize *token
+	maxOps    *token
+	maxCopies *token
 }
 
 func (asm assembler) Assemble(in ...interface{}) ([]byte, error) {
@@ -111,7 +173,7 @@ func (asm assembler) Assemble(in ...interface{}) ([]byte, error) {
 
 	enc.logf = asm.logf
 	enc.base = asm.stackSize.Arg
-	enc.nopts = len(asm.opts.ops)
+	enc.nopts = len(asm.opts.toks)
 	return enc.encode()
 }
 
@@ -128,19 +190,19 @@ func (asm *assembler) logf(format string, args ...interface{}) {
 	}
 }
 
-func (asm *assembler) setOption(pop **stackvm.Op, name string, v uint32) {
-	if *pop == nil {
-		*pop = asm.refOpt(name, v, true)
+func (asm *assembler) setOption(ptok **token, name string, v uint32) {
+	if *ptok == nil {
+		*ptok = asm.refOpt(name, v, true)
 	} else {
-		(*pop).Arg = v
+		(*ptok).Arg = v
 	}
 }
 
 func collectSections(secs ...section) (enc encoder, err error) {
-	numLabels, numRefs, numOps := 0, 0, 0
+	numLabels, numRefs, numToks := 0, 0, 0
 	for _, sec := range secs {
 		numLabels += len(sec.labels)
-		numOps += len(sec.ops)
+		numToks += len(sec.toks)
 		for _, rfs := range sec.refsBy {
 			numRefs += len(rfs)
 		}
@@ -149,8 +211,8 @@ func collectSections(secs ...section) (enc encoder, err error) {
 	if numLabels > 0 {
 		enc.labels = make(map[string]int)
 	}
-	if numOps > 0 {
-		enc.ops = make([]stackvm.Op, 0, numOps)
+	if numToks > 0 {
+		enc.toks = make([]token, 0, numToks)
 	}
 	if numRefs > 0 {
 		enc.refs = make([]ref, 0, numRefs)
@@ -163,10 +225,10 @@ func collectSections(secs ...section) (enc encoder, err error) {
 			enc.labels[name] = base + off
 		}
 
-		// collect ops
-		enc.ops = append(enc.ops, sec.ops...)
+		// collect tokens
+		enc.toks = append(enc.toks, sec.toks...)
 
-		base += len(sec.ops)
+		base += len(sec.toks)
 	}
 
 	// check for undefined label refs
@@ -195,7 +257,7 @@ func collectSections(secs ...section) (enc encoder, err error) {
 			}
 		}
 
-		base += len(sec.ops)
+		base += len(sec.toks)
 	}
 
 	if len(enc.refs) > 0 {
@@ -208,7 +270,7 @@ func collectSections(secs ...section) (enc encoder, err error) {
 }
 
 type section struct {
-	ops      []stackvm.Op
+	toks     []token
 	refsBy   map[string][]ref
 	labels   map[string]int
 	maxBytes int
@@ -216,24 +278,22 @@ type section struct {
 
 func makeSection() section {
 	return section{
-		ops:      nil,
+		toks:     nil,
 		refsBy:   make(map[string][]ref),
 		labels:   make(map[string]int),
 		maxBytes: 0,
 	}
 }
 
-func (sec *section) add(op stackvm.Op) {
-	sec.ops = append(sec.ops, op)
-	if _, isData := opData(op); !isData {
-		sec.maxBytes += op.NeededSize()
-	}
+func (sec *section) add(tok token) {
+	sec.toks = append(sec.toks, tok)
+	sec.maxBytes += tok.NeededSize()
 }
 
-func (sec *section) addRef(op stackvm.Op, name string, off int) {
-	rf := ref{site: len(sec.ops), off: off}
+func (sec *section) addRef(tok token, name string, off int) {
+	rf := ref{site: len(sec.toks), off: off}
 	sec.refsBy[name] = append(sec.refsBy[name], rf)
-	sec.ops = append(sec.ops, op)
+	sec.toks = append(sec.toks, tok)
 	sec.maxBytes += 6
 }
 
@@ -246,19 +306,19 @@ const (
 
 const defaultStackSize = 0x40
 
-func (asm *assembler) refOpt(name string, arg uint32, have bool) *stackvm.Op {
-	i := len(asm.opts.ops)
+func (asm *assembler) refOpt(name string, arg uint32, have bool) *token {
+	i := len(asm.opts.toks)
 	asm.addOpt(name, arg, have)
-	return &asm.opts.ops[i]
+	return &asm.opts.toks[i]
 }
 
 func (asm *assembler) addOpt(name string, arg uint32, have bool) {
-	asm.opts.add(stackvm.ResolveOption(name, arg, have))
+	asm.opts.add(optToken(name, arg, have))
 }
 
 func (asm *assembler) addRefOpt(name string, targetName string, off int) {
-	op := stackvm.ResolveOption(name, 0, true)
-	asm.opts.addRef(op, targetName, off)
+	tok := optToken(name, 0, true)
+	asm.opts.addRef(tok, targetName, off)
 }
 
 type scanner struct {
@@ -465,7 +525,7 @@ func (sc *scanner) handleEntry() error {
 		}
 		return fmt.Errorf("duplicate .entry %q, already set to ???", name)
 	}
-	sc.prog.labels[".entry"] = len(sc.prog.ops)
+	sc.prog.labels[".entry"] = len(sc.prog.toks)
 
 	sc.addRefOpt("entry", name, 0)
 
@@ -488,26 +548,26 @@ func (sc *scanner) handleLabel(name string) error {
 	if i, defined := sc.prog.labels[name]; defined && i >= 0 {
 		return fmt.Errorf("label %q already defined", name)
 	}
-	sc.prog.labels[name] = len(sc.prog.ops)
+	sc.prog.labels[name] = len(sc.prog.toks)
 	return nil
 }
 
 func (sc *scanner) handleRef(name string) error {
-	op, err := sc.expectRefOp(0, true, name)
+	tok, err := sc.expectRefOp(0, true, name)
 	if err != nil {
 		return err
 	}
-	sc.prog.addRef(op, name, 0)
+	sc.prog.addRef(tok, name, 0)
 	sc.refLabel(name)
 	return nil
 }
 
 func (sc *scanner) handleOffRef(name string, n int) error {
-	op, err := sc.expectRefOp(0, true, name)
+	tok, err := sc.expectRefOp(0, true, name)
 	if err != nil {
 		return err
 	}
-	sc.prog.addRef(op, name, n)
+	sc.prog.addRef(tok, name, n)
 	sc.refLabel(name)
 	return nil
 }
@@ -517,7 +577,7 @@ func (sc *scanner) handleOp(name string) error {
 	if err != nil {
 		return err
 	}
-	sc.prog.add(op)
+	sc.prog.add(opToken(op))
 	return nil
 }
 
@@ -533,7 +593,7 @@ func (sc *scanner) handleImm(n int) error {
 	if err != nil {
 		return err
 	}
-	sc.prog.add(op)
+	sc.prog.add(opToken(op))
 	return nil
 }
 
@@ -547,10 +607,9 @@ func (sc *scanner) handleAlloc() error {
 	}
 	// TODO: should be in bytes, not words
 	// TODO: would like to avoid N*append
-	do := dataOp(0)
-	sc.prog.maxBytes += 4 * n
+	dt := dataToken(0)
 	for i := 0; i < n; i++ {
-		sc.prog.add(do)
+		sc.prog.add(dt)
 	}
 	return nil
 }
@@ -596,36 +655,35 @@ func (sc *scanner) handleOutput() error {
 }
 
 func (sc *scanner) handleDataWord(d uint32) error {
-	sc.prog.maxBytes += 4
-	sc.prog.add(dataOp(d))
+	sc.prog.add(dataToken(d))
 	return nil
 }
 
-func (sc *scanner) expectRefOp(arg uint32, have bool, name string) (stackvm.Op, error) {
+func (sc *scanner) expectRefOp(arg uint32, have bool, name string) (token, error) {
 	opName, err := sc.expectString(`"opName"`)
 	if err != nil {
-		return stackvm.Op{}, err
+		return token{}, err
 	}
 	op, err := stackvm.ResolveOp(opName, arg, have)
 	if err != nil {
-		return stackvm.Op{}, err
+		return token{}, err
 	}
 	if !op.AcceptsRef() {
-		return stackvm.Op{}, fmt.Errorf("%v does not accept ref %q", op, name)
+		return token{}, fmt.Errorf("%v does not accept ref %q", op, name)
 	}
-	return op, nil
+	return opToken(op), nil
 }
 
-func (sc *scanner) expectOp(arg uint32, have bool) (stackvm.Op, error) {
+func (sc *scanner) expectOp(arg uint32, have bool) (token, error) {
 	opName, err := sc.expectString(`"opName"`)
 	if err != nil {
-		return stackvm.Op{}, err
+		return token{}, err
 	}
 	op, err := stackvm.ResolveOp(opName, arg, have)
 	if err != nil {
-		return stackvm.Op{}, err
+		return token{}, err
 	}
-	return op, nil
+	return opToken(op), nil
 }
 
 func (sc *scanner) expectString(desc string) (string, error) {
@@ -670,17 +728,17 @@ type encoder struct {
 	base     uint32
 	labels   map[string]int
 	refs     []ref
-	ops      []stackvm.Op
+	toks     []token
 	maxBytes int
 }
 
 func (enc encoder) encode() ([]byte, error) {
 	var (
 		buf     = make([]byte, enc.maxBytes)
-		offsets = make([]uint32, len(enc.ops)+1)
+		offsets = make([]uint32, len(enc.toks)+1)
 		boff    uint32           // offset of encoded program
-		c       uint32           // current op offset
-		i       int              // current op index
+		c       uint32           // current token offset
+		i       int              // current token index
 		rfi     int              // index of next ref
 		rf      = ref{-1, -1, 0} // next ref
 	)
@@ -691,33 +749,29 @@ func (enc encoder) encode() ([]byte, error) {
 
 	// encode options
 encodeOptions:
-	for i < len(enc.ops) {
-		op := enc.ops[i]
-		c += uint32(op.EncodeInto(buf[c:]))
+	for i < len(enc.toks) {
+		tok := enc.toks[i]
+		c += uint32(tok.EncodeInto(buf[c:]))
 		i++
 		offsets[i] = c
-		if op.Code == optCodeEnd {
+		if tok.Code == optCodeEnd {
 			break
 		}
 	}
 	boff = c
 
 	// encode program
-	for i < len(enc.ops) {
+	for i < len(enc.toks) {
 		// fix a previously encoded ref's target
 		for 0 <= rf.site && rf.site < i && rf.targ <= i {
 			// re-encode the ref and rewind if arg size changed
 			lo, hi := offsets[rf.site], offsets[rf.site+1]
 			site := enc.base + offsets[rf.site] - boff
 			targ := enc.base + offsets[rf.targ] - boff + uint32(enc.refs[rfi].off)
-			op := enc.ops[rf.site]
-			if rf.site < enc.nopts {
-				op.Arg = targ
-			} else {
-				op = op.ResolveRefArg(site, targ)
-			}
-			enc.ops[rf.site] = op
-			if end := lo + uint32(op.EncodeInto(buf[lo:])); end != hi {
+			tok := enc.toks[rf.site]
+			tok = tok.ResolveRefArg(site, targ)
+			enc.toks[rf.site] = tok
+			if end := lo + uint32(tok.EncodeInto(buf[lo:])); end != hi {
 				// rewind to prior ref
 				i, c = rf.site+1, end
 				offsets[i] = c
@@ -740,24 +794,15 @@ encodeOptions:
 			}
 		}
 
-		op := enc.ops[i]
-		if d, ok := opData(op); ok {
-			// encode a data word
-			stackvm.ByteOrder.PutUint32(buf[c:], d)
-			c += 4
-			i++
-			offsets[i] = c
-			continue
-		}
-
-		// encode next operation
-		c += uint32(op.EncodeInto(buf[c:]))
+		// encode next token
+		tok := enc.toks[i]
+		c += uint32(tok.EncodeInto(buf[c:]))
 		i++
 		offsets[i] = c
 	}
 
 	if rf.site >= 0 {
-		op := enc.ops[rf.site]
+		tok := enc.toks[rf.site]
 		name := "???"
 		for n, targ := range enc.labels {
 			if targ == rf.targ {
@@ -765,9 +810,9 @@ encodeOptions:
 			}
 		}
 		if rf.off != 0 {
-			return nil, fmt.Errorf("unresolved reference for `%d, \":%s\", %q`", rf.off, name, op.Name())
+			return nil, fmt.Errorf("unresolved reference for `%d, \":%s\", %q`", rf.off, name, tok.Name())
 		}
-		return nil, fmt.Errorf("unresolved reference for `\":%s\", %q`", name, op.Name())
+		return nil, fmt.Errorf("unresolved reference for `\":%s\", %q`", name, tok.Name())
 	}
 
 	return buf[:c], nil
