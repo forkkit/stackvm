@@ -514,25 +514,27 @@ func (sc *scanner) handleOffRef(name string, n int) error {
 
 func (sc *scanner) handleOp(name string) error {
 	op, err := stackvm.ResolveOp(name, 0, false)
-	if err == nil {
-		sc.prog.add(op)
+	if err != nil {
+		return err
 	}
-	return err
+	sc.prog.add(op)
+	return nil
 }
 
-func (sc *scanner) handleImm(n int) (err error) {
-	var op stackvm.Op
+func (sc *scanner) handleImm(n int) error {
 	s, err := sc.expectString(`":ref" or "opName"`)
-	if err == nil {
-		if len(s) > 1 && s[0] == ':' {
-			return sc.handleOffRef(s[1:], n)
-		}
-		op, err = stackvm.ResolveOp(s, uint32(n), true)
+	if err != nil {
+		return err
 	}
-	if err == nil {
-		sc.prog.add(op)
+	if len(s) > 1 && s[0] == ':' {
+		return sc.handleOffRef(s[1:], n)
 	}
-	return err
+	op, err := stackvm.ResolveOp(s, uint32(n), true)
+	if err != nil {
+		return err
+	}
+	sc.prog.add(op)
+	return nil
 }
 
 func (sc *scanner) handleAlloc() error {
@@ -599,23 +601,31 @@ func (sc *scanner) handleDataWord(d uint32) error {
 	return nil
 }
 
-func (sc *scanner) expectRefOp(arg uint32, have bool, name string) (op stackvm.Op, err error) {
+func (sc *scanner) expectRefOp(arg uint32, have bool, name string) (stackvm.Op, error) {
 	opName, err := sc.expectString(`"opName"`)
-	if err == nil {
-		op, err = stackvm.ResolveOp(opName, arg, have)
+	if err != nil {
+		return stackvm.Op{}, err
 	}
-	if err == nil && !op.AcceptsRef() {
-		err = fmt.Errorf("%v does not accept ref %q", op, name)
+	op, err := stackvm.ResolveOp(opName, arg, have)
+	if err != nil {
+		return stackvm.Op{}, err
 	}
-	return
+	if !op.AcceptsRef() {
+		return stackvm.Op{}, fmt.Errorf("%v does not accept ref %q", op, name)
+	}
+	return op, nil
 }
 
-func (sc *scanner) expectOp(arg uint32, have bool) (op stackvm.Op, err error) {
+func (sc *scanner) expectOp(arg uint32, have bool) (stackvm.Op, error) {
 	opName, err := sc.expectString(`"opName"`)
-	if err == nil {
-		op, err = stackvm.ResolveOp(opName, arg, have)
+	if err != nil {
+		return stackvm.Op{}, err
 	}
-	return
+	op, err := stackvm.ResolveOp(opName, arg, have)
+	if err != nil {
+		return stackvm.Op{}, err
+	}
+	return op, nil
 }
 
 func (sc *scanner) expectString(desc string) (string, error) {
