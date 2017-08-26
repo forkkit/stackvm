@@ -513,12 +513,14 @@ func (sess *session) toJSON() sessDat {
 }
 
 type jsonDumper struct {
+	io.Closer
 	enc *json.Encoder
 }
 
-func newJSONDumper(w io.Writer) sessionWriter {
+func newJSONDumper(wc io.WriteCloser) sessionWriter {
 	return jsonDumper{
-		enc: json.NewEncoder(w),
+		Closer: wc,
+		enc:    json.NewEncoder(wc),
 	}
 }
 
@@ -531,11 +533,13 @@ func (jd jsonDumper) WriteSession(sessions sessions, mid machID) error {
 
 type sessionWriter interface {
 	WriteSession(sessions, machID) error
+	Close() error
 }
 
 type sessionWriterFunc func(sessions, machID) error
 
 func (swf sessionWriterFunc) WriteSession(ss sessions, mid machID) error { return swf(ss, mid) }
+func (swf sessionWriterFunc) Close() error                               { return nil }
 
 func main() {
 	var (
@@ -578,9 +582,17 @@ func main() {
 			mids[i][2] < mids[j][2]
 	})
 
-	for _, mid := range mids {
-		if err := sw.WriteSession(sessions, mid); err != nil {
-			log.Fatal(err)
+	if err := func() (err error) {
+		for _, mid := range mids {
+			if err = sw.WriteSession(sessions, mid); err != nil {
+				break
+			}
 		}
+		if cerr := sw.Close(); err == nil {
+			err = cerr
+		}
+		return err
+	}(); err != nil {
+		log.Fatal(err)
 	}
 }
