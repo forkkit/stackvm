@@ -564,6 +564,8 @@ type sessionWriterFunc func(sessions, machID) error
 func (swf sessionWriterFunc) WriteSession(ss sessions, mid machID) error { return swf(ss, mid) }
 func (swf sessionWriterFunc) Close() error                               { return nil }
 
+//go:generate ../../node_modules/.bin/rollup -c
+
 func main() {
 	var (
 		terse    bool
