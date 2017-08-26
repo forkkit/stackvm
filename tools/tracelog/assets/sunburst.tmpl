@@ -1,0 +1,19 @@
+<!doctype html>
+
+<meta charset="utf-8">
+<title>StackVM Trace Sunburst</title>
+
+<link rel="stylesheet" type="text/css" href="sunburst.css">
+
+<body>
+
+<main>
+<ul id="sequence"></ul>
+<svg id="chart"></svg>
+<table id="log" style="display: none" cellpadding="0" cellspacing="0" border="0"></table>
+</main>
+
+<script>var data = {{ . }};</script>
+<script src="sunburst.rollup.js" class="main" data-var="data"></script>
+
+</body>

@@ -1,0 +1,47 @@
+html, body, main {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: rgb(27, 33, 44);
+    color: #fff;
+}
+
+#sequence {
+    position: fixed;
+    margin: 0;
+    padding: 0;
+}
+
+#sequence li {
+    color: #fff;
+    float: left;
+    list-style: none;
+    padding: 0.1em 0.2em;
+}
+
+#sequence.active {
+}
+
+#sequence.active li {
+    cursor: pointer;
+    float: none;
+    margin: 0.1em;
+}
+
+#chart #bound { opacity: 0; }
+
+#log { margin: 0 auto; }
+#log td { padding: 0.2em 0.5em; }
+
+.fillColor1 { fill: #5687d1 }
+.fillColor2 { fill: #7b615c }
+.fillColor3 { fill: #6ab975 }
+.fillColor4 { fill: #a173d1 }
+
+.bgColor1 { background-color: #5687d1 }
+.bgColor2 { background-color: #7b615c }
+.bgColor3 { background-color: #6ab975 }
+.bgColor4 { background-color: #a173d1 }

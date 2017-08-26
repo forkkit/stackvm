@@ -14,6 +14,7 @@
   "devDependencies": {
     "d3": "^4.10.0",
     "eslint": "^4.5.0",
+    "html-inline": "^1.2.0",
     "rollup": "^0.48.2",
     "rollup-plugin-cleanup": "^1.0.1",
     "rollup-plugin-commonjs": "^8.2.0",

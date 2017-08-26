@@ -565,6 +565,8 @@ func (swf sessionWriterFunc) WriteSession(ss sessions, mid machID) error { retur
 func (swf sessionWriterFunc) Close() error                               { return nil }
 
 //go:generate ../../node_modules/.bin/rollup -c
+//go:generate mkdir -p ./assets/smashed
+//go:generate ../../node_modules/.bin/html-inline -b assets -i assets/sunburst.tmpl -o assets/smashed/sunburst.tmpl
 
 func main() {
 	var (
