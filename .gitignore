@@ -2,3 +2,6 @@
 prof.*.bench
 prof.*.cpu
 prof.*.mem
+
+# build artifacts
+/tracelog
