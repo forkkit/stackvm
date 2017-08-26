@@ -10,5 +10,8 @@
     "url": "https://github.com/jcorbin/stackvm"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^4.5.0"
+  }
 }
