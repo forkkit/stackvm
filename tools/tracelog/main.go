@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"os"
@@ -567,6 +568,17 @@ func (swf sessionWriterFunc) Close() error                               { retur
 //go:generate ../../node_modules/.bin/rollup -c
 //go:generate mkdir -p ./assets/smashed
 //go:generate ../../node_modules/.bin/html-inline -b assets -i assets/sunburst.tmpl -o assets/smashed/sunburst.tmpl
+//go:generate go-bindata -prefix ./assets/smashed/ ./assets/smashed/
+
+func parseTemplateAsset(name string) (tmpl *template.Template, err error) {
+	var content []byte
+	tmpl = template.New(name)
+	content, err = Asset(name + ".tmpl")
+	if err == nil {
+		tmpl, err = tmpl.Parse(string(content))
+	}
+	return
+}
 
 func main() {
 	var (
