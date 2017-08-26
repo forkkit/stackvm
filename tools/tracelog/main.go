@@ -521,13 +521,12 @@ func main() {
 	flag.BoolVar(&fmtJSON, "json", false, "output json")
 	flag.Parse()
 
-	var out func(sessions, machID) error
+	var out = printFullSession
+
 	if fmtJSON {
 		out = jsonDumper{json.NewEncoder(os.Stdout)}.dump
 	} else if terse {
 		out = printSession
-	} else {
-		out = printFullSession
 	}
 
 	sessions, err := parseSessions(os.Stdin)
