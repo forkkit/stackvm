@@ -513,22 +513,45 @@ func (sess *session) toJSON() sessDat {
 }
 
 type jsonDumper struct {
-	io.Closer
+	wc  io.WriteCloser
+	st  bool
 	enc *json.Encoder
 }
 
 func newJSONDumper(wc io.WriteCloser) sessionWriter {
-	return jsonDumper{
-		Closer: wc,
-		enc:    json.NewEncoder(wc),
+	return &jsonDumper{
+		wc:  wc,
+		enc: json.NewEncoder(wc),
 	}
 }
 
-func (jd jsonDumper) WriteSession(sessions sessions, mid machID) error {
+func (jd *jsonDumper) WriteSession(sessions sessions, mid machID) error {
 	if mid == zeroMachID {
 		return nil
 	}
+	var err error
+	if !jd.st {
+		_, err = jd.wc.Write([]byte("[\n  "))
+		if err == nil {
+			jd.st = true
+		}
+	} else {
+		_, err = jd.wc.Write([]byte(", "))
+	}
+	if err != nil {
+		return err
+	}
 	return jd.enc.Encode(sessions[mid].toJSON())
+}
+
+func (jd *jsonDumper) Close() (err error) {
+	if jd.st {
+		_, err = jd.wc.Write([]byte("]\n"))
+	}
+	if cerr := jd.wc.Close(); err == nil {
+		err = cerr
+	}
+	return err
 }
 
 type sessionWriter interface {
