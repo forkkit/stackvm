@@ -459,17 +459,7 @@ type sessDat struct {
 	Extra    []string `json:"extra"`
 }
 
-type jsonDumper struct {
-	*json.Encoder
-}
-
-func (jd jsonDumper) dump(sessions sessions, mid machID) error {
-	if mid == zeroMachID {
-		return nil
-	}
-
-	sess := sessions[mid]
-
+func (sess *session) toJSON() sessDat {
 	dat := sessDat{
 		ID:      sess.mid.String(),
 		Error:   sess.err,
@@ -506,7 +496,18 @@ func (jd jsonDumper) dump(sessions sessions, mid machID) error {
 		dat.Records[i] = rd
 	}
 
-	return jd.Encode(dat)
+	return dat
+}
+
+type jsonDumper struct {
+	*json.Encoder
+}
+
+func (jd jsonDumper) dump(sessions sessions, mid machID) error {
+	if mid == zeroMachID {
+		return nil
+	}
+	return jd.Encode(sessions[mid].toJSON())
 }
 
 func main() {
