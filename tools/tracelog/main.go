@@ -442,28 +442,28 @@ func (s indentPrintf) Printf(format string, args ...interface{}) error {
 	return err
 }
 
+type recDat struct {
+	Kind   string                 `json:"kind"`
+	Action string                 `json:"action"`
+	Count  int                    `json:"count"`
+	IP     int                    `json:"ip"`
+	Extra  map[string]interface{} `json:"extra"`
+}
+
+type sessDat struct {
+	ID       string   `json:"id"`
+	ParentID *string  `json:"parent_id"`
+	Error    string   `json:"error"`
+	Values   string   `json:"values"`
+	Records  []recDat `json:"records"`
+	Extra    []string `json:"extra"`
+}
+
 type jsonDumper struct {
 	*json.Encoder
 }
 
 func (jd jsonDumper) dump(sessions sessions, mid machID) error {
-	type recDat struct {
-		Kind   string                 `json:"kind"`
-		Action string                 `json:"action"`
-		Count  int                    `json:"count"`
-		IP     int                    `json:"ip"`
-		Extra  map[string]interface{} `json:"extra"`
-	}
-
-	type sessDat struct {
-		ID       string   `json:"id"`
-		ParentID *string  `json:"parent_id"`
-		Error    string   `json:"error"`
-		Values   string   `json:"values"`
-		Records  []recDat `json:"records"`
-		Extra    []string `json:"extra"`
-	}
-
 	if mid == zeroMachID {
 		return nil
 	}
