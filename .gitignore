@@ -5,3 +5,6 @@ prof.*.mem
 
 # build artifacts
 /tracelog
+
+# frontend dev
+node_modules/
