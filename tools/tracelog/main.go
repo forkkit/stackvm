@@ -503,6 +503,10 @@ type jsonDumper struct {
 	*json.Encoder
 }
 
+func newJSONDumper(w io.Writer) jsonDumper {
+	return jsonDumper{json.NewEncoder(w)}
+}
+
 func (jd jsonDumper) dump(sessions sessions, mid machID) error {
 	if mid == zeroMachID {
 		return nil
@@ -525,7 +529,7 @@ func main() {
 	var out = printFullSession
 
 	if fmtJSON {
-		out = jsonDumper{json.NewEncoder(os.Stdout)}.dump
+		out = newJSONDumper(os.Stdout).dump
 	} else if terse {
 		out = printSession
 	}
