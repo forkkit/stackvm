@@ -1,0 +1,4 @@
+# output from bench.sh
+prof.*.bench
+prof.*.cpu
+prof.*.mem
