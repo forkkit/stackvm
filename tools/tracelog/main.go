@@ -500,18 +500,20 @@ func (sess *session) toJSON() sessDat {
 }
 
 type jsonDumper struct {
-	*json.Encoder
+	enc *json.Encoder
 }
 
 func newJSONDumper(w io.Writer) jsonDumper {
-	return jsonDumper{json.NewEncoder(w)}
+	return jsonDumper{
+		enc: json.NewEncoder(w),
+	}
 }
 
 func (jd jsonDumper) dump(sessions sessions, mid machID) error {
 	if mid == zeroMachID {
 		return nil
 	}
-	return jd.Encode(sessions[mid].toJSON())
+	return jd.enc.Encode(sessions[mid].toJSON())
 }
 
 func main() {
