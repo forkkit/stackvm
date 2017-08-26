@@ -516,18 +516,26 @@ type jsonDumper struct {
 	enc *json.Encoder
 }
 
-func newJSONDumper(w io.Writer) jsonDumper {
+func newJSONDumper(w io.Writer) sessionWriter {
 	return jsonDumper{
 		enc: json.NewEncoder(w),
 	}
 }
 
-func (jd jsonDumper) dump(sessions sessions, mid machID) error {
+func (jd jsonDumper) WriteSession(sessions sessions, mid machID) error {
 	if mid == zeroMachID {
 		return nil
 	}
 	return jd.enc.Encode(sessions[mid].toJSON())
 }
+
+type sessionWriter interface {
+	WriteSession(sessions, machID) error
+}
+
+type sessionWriterFunc func(sessions, machID) error
+
+func (swf sessionWriterFunc) WriteSession(ss sessions, mid machID) error { return swf(ss, mid) }
 
 func main() {
 	var (
@@ -541,12 +549,12 @@ func main() {
 	flag.BoolVar(&fmtJSON, "json", false, "output json")
 	flag.Parse()
 
-	var out = printFullSession
+	var sw sessionWriter = sessionWriterFunc(printFullSession)
 
 	if fmtJSON {
-		out = newJSONDumper(os.Stdout).dump
+		sw = newJSONDumper(os.Stdout)
 	} else if terse {
-		out = printSession
+		sw = sessionWriterFunc(printSession)
 	}
 
 	sessions, err := parseSessions(os.Stdin)
@@ -571,7 +579,7 @@ func main() {
 	})
 
 	for _, mid := range mids {
-		if err := out(sessions, mid); err != nil {
+		if err := sw.WriteSession(sessions, mid); err != nil {
 			log.Fatal(err)
 		}
 	}
