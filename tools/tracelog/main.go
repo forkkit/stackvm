@@ -8,9 +8,12 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -590,6 +593,43 @@ func (hd *htmlDumper) Close() (err error) {
 	return err
 }
 
+type webDumper struct {
+	sessionWriter
+	temp *os.File
+}
+
+func newWebDumper(name string) (sessionWriter, error) {
+	webfile, err := ioutil.TempFile("", "stackvm-"+name)
+	if err != nil {
+		return nil, err
+	}
+	sw, err := newHTMLDumper(name, webfile)
+	if err != nil {
+		return nil, err
+	}
+	return webDumper{
+		sessionWriter: sw,
+		temp:          webfile,
+	}, nil
+}
+
+func (wd webDumper) Close() error {
+	if err := wd.sessionWriter.Close(); err != nil {
+		return err
+	}
+	var args []string
+	switch runtime.GOOS {
+	case "darwin":
+		args = []string{"open"}
+	case "windows":
+		args = []string{"cmd", "/c", "start"}
+	default:
+		args = []string{"xdg-open"}
+	}
+	args = append(args, wd.temp.Name())
+	return exec.Command(args[0], args[1:]...).Start()
+}
+
 type sessionWriter interface {
 	WriteSession(sessions, machID) error
 	Close() error
@@ -620,6 +660,7 @@ func main() {
 		terse    bool
 		fmtJSON  bool
 		fmtHTML  bool
+		fmtWeb   bool
 		ignCodes = make(intsetFlag)
 	)
 
@@ -627,6 +668,7 @@ func main() {
 	flag.Var(ignCodes, "ignoreHaltCodes", "skip printing logs for session that halted with these non-zero codes")
 	flag.BoolVar(&fmtJSON, "json", false, "output json")
 	flag.BoolVar(&fmtHTML, "html", false, "output html")
+	flag.BoolVar(&fmtWeb, "web", false, "output html")
 	flag.Parse()
 
 	var sw sessionWriter = sessionWriterFunc(printFullSession)
@@ -636,6 +678,12 @@ func main() {
 	} else if fmtHTML {
 		var err error
 		sw, err = newHTMLDumper("sunburst", os.Stdout)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else if fmtWeb {
+		var err error
+		sw, err = newWebDumper("sunburst")
 		if err != nil {
 			log.Fatal(err)
 		}
