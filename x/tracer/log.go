@@ -29,14 +29,14 @@ func (lf logfTracer) Context(m *stackvm.Mach, key string) (interface{}, bool) {
 }
 
 func (lf logfTracer) Begin(m *stackvm.Mach) {
-	lf.note(m, "===", "Begin", "stacks=[0x%04x:0x%04x]", m.PBP(), m.CBP())
+	lf.note(m, "===", "Begin", "pbp=0x%04x cbp=0x%04x", m.PBP(), m.CBP())
 }
 
 func (lf logfTracer) End(m *stackvm.Mach) {
 	if err := m.Err(); err != nil {
-		lf.note(m, "===", "End", "err=%v", errors.Cause(err))
+		lf.note(m, "===", "End", "err=%q", errors.Cause(err))
 	} else if vs, err := m.Values(); err != nil {
-		lf.note(m, "===", "End", "values_err=%v", err)
+		lf.note(m, "===", "End", "values_err=%q", err)
 	} else {
 		lf.note(m, "===", "End", "values=%v", vs)
 	}
@@ -45,7 +45,7 @@ func (lf logfTracer) End(m *stackvm.Mach) {
 func (lf logfTracer) Queue(m, n *stackvm.Mach) {
 	mid, _ := m.Tracer().Context(n, "id")
 	if vs, err := m.Values(); err != nil {
-		lf.note(m, "+++", "Copy", "child=%v values_err=%v", mid, err)
+		lf.note(m, "+++", "Copy", "child=%v values_err=%q", mid, err)
 	} else {
 		lf.note(m, "+++", "Copy", "child=%v values=%v", mid, vs)
 	}
@@ -53,7 +53,7 @@ func (lf logfTracer) Queue(m, n *stackvm.Mach) {
 
 func (lf logfTracer) Handle(m *stackvm.Mach, err error) {
 	if err != nil {
-		lf.note(m, "!!!", "Handle", "err=%v", err)
+		lf.note(m, "!!!", "Handle", "err=%q", err)
 	} else {
 		lf.note(m, "===", "Handle")
 	}
@@ -65,12 +65,12 @@ func (lf logfTracer) noteStack(m *stackvm.Mach, mark string, note interface{}) {
 	ps, cs, err := m.Stacks()
 	if err != nil {
 		lf.note(m, mark, note,
-			"0x%04x:0x%04x 0x%04x:0x%04x ERROR %v",
+			"pbp=0x%04x psp=0x%04x csp=0x%04x cbp=0x%04x stacks_err=%q",
 			m.PBP(), m.PSP(), m.CSP(), m.CBP(), err)
 	} else {
 		lf.note(m, mark, note,
-			"%v :0x%04x 0x%04x: %v",
-			ps, m.PSP(), m.CSP(), cs)
+			"ps=%v cs=%v psp=0x%04x csp=0x%04x",
+			ps, cs, m.PSP(), m.CSP())
 	}
 }
 
