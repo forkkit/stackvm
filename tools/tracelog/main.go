@@ -555,6 +555,41 @@ func (jd *jsonDumper) Close() (err error) {
 	return err
 }
 
+type htmlDumper struct {
+	sessionWriter
+	wc   io.WriteCloser
+	tmpl *template.Template
+	buf  bytes.Buffer
+}
+
+type nopWriteCloser struct{ io.Writer }
+
+func (nwf nopWriteCloser) Close() error { return nil }
+
+func newHTMLDumper(name string, wc io.WriteCloser) (sessionWriter, error) {
+	tmpl, err := parseTemplateAsset(name)
+	if err != nil {
+		return nil, err
+	}
+	hd := htmlDumper{
+		wc:   wc,
+		tmpl: tmpl,
+	}
+	hd.sessionWriter = newJSONDumper(nopWriteCloser{&hd.buf})
+	return &hd, nil
+}
+
+func (hd *htmlDumper) Close() (err error) {
+	err = hd.sessionWriter.Close()
+	if err == nil {
+		err = hd.tmpl.Execute(hd.wc, template.JS(hd.buf.String()))
+	}
+	if cerr := hd.wc.Close(); err == nil {
+		err = cerr
+	}
+	return err
+}
+
 type sessionWriter interface {
 	WriteSession(sessions, machID) error
 	Close() error
@@ -584,18 +619,26 @@ func main() {
 	var (
 		terse    bool
 		fmtJSON  bool
+		fmtHTML  bool
 		ignCodes = make(intsetFlag)
 	)
 
 	flag.BoolVar(&terse, "terse", false, "don't print full session logs")
 	flag.Var(ignCodes, "ignoreHaltCodes", "skip printing logs for session that halted with these non-zero codes")
 	flag.BoolVar(&fmtJSON, "json", false, "output json")
+	flag.BoolVar(&fmtHTML, "html", false, "output html")
 	flag.Parse()
 
 	var sw sessionWriter = sessionWriterFunc(printFullSession)
 
 	if fmtJSON {
 		sw = newJSONDumper(os.Stdout)
+	} else if fmtHTML {
+		var err error
+		sw, err = newHTMLDumper("sunburst", os.Stdout)
+		if err != nil {
+			log.Fatal(err)
+		}
 	} else if terse {
 		sw = sessionWriterFunc(printSession)
 	}
