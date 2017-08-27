@@ -38,6 +38,8 @@ const (
 	endLine
 	hndlLine
 	noteLine
+	preOpLine
+	postOpLine
 )
 
 func (rk recordKind) String() string {
@@ -56,6 +58,10 @@ func (rk recordKind) String() string {
 		return "hndl"
 	case noteLine:
 		return "note"
+	case preOpLine:
+		return "preOp"
+	case postOpLine:
+		return "postOp"
 	default:
 		return ""
 	}
@@ -134,7 +140,7 @@ var (
 		`^=== +Handle` +
 		`)`)
 
-	markPat = regexp.MustCompile(`^(\+\+\+|===|\.\.\.|>>>)\s+`)
+	markPat = regexp.MustCompile(`^(\+\+\+|===|\.\.\.|>>>)\s*`)
 
 	midPat = regexp.MustCompile(`(\d+)\((\d+):(\d+)\)`)
 )
@@ -474,14 +480,21 @@ func (sess *session) toJSON() sessDat {
 	}
 
 	for i, rec := range sess.recs {
-		act := rec.act
-		if m := markPat.FindStringIndex(act); m != nil {
+		// TODO: push this munging back into primary code
+		kind, act := rec.kind, rec.act
+		if m := markPat.FindStringSubmatchIndex(act); m != nil {
+			switch act[m[2]:m[3]] {
+			case ">>>":
+				kind = preOpLine
+			case "...":
+				kind = postOpLine
+			}
 			act = act[m[1]:]
 		}
 		act = strings.TrimSpace(act)
 
 		rd := recDat{
-			Kind:   rec.kind.String(),
+			Kind:   kind.String(),
 			Action: act,
 			Count:  rec.count,
 			IP:     int(rec.ip),
