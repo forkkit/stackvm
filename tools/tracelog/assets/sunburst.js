@@ -115,7 +115,6 @@ function draw() {
     path = path.merge(path
         .enter().append("path")
         .attr("fill-rule", "evenodd")
-        .style("opacity", 1)
         .on("mouseover", mouseover)
         .on("click", clicked)
     );
@@ -199,15 +198,16 @@ function clicked(d) {
 
 function mouseover(d) {
     updateBreadcrumbs(d);
+    d3Select(chart)
+        .classed("focusing", true);
     cont.selectAll("path")
-        .style("opacity", 0.3);
-    cont.selectAll("path")
-        .filter((node) => model.cur.indexOf(node) >= 0)
-        .style("opacity", 1);
+        .classed("focus", (node) => model.cur.indexOf(node) >= 0);
 }
 
 function mouseleave() {
-    d3Select(chart).selectAll("path").style("opacity", 1);
+    const sel = d3Select(chart);
+    sel.classed("focusing", false);
+    sel.selectAll("path").classed("focus", false);
     updateBreadcrumbs(null);
 }
 

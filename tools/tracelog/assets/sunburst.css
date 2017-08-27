@@ -33,6 +33,9 @@ body {
 
 #chart #bound { opacity: 0; }
 
+#chart.focusing path { opacity: 0.3; }
+#chart.focusing path.focus { opacity: 1; }
+
 #log { margin: 0 auto; }
 #log td { padding: 0.2em 0.5em; }
 
