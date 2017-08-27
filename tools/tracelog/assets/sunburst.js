@@ -265,8 +265,9 @@ class LogTable {
         bodies = bodies.merge(bodies.enter().append("tbody"));
 
         let rows = bodies.selectAll("tr")
-            .data(({id, records}, j) => {
-                const next = que[j+1];
+            .data(({id, records}, depth) => {
+                let mid = midPat.exec(id)[3];
+                const next = que[depth+1];
                 if (next) {
                     for (let i = 0; i < records.length; i++) {
                         if (records[i].kind === "copy" &&
@@ -276,11 +277,9 @@ class LogTable {
                         }
                     }
                 }
-                return records.map(r => {
-                    let idm = midPat.exec(id);
-                    return Object.assign({mid: idm[3], depth: j}, r);
-                });
+                return records.map(r => Object.assign({mid, depth}, r));
             });
+
         rows = rows.merge(rows.enter().append("tr"));
         rows.attr("class", ({depth}) => `bgColor${depth % numColors + 1}`);
 
