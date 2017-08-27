@@ -10,13 +10,17 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type machID [3]int
@@ -593,6 +597,69 @@ func (hd *htmlDumper) Close() (err error) {
 	return err
 }
 
+type webDevDumper struct {
+	sessionWriter
+	buf bytes.Buffer
+	wds webDevServer
+}
+
+type webDevServer struct {
+	fs       http.Handler
+	tmplFile string
+	mtime    time.Time
+	data     []byte
+}
+
+func newWebDevDumper(dir string, tmplName string) sessionWriter {
+	var wdd webDevDumper
+	wdd.sessionWriter = newJSONDumper(nopWriteCloser{&wdd.buf})
+	wdd.wds.fs = http.FileServer(http.Dir(dir))
+	wdd.wds.tmplFile = path.Join(dir, tmplName)
+	return &wdd
+}
+
+func (wdd *webDevDumper) Close() error {
+	err := wdd.sessionWriter.Close()
+	if err == nil {
+		wdd.wds.mtime = time.Now()
+		wdd.wds.data = wdd.buf.Bytes()
+		err = wdd.wds.run()
+	}
+	return err
+}
+
+func (wds webDevServer) run() error {
+	http.HandleFunc("/index.html", wds.serveIndex)
+	http.HandleFunc("/data.json", wds.serveData)
+	http.HandleFunc("/", wds.serveRoot)
+	log.Printf("web dev serving on %s", webDevAddr)
+	return http.ListenAndServe(webDevAddr, nil)
+}
+
+func (wds webDevServer) serveRoot(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/" {
+		http.Redirect(w, r, "/index.html", http.StatusFound)
+		return
+	}
+	wds.fs.ServeHTTP(w, r)
+}
+
+func (wds webDevServer) serveIndex(w http.ResponseWriter, r *http.Request) {
+	data := template.JS(`fetch("/data.json").then(resp => resp.json())`)
+	tmpl, err := template.ParseFiles(wds.tmplFile)
+	if err == nil {
+		err = tmpl.Execute(w, data)
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (wds webDevServer) serveData(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	http.ServeContent(w, r, "data.json", wds.mtime, bytes.NewReader(wds.data))
+}
+
 type webDumper struct {
 	sessionWriter
 	temp *os.File
@@ -655,20 +722,25 @@ func parseTemplateAsset(name string) (tmpl *template.Template, err error) {
 	return
 }
 
+var webDevAddr = ":8000"
+
 func main() {
 	var (
-		terse    bool
-		fmtJSON  bool
-		fmtHTML  bool
-		fmtWeb   bool
-		ignCodes = make(intsetFlag)
+		terse     bool
+		fmtJSON   bool
+		fmtHTML   bool
+		fmtWeb    bool
+		fmtWebDev bool
+		ignCodes  = make(intsetFlag)
 	)
 
 	flag.BoolVar(&terse, "terse", false, "don't print full session logs")
 	flag.Var(ignCodes, "ignoreHaltCodes", "skip printing logs for session that halted with these non-zero codes")
 	flag.BoolVar(&fmtJSON, "json", false, "output json")
 	flag.BoolVar(&fmtHTML, "html", false, "output html")
-	flag.BoolVar(&fmtWeb, "web", false, "output html")
+	flag.BoolVar(&fmtWeb, "web", false, "open html in browser")
+	flag.BoolVar(&fmtWebDev, "web-dev", false, "host html for development")
+	flag.StringVar(&webDevAddr, "web-dev-addr", webDevAddr, "listen address for -web-dev server")
 	flag.Parse()
 
 	var sw sessionWriter = sessionWriterFunc(printFullSession)
@@ -687,6 +759,38 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+	} else if fmtWebDev {
+		exe, err := os.Executable()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		tlDir := path.Join(path.Dir(exe), "tools/tracelog")
+
+		rollupPath, err := exec.LookPath("rollup")
+		if err == nil {
+			rollupPath, err = filepath.Abs(rollupPath)
+		}
+		if err != nil {
+			log.Fatalf("no rollup: %v", err)
+		}
+
+		rollup := exec.Command(rollupPath, "-c", path.Join(tlDir, "rollup.config.js"), "-w")
+		rollup.Env = append(os.Environ(), "ROLLUP_DEV=1")
+		rollup.Dir = tlDir
+		rollup.Stdout = os.Stdout
+		rollup.Stderr = os.Stderr
+		if err := rollup.Start(); err != nil {
+			log.Fatalf("failed to start rollup: %v", err)
+		}
+		go func() {
+			if err := rollup.Wait(); err != nil {
+				log.Fatalf("rollup failed: %v", err)
+			}
+		}()
+
+		asDir := path.Join(tlDir, "assets")
+		sw = newWebDevDumper(asDir, "sunburst.tmpl")
 	} else if terse {
 		sw = sessionWriterFunc(printSession)
 	}

@@ -3,6 +3,9 @@ import commonjs from "rollup-plugin-commonjs";
 import eslint from "rollup-plugin-eslint";
 import cleanup from "rollup-plugin-cleanup";
 
+/* global process */
+let isDev = process.env["ROLLUP_DEV"] && process.env["ROLLUP_DEV"] != "";
+
 export default [
     "sunburst",
 ].map(name => ({
@@ -11,7 +14,7 @@ export default [
         file: `assets/${name}.rollup.js`,
         format: "iife",
     },
-    sourcemap: false,
+    sourcemap: isDev ? "inline" : false,
     plugins: [
         eslint(),
         node(),

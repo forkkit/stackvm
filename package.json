@@ -19,6 +19,7 @@
     "rollup-plugin-cleanup": "^1.0.1",
     "rollup-plugin-commonjs": "^8.2.0",
     "rollup-plugin-eslint": "^4.0.0",
-    "rollup-plugin-node-resolve": "^3.0.0"
+    "rollup-plugin-node-resolve": "^3.0.0",
+    "rollup-watch": "^4.3.1"
   }
 }

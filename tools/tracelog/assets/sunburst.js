@@ -35,9 +35,9 @@ const mainScript = document.querySelector("script.main");
 if (mainScript) {
     let dataVar = mainScript.dataset.var;
     if (dataVar) {
-        setTimeout(() => {
-            load(window[dataVar]);
-        }, 1);
+        let dat = window[dataVar];
+        if (!(dat instanceof Promise)) dat = Promise.resolve(dat);
+        dat.then(load);
     }
 }
 
