@@ -285,9 +285,13 @@ class LogTable {
 
         let cells = rows.selectAll("td")
             .data(({mid, action, count, ip, extra}) => {
+                let ps = extra.ps || "";
+                let cs = extra.cs || "";
+                let values = extra.values || "";
                 let ex = Object.entries(extra)
+                    .filter(([k]) => ["ps", "cs", "values"].indexOf(k) < 0)
                     .map(([k, v]) => `${k}=${v}`).join(" ");
-                return [mid, action, count, ip, ex];
+                return [mid, action, count, ip, ps, cs, values, ex];
             });
 
         cells = cells.merge(cells.enter().append("td"));
