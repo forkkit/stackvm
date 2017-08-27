@@ -58,7 +58,7 @@ function load(data) {
     let rootID = null;
     let byID = {};
     let kids = {};
-    let results = [];
+    let resultIDs = [];
     data.forEach(d => {
         if (d.parent_id === null) {
             if (rootID !== null) {
@@ -69,7 +69,7 @@ function load(data) {
         let idm = midPat.exec(d.id);
         d.idi = parseInt(idm && idm[3]);
         if (d.error === "" && d.values !== "") {
-            results.push(d.id);
+            resultIDs.push(d.id);
         }
 
         byID[d.id] = d;
@@ -83,18 +83,23 @@ function load(data) {
         }
     });
 
-    // TODO: complete results so that all parents are marked
-    // let n = results.length;
-
     model = {
         recods: data,
         byID: byID,
         kids: kids,
         rootID: rootID,
-        results: results,
+        results: new Map(),
         root: null,
         cur: null
     };
+
+    resultIDs.forEach((resultID) => {
+        let node = byID[resultID];
+        let ridi = node.idi;
+        for (; node; node = byID[node.parent_id]) {
+            model.results.set(node.idi, ridi);
+        }
+    });
 
     model.root = d3Hierarchy(model.byID[rootID], ({id}) => {
         return kids[id] && kids[id].map((cid) => byID[cid]);
@@ -122,7 +127,13 @@ function draw() {
     path
         .attr("display", ({depth}) => depth ? null : "none")
         .attr("d", arc)
-        .attr("class", ({depth}) => `fillColor${depth % numColors + 1}`);
+        .attr("class", ({depth, data: {idi}}) => {
+            let parts = [`fillColor${depth % numColors + 1}`];
+            if (model.results.has(idi)) {
+                parts.push(model.results.get(idi) === idi ? "goal" : "goalPath");
+            }
+            return parts.join(" ");
+        });
 
     if (model && model.cur) updateBreadcrumbs(model.cur);
 }
