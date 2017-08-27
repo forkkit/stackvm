@@ -284,9 +284,12 @@ class LogTable {
         rows.attr("class", ({depth}) => `bgColor${depth % numColors + 1}`);
 
         let cells = rows.selectAll("td")
-            .data(({mid, action, count, ip, extra}) => [
-                mid, action, count, ip,
-                Object.entries(extra).map(([k, v]) => `${k}=${v}`).join(" ")]);
+            .data(({mid, action, count, ip, extra}) => {
+                let ex = Object.entries(extra)
+                    .map(([k, v]) => `${k}=${v}`).join(" ");
+                return [mid, action, count, ip, ex];
+            });
+
         cells = cells.merge(cells.enter().append("td"));
         cells.text(i => i);
     }
