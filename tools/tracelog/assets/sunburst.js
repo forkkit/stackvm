@@ -289,7 +289,7 @@ class LogTable {
                 let cs = extra.cs || "";
                 let values = extra.values || "";
                 let ex = Object.entries(extra)
-                    .filter(([k]) => ["ps", "cs", "values"].indexOf(k) < 0)
+                    .filter(([k]) => ["ps", "cs", "values", "parent", "child"].indexOf(k) < 0)
                     .map(([k, v]) => `${k}=${v}`).join(" ");
                 return [mid, action, count, ip, ps, cs, values, ex];
             });
