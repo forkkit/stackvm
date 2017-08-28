@@ -35,6 +35,8 @@ import {
 import {select as d3Select} from "d3-selection";
 import {arc as d3Arc} from "d3-shape";
 
+import { default as debounce } from "debounce";
+
 const midPat = /^(\d+)\((\d+):(\d+)\)$/;
 const numColors = 4;
 
@@ -299,12 +301,13 @@ class Page {
         this.model = null;
         this.handleLogKeyUp = (e) => { if (e.keyCode == 27) this.showChart(); };
         this.chart.addListener("nodeActivated", (node) => this.showLog(node));
-        let mouseleave = () => {
+        let mouseleave = debounce(() => {
             if (this.chart.active) {
                 this.model.cur = null;
                 this.chart.blur();
             }
-        };
+        }, 200);
+        this.trail.el.addEventListener("mouseover", mouseleave.clear);
         this.chart.cont.on("mouseleave", mouseleave);
     }
 
