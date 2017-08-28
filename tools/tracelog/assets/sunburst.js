@@ -112,7 +112,9 @@ class SunburstChart extends EventEmitter {
         this.sel = d3Select(this.el);
         this.partition = d3Partition();
         this.cont = this.sel.append("g");
-        this.bound = this.cont.append("circle").attr("id", "bound");
+        this.bound = this.cont.append("g").attr("id", "bound");
+        this.boundCirc = this.bound.append("circle");
+        this.boundHead = this.bound.append("rect");
         this.arc = d3Arc()
             .startAngle(({x0}) => x0)
             .endAngle(({x1}) => x1)
@@ -168,7 +170,12 @@ class SunburstChart extends EventEmitter {
             .attr("width", width)
             .attr("height", height);
         this.cont.attr("transform", `translate(${width/2},${height/2})`);
-        this.bound.attr("r", radius);
+        this.boundCirc.attr("r", radius);
+        this.boundHead
+            .attr("x", -width/2)
+            .attr("y", -height/2)
+            .attr("width", width)
+            .attr("height", height*0.33);
         if (this._model !== null) this.draw();
     }
 
