@@ -300,6 +300,7 @@ class Page {
         this.chart = new SunburstChart(chartEl);
         this.trail = new SunburstTrail(trailEl);
         this.log = new LogTable(logEl);
+        this.model = null;
         this.handleLogKeyUp = (e) => { if (e.keyCode == 27) this.showChart(); };
         this.chart.addListener("nodeActivated", (node) => this.showLog(node));
     }
@@ -324,10 +325,10 @@ class Page {
     load(data) {
         (data instanceof Promise ? data : Promise.resolve(data)
         ).then((data) => {
-            let model = new SunburstModel(data);
-            this.trail.model = model;
-            this.chart.model = model;
-            this.log.model = model;
+            this.model = new SunburstModel(data);
+            this.trail.model = this.model;
+            this.chart.model = this.model;
+            this.log.model = this.model;
             this.size();
         });
     }
