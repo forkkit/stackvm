@@ -98,10 +98,51 @@ class SunburstModel extends EventEmitter {
     }
 }
 
+class SunburstTrail {
+    constructor(el) {
+        this.el = el;
+        this.sel = d3Select(this.el);
+        this.items = null;
+        this.activationCallback = null;
+        this._model = null;
+    }
+
+    set model(model) {
+        this._model = model;
+        this._model.addListener("curChanged", (cur) => this.update(cur));
+        this.update(this._model.cur);
+    }
+
+    update(cur) {
+        cur = cur || [];
+        let items = this.sel
+            .selectAll("li")
+            .data(cur, ({data, depth}) => data.id + depth);
+        items.exit().remove();
+        this.items = items.merge(items.enter()
+            .append("li")
+            .attr("class", ({depth}) => `bgColor${depth % numColors + 1}`)
+            .on("click", this.activationCallback)
+        ).text(({data}) => data.idi);
+    }
+
+    activate(callback) {
+        this.activationCallback = callback;
+        this.el.className = "active";
+        this.items.on("click", callback);
+    }
+
+    deactivate() {
+        this.activationCallback = null;
+        this.el.className = "";
+        this.items.on("click", null);
+    }
+}
+
 let model = null;
 
 const chart = document.querySelector("#chart");
-const trail = document.querySelector("#sequence");
+const trail = new SunburstTrail(document.querySelector("#sequence"));
 const log = document.querySelector("#log");
 
 const partition = d3Partition();
@@ -144,8 +185,7 @@ function updateSize() {
 
 function load(data) {
     model = new SunburstModel(data);
-    model.addListener("curChanged", updateBreadcrumbs);
-    updateBreadcrumbs(model.cur);
+    trail.model = model;
     updateSize();
 }
 
@@ -183,10 +223,7 @@ function showLog(node) {
     cont.on("mouseleave", null);
     chart.style.display = "none";
     log.style.display = "";
-    trail.className = "active";
-    d3Select(trail).selectAll("li").on("click", (_, i) => {
-        log.tBodies[i].scrollIntoView();
-    });
+    trail.activate((_, i) => log.tBodies[i].scrollIntoView());
 
     let que = [];
     while (node.parent_id !== null) {
@@ -231,8 +268,7 @@ function hideLog() {
     cont.on("mouseleave", mouseleave);
     chart.style.display = "";
     log.style.display = "none";
-    trail.className = "";
-    d3Select(trail).selectAll("li").on("click", null);
+    trail.deactivate();
 }
 
 function clicked(d) {
@@ -254,17 +290,3 @@ function mouseleave() {
     sel.selectAll("path").classed("focus", false);
     model.cur = null;
 }
-
-function updateBreadcrumbs(cur) {
-    let items = d3Select(trail)
-        .selectAll("li")
-        .data(cur || [], ({data, depth}) => data.id + depth);
-    items.exit().remove();
-    items.merge(items.enter()
-        .append("li")
-        .attr("class", ({depth}) => `bgColor${depth % numColors + 1}`)
-    )
-        .text(({data}) => data.idi);
-}
-
-
