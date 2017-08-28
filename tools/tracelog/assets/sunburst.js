@@ -98,10 +98,17 @@ class SunburstModel extends EventEmitter {
     }
 }
 
+function thel(elOrString) {
+    if (typeof elOrString === "string") {
+        return document.querySelector(elOrString);
+    }
+    return elOrString;
+}
+
 class SunburstChart extends EventEmitter {
     constructor(el) {
         super();
-        this.el = el;
+        this.el = thel(el);
         this.sel = d3Select(this.el);
         this.partition = d3Partition();
         this.cont = this.sel.append("g");
@@ -191,7 +198,7 @@ class SunburstChart extends EventEmitter {
 
 class SunburstTrail {
     constructor(el) {
-        this.el = el;
+        this.el = thel(el);
         this.sel = d3Select(this.el);
         this.items = null;
         this.activationCallback = null;
@@ -232,7 +239,7 @@ class SunburstTrail {
 
 class LogTable {
     constructor(el) {
-        this.el = el;
+        this.el = thel(el);
         this.sel = d3Select(this.el);
         this.model = null;
     }
@@ -320,7 +327,7 @@ class Page {
     }
 }
 
-let pg = new Page(document.querySelector("#chart"), document.querySelector("#sequence"), document.querySelector("#log"));
+let pg = new Page("#chart", "#sequence", "#log");
 window.addEventListener("resize", () => pg.size());
 pg.size();
 
