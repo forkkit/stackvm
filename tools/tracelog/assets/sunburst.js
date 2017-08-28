@@ -315,11 +315,14 @@ class Page {
     }
 
     load(data) {
-        let model = new SunburstModel(data);
-        this.trail.model = model;
-        this.chart.model = model;
-        this.log.model = model;
-        this.size();
+        (data instanceof Promise ? data : Promise.resolve(data)
+        ).then((data) => {
+            let model = new SunburstModel(data);
+            this.trail.model = model;
+            this.chart.model = model;
+            this.log.model = model;
+            this.size();
+        });
     }
 
     size() {
@@ -329,14 +332,4 @@ class Page {
 
 let pg = new Page("#chart", "#sequence", "#log");
 window.addEventListener("resize", () => pg.size());
-pg.size();
-
-const mainScript = document.querySelector("script.main");
-if (mainScript) {
-    let dataVar = mainScript.dataset.var;
-    if (dataVar) {
-        let dat = window[dataVar];
-        if (!(dat instanceof Promise)) dat = Promise.resolve(dat);
-        dat.then((data) => pg.load(data));
-    }
-}
+pg.load(window[document.querySelector("script.main").dataset.var]);
