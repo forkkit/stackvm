@@ -199,12 +199,14 @@ function hideLog() {
 }
 
 function clicked(d) {
-    updateBreadcrumbs(d);
+    model.cur = d && d.ancestors().reverse();
+    updateBreadcrumbs(model.cur);
     showLog(d.data);
 }
 
 function mouseover(d) {
-    updateBreadcrumbs(d);
+    model.cur = d && d.ancestors().reverse();
+    updateBreadcrumbs(model.cur);
     d3Select(chart)
         .classed("focusing", true);
     cont.selectAll("path")
@@ -215,15 +217,14 @@ function mouseleave() {
     const sel = d3Select(chart);
     sel.classed("focusing", false);
     sel.selectAll("path").classed("focus", false);
-    updateBreadcrumbs(null);
+    model.cur = null;
+    updateBreadcrumbs(model.cur);
 }
 
-function updateBreadcrumbs(d) {
-    if (!model) return;
-    model.cur = d && d.ancestors().reverse();
+function updateBreadcrumbs(cur) {
     let items = d3Select(trail)
         .selectAll("li")
-        .data(model.cur || [], ({data, depth}) => data.id + depth);
+        .data(cur || [], ({data, depth}) => data.id + depth);
     items.exit().remove();
     items.merge(items.enter()
         .append("li")
