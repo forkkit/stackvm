@@ -98,6 +98,97 @@ class SunburstModel extends EventEmitter {
     }
 }
 
+class SunburstChart extends EventEmitter {
+    constructor(el) {
+        super();
+        this.el = el;
+        this.sel = d3Select(this.el);
+        this.partition = d3Partition();
+        this.cont = this.sel.append("g");
+        this.bound = this.cont.append("circle").attr("id", "bound");
+        this.arc = d3Arc()
+            .startAngle(({x0}) => x0)
+            .endAngle(({x1}) => x1)
+            .innerRadius(({y0}) => Math.sqrt(y0))
+            .outerRadius(({y1}) => Math.sqrt(y1));
+        this.cont.on("mouseleave", () => this.mouseleave());
+        this.path = null;
+        this._model = null;
+        this.active = false;
+        this.activate();
+    }
+
+    set model(model) {
+        this._model = model;
+        this.size();
+    }
+
+    activate() {
+        this.active = true;
+        this.cont.on("mouseleave", (d) => this.mouseleave(d));
+        if (this.path) this.path.on("mouseover", (d) => this.mouseover(d));
+    }
+
+    deactivate() {
+        this.active = false;
+        this.cont.on("mouseleave", null);
+        if (this.path) this.path.on("mouseover", null);
+    }
+
+    mouseover(d) {
+        this._model.cur = d && d.ancestors().reverse();
+        this.sel.classed("focusing", true);
+        this.path.classed("focus", (node) => this._model.cur.indexOf(node) >= 0);
+    }
+
+    mouseleave() {
+        this._model.cur = null;
+        this.sel.classed("focusing", false);
+        this.sel.selectAll("path").classed("focus", false);
+    }
+
+    clicked(d) {
+        this._model.cur = d && d.ancestors().reverse();
+        this.emit("nodeActivated", d.data);
+    }
+
+    size() {
+        const width = document.body.clientWidth;
+        const height = document.body.clientHeight;
+        const radius = Math.min(width, height) / 2;
+        this.partition.size([2 * Math.PI, radius * radius]);
+        this.sel
+            .attr("width", width)
+            .attr("height", height);
+        this.cont.attr("transform", `translate(${width/2},${height/2})`);
+        this.bound.attr("r", radius);
+        if (this._model !== null) this.draw();
+    }
+
+    draw() {
+        this.path = this.cont
+            .data([this._model.records])
+            .selectAll("path")
+            .data(this.partition(this._model.root).descendants());
+        let enter = this.path
+            .enter().append("path")
+            .attr("fill-rule", "evenodd")
+            .on("click", (d) => this.clicked(d));
+        if (this.active) enter.on("mouseover", (d) => this.mouseover(d));
+        this.path = this.path.merge(enter);
+        this.path
+            .attr("display", ({depth}) => depth ? null : "none")
+            .attr("d", this.arc)
+            .attr("class", ({depth, data: {idi}}) => {
+                let parts = [`fillColor${depth % numColors + 1}`];
+                if (this._model.results.has(idi)) {
+                    parts.push(this._model.results.get(idi) === idi ? "goal" : "goalPath");
+                }
+                return parts.join(" ");
+            });
+    }
+}
+
 class SunburstTrail {
     constructor(el) {
         this.el = el;
@@ -141,21 +232,11 @@ class SunburstTrail {
 
 let model = null;
 
-const chart = document.querySelector("#chart");
+const chart = new SunburstChart(document.querySelector("#chart"));
 const trail = new SunburstTrail(document.querySelector("#sequence"));
 const log = document.querySelector("#log");
 
-const partition = d3Partition();
-const cont = d3Select(chart).append("g");
-const bound = cont.append("circle").attr("id", "bound");
-
-const arc = d3Arc()
-    .startAngle(({x0}) => x0)
-    .endAngle(({x1}) => x1)
-    .innerRadius(({y0}) => Math.sqrt(y0))
-    .outerRadius(({y1}) => Math.sqrt(y1));
-
-cont.on("mouseleave", mouseleave);
+chart.addListener("nodeActivated", (node) => showLog(node));
 
 window.addEventListener("resize", updateSize);
 updateSize();
@@ -171,47 +252,14 @@ if (mainScript) {
 }
 
 function updateSize() {
-    let width = document.body.clientWidth;
-    let height = document.body.clientHeight;
-    let radius = Math.min(width, height) / 2;
-    partition.size([2 * Math.PI, radius * radius]);
-    d3Select(chart)
-        .attr("width", width)
-        .attr("height", height);
-    cont.attr("transform", `translate(${width/2},${height/2})`);
-    bound.attr("r", radius);
-    if (model !== null) draw();
+    chart.size();
 }
 
 function load(data) {
     model = new SunburstModel(data);
     trail.model = model;
+    chart.model = model;
     updateSize();
-}
-
-function draw() {
-    let path = cont
-        .data([model.records])
-        .selectAll("path")
-        .data(partition(model.root).descendants());
-
-    path = path.merge(path
-        .enter().append("path")
-        .attr("fill-rule", "evenodd")
-        .on("mouseover", mouseover)
-        .on("click", clicked)
-    );
-
-    path
-        .attr("display", ({depth}) => depth ? null : "none")
-        .attr("d", arc)
-        .attr("class", ({depth, data: {idi}}) => {
-            let parts = [`fillColor${depth % numColors + 1}`];
-            if (model.results.has(idi)) {
-                parts.push(model.results.get(idi) === idi ? "goal" : "goalPath");
-            }
-            return parts.join(" ");
-        });
 }
 
 window.addEventListener("keyup", (e) => {
@@ -219,9 +267,8 @@ window.addEventListener("keyup", (e) => {
 });
 
 function showLog(node) {
-    cont.selectAll("path").on("mouseover", null);
-    cont.on("mouseleave", null);
-    chart.style.display = "none";
+    chart.deactivate();
+    chart.el.style.display = "none";
     log.style.display = "";
     trail.activate((_, i) => log.tBodies[i].scrollIntoView());
 
@@ -264,29 +311,8 @@ function showLog(node) {
 }
 
 function hideLog() {
-    cont.selectAll("path").on("mouseover", mouseover);
-    cont.on("mouseleave", mouseleave);
-    chart.style.display = "";
+    chart.activate();
+    chart.el.style.display = "";
     log.style.display = "none";
     trail.deactivate();
-}
-
-function clicked(d) {
-    model.cur = d && d.ancestors().reverse();
-    showLog(d.data);
-}
-
-function mouseover(d) {
-    model.cur = d && d.ancestors().reverse();
-    d3Select(chart)
-        .classed("focusing", true);
-    cont.selectAll("path")
-        .classed("focus", (node) => model.cur.indexOf(node) >= 0);
-}
-
-function mouseleave() {
-    const sel = d3Select(chart);
-    sel.classed("focusing", false);
-    sel.selectAll("path").classed("focus", false);
-    model.cur = null;
 }
