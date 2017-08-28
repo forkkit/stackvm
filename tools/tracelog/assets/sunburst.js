@@ -230,11 +230,62 @@ class SunburstTrail {
     }
 }
 
+class LogTable {
+    constructor(el) {
+        this.el = el;
+        this.sel = d3Select(this.el);
+        this.model = null;
+    }
+
+    focus(i) {
+        this.el.tBodies[i].scrollIntoView();
+    }
+
+    show(node) {
+        let que = [];
+        while (node.parent_id !== null) {
+            que.unshift(node);
+            node = this.model.byID[node.parent_id];
+        }
+        que.unshift(node);
+
+        let bodies = this.sel.selectAll("tbody").data(que);
+        bodies = bodies.merge(bodies.enter().append("tbody"));
+
+        let rows = bodies.selectAll("tr")
+            .data(({id, records}, j) => {
+                const next = que[j+1];
+                if (next) {
+                    for (let i = 0; i < records.length; i++) {
+                        if (records[i].kind === "copy" &&
+                            records[i].extra["child"] === next.id) {
+                            records = records.slice(0, i);
+                            break;
+                        }
+                    }
+                }
+                return records.map(r => {
+                    let idm = midPat.exec(id);
+                    return Object.assign({mid: idm[3], depth: j}, r);
+                });
+            });
+        rows = rows.merge(rows.enter().append("tr"));
+        rows.attr("class", ({depth}) => `bgColor${depth % numColors + 1}`);
+
+        let cells = rows.selectAll("td")
+            .data(({mid, action, count, ip, extra}) => [
+                mid, action, count, ip,
+                Object.entries(extra).map(([k, v]) => `${k}=${v}`).join(" ")]);
+        cells = cells.merge(cells.enter().append("td"));
+        cells.text(i => i);
+    }
+}
+
 let model = null;
 
 const chart = new SunburstChart(document.querySelector("#chart"));
 const trail = new SunburstTrail(document.querySelector("#sequence"));
-const log = document.querySelector("#log");
+const log = new LogTable(document.querySelector("#log"));
 
 chart.addListener("nodeActivated", (node) => showLog(node));
 
@@ -259,6 +310,7 @@ function load(data) {
     model = new SunburstModel(data);
     trail.model = model;
     chart.model = model;
+    log.model = model;
     updateSize();
 }
 
@@ -269,50 +321,14 @@ window.addEventListener("keyup", (e) => {
 function showLog(node) {
     chart.deactivate();
     chart.el.style.display = "none";
-    log.style.display = "";
-    trail.activate((_, i) => log.tBodies[i].scrollIntoView());
-
-    let que = [];
-    while (node.parent_id !== null) {
-        que.unshift(node);
-        node = model.byID[node.parent_id];
-    }
-    que.unshift(node);
-
-    let sel = d3Select(log).selectAll("tbody").data(que);
-    sel = sel.merge(sel.enter().append("tbody"));
-
-    sel = sel.selectAll("tr")
-        .data(({id, records}, j) => {
-            const next = que[j+1];
-            if (next) {
-                for (let i = 0; i < records.length; i++) {
-                    if (records[i].kind === "copy" &&
-                        records[i].extra["child"] === next.id) {
-                        records = records.slice(0, i);
-                        break;
-                    }
-                }
-            }
-            return records.map(r => {
-                let idm = midPat.exec(id);
-                return Object.assign({mid: idm[3], depth: j}, r);
-            });
-        });
-    sel = sel.merge(sel.enter().append("tr"));
-    sel.attr("class", ({depth}) => `bgColor${depth % numColors + 1}`);
-
-    sel = sel.selectAll("td")
-        .data(({mid, action, count, ip, extra}) => [
-            mid, action, count, ip,
-            Object.entries(extra).map(([k, v]) => `${k}=${v}`).join(" ")]);
-    sel = sel.merge(sel.enter().append("td"));
-    sel.text(i => i);
+    log.el.style.display = "";
+    trail.activate((_, i) => log.focus(i));
+    log.show(node);
 }
 
 function hideLog() {
     chart.activate();
     chart.el.style.display = "";
-    log.style.display = "none";
+    log.el.style.display = "none";
     trail.deactivate();
 }
