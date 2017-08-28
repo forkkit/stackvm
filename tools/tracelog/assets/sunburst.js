@@ -44,8 +44,8 @@ class SunburstModel extends EventEmitter {
     constructor(records) {
         super();
         this.records = records;
-        this.byID = {};
-        this.kids = {};
+        this.byID = new Map();
+        this.kids = new Map();
         this.rootID = null;
         this.results = new Map();
         this.root = null;
@@ -64,28 +64,28 @@ class SunburstModel extends EventEmitter {
             if (d.error === "" && d.values !== "") {
                 resultIDs.push(d.id);
             }
-            this.byID[d.id] = d;
+            this.byID.set(d.id, d);
             if (d.parent_id !== null) {
-                let children = this.kids[d.parent_id];
-                if (!children) {
-                    children = [];
-                    this.kids[d.parent_id] = children;
+                if (this.kids.has(d.parent_id)) {
+                    this.kids.get(d.parent_id).push(d.id);
+                } else {
+                    this.kids.set(d.parent_id, [d.id]);
                 }
-                children.push(d.id);
             }
         });
 
         resultIDs.forEach((resultID) => {
-            let node = this.byID[resultID];
+            let node = this.byID.get(resultID);
             let ridi = node.idi;
-            for (; node; node = this.byID[node.parent_id]) {
+            for (; node; node = this.byID.get(node.parent_id)) {
                 this.results.set(node.idi, ridi);
             }
         });
 
-        this.root = d3Hierarchy(this.byID[this.rootID], ({id}) => {
-            return this.kids[id] && this.kids[id].map((cid) => this.byID[cid]);
-        })
+        this.root = d3Hierarchy(this.byID.get(this.rootID), ({id}) => (
+            this.kids.has(id)
+                ? this.kids.get(id).map((cid) => this.byID.get(cid))
+                : []))
             .sum(() => 1)
             .sort(({data: {idi: a}}, {data: {idi: b}}) => a - b);
         // .sort(({value: a}, {value: b}) => a - b);
@@ -257,7 +257,7 @@ class LogTable {
         let que = [];
         while (node.parent_id !== null) {
             que.unshift(node);
-            node = this.model.byID[node.parent_id];
+            node = this.model.byID.get(node.parent_id);
         }
         que.unshift(node);
 
