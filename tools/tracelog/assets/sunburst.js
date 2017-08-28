@@ -10,6 +10,57 @@ import {arc as d3Arc} from "d3-shape";
 const midPat = /^(\d+)\((\d+):(\d+)\)$/;
 const numColors = 4;
 
+class SunburstModel {
+    constructor(records) {
+        this.records = records;
+        this.byID = {};
+        this.kids = {};
+        this.rootID = null;
+        this.results = new Map();
+        this.root = null;
+        this.cur = null;
+
+        let resultIDs = [];
+        this.records.forEach(d => {
+            if (d.parent_id === null) {
+                if (this.rootID !== null) {
+                    throw new Error("only one root supported");
+                }
+                this.rootID = d.id;
+            }
+            let idm = midPat.exec(d.id);
+            d.idi = parseInt(idm && idm[3]);
+            if (d.error === "" && d.values !== "") {
+                resultIDs.push(d.id);
+            }
+            this.byID[d.id] = d;
+            if (d.parent_id !== null) {
+                let children = this.kids[d.parent_id];
+                if (!children) {
+                    children = [];
+                    this.kids[d.parent_id] = children;
+                }
+                children.push(d.id);
+            }
+        });
+
+        resultIDs.forEach((resultID) => {
+            let node = this.byID[resultID];
+            let ridi = node.idi;
+            for (; node; node = this.byID[node.parent_id]) {
+                this.results.set(node.idi, ridi);
+            }
+        });
+
+        this.root = d3Hierarchy(this.byID[this.rootID], ({id}) => {
+            return this.kids[id] && this.kids[id].map((cid) => this.byID[cid]);
+        })
+            .sum(() => 1)
+            .sort(({data: {idi: a}}, {data: {idi: b}}) => a - b);
+        // .sort(({value: a}, {value: b}) => a - b);
+    }
+}
+
 let model = null;
 
 const chart = document.querySelector("#chart");
@@ -55,59 +106,7 @@ function updateSize() {
 }
 
 function load(data) {
-    let rootID = null;
-    let byID = {};
-    let kids = {};
-    let resultIDs = [];
-    data.forEach(d => {
-        if (d.parent_id === null) {
-            if (rootID !== null) {
-                throw new Error("only one root supported");
-            }
-            rootID = d.id;
-        }
-        let idm = midPat.exec(d.id);
-        d.idi = parseInt(idm && idm[3]);
-        if (d.error === "" && d.values !== "") {
-            resultIDs.push(d.id);
-        }
-
-        byID[d.id] = d;
-        if (d.parent_id !== null) {
-            let children = kids[d.parent_id];
-            if (!children) {
-                children = [];
-                kids[d.parent_id] = children;
-            }
-            children.push(d.id);
-        }
-    });
-
-    model = {
-        recods: data,
-        byID: byID,
-        kids: kids,
-        rootID: rootID,
-        results: new Map(),
-        root: null,
-        cur: null
-    };
-
-    resultIDs.forEach((resultID) => {
-        let node = byID[resultID];
-        let ridi = node.idi;
-        for (; node; node = byID[node.parent_id]) {
-            model.results.set(node.idi, ridi);
-        }
-    });
-
-    model.root = d3Hierarchy(model.byID[rootID], ({id}) => {
-        return kids[id] && kids[id].map((cid) => byID[cid]);
-    })
-        .sum(() => 1)
-        .sort(({data: {idi: a}}, {data: {idi: b}}) => a - b);
-    // .sort(({value: a}, {value: b}) => a - b);
-
+    model = new SunburstModel(data);
     updateSize();
 }
 
