@@ -1,5 +1,33 @@
 "use strict";
 
+class EventEmitter {
+    constructor() {
+        this.events = new Map();
+    }
+    addListener(name, callback) {
+        if (this.events.has(name)) {
+            this.events.get(name).push(callback);
+        } else {
+            this.events.set(name, [callback]);
+        }
+    }
+    removeListener(name, callback) {
+        if (this.events.has(name)) {
+            let callbacks = this.events.get(name).filter((cb) => cb !== callback);
+            if (callbacks.length) {
+                this.events.set(name, callbacks);
+            } else {
+                this.events.delete(name);
+            }
+        }
+    }
+    emit(name, ...args) {
+        if (this.events.has(name)) {
+            this.events.get(name).forEach((cb) => cb(...args));
+        }
+    }
+}
+
 import {
     hierarchy as d3Hierarchy,
     partition as d3Partition
@@ -10,15 +38,16 @@ import {arc as d3Arc} from "d3-shape";
 const midPat = /^(\d+)\((\d+):(\d+)\)$/;
 const numColors = 4;
 
-class SunburstModel {
+class SunburstModel extends EventEmitter {
     constructor(records) {
+        super();
         this.records = records;
         this.byID = {};
         this.kids = {};
         this.rootID = null;
         this.results = new Map();
         this.root = null;
-        this.cur = null;
+        this._cur = null;
 
         let resultIDs = [];
         this.records.forEach(d => {
@@ -58,6 +87,14 @@ class SunburstModel {
             .sum(() => 1)
             .sort(({data: {idi: a}}, {data: {idi: b}}) => a - b);
         // .sort(({value: a}, {value: b}) => a - b);
+    }
+
+    get cur() {
+        return this._cur;
+    }
+    set cur(cur) {
+        this._cur = cur;
+        this.emit("curChanged", cur);
     }
 }
 
@@ -107,6 +144,8 @@ function updateSize() {
 
 function load(data) {
     model = new SunburstModel(data);
+    model.addListener("curChanged", updateBreadcrumbs);
+    updateBreadcrumbs(model.cur);
     updateSize();
 }
 
@@ -133,8 +172,6 @@ function draw() {
             }
             return parts.join(" ");
         });
-
-    if (model && model.cur) updateBreadcrumbs(model.cur);
 }
 
 window.addEventListener("keyup", (e) => {
@@ -200,13 +237,11 @@ function hideLog() {
 
 function clicked(d) {
     model.cur = d && d.ancestors().reverse();
-    updateBreadcrumbs(model.cur);
     showLog(d.data);
 }
 
 function mouseover(d) {
     model.cur = d && d.ancestors().reverse();
-    updateBreadcrumbs(model.cur);
     d3Select(chart)
         .classed("focusing", true);
     cont.selectAll("path")
@@ -218,7 +253,6 @@ function mouseleave() {
     sel.classed("focusing", false);
     sel.selectAll("path").classed("focus", false);
     model.cur = null;
-    updateBreadcrumbs(model.cur);
 }
 
 function updateBreadcrumbs(cur) {
