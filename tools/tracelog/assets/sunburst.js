@@ -120,7 +120,6 @@ class SunburstChart extends EventEmitter {
             .endAngle(({x1}) => x1)
             .innerRadius(({y0}) => Math.sqrt(y0))
             .outerRadius(({y1}) => Math.sqrt(y1));
-        this.cont.on("mouseleave", () => this.mouseleave());
         this.path = null;
         this._model = null;
         this.active = false;
@@ -134,26 +133,23 @@ class SunburstChart extends EventEmitter {
 
     activate() {
         this.active = true;
-        this.cont.on("mouseleave", (d) => this.mouseleave(d));
         if (this.path) this.path.on("mouseover", (d) => this.mouseover(d));
     }
 
     deactivate() {
         this.active = false;
-        this.cont.on("mouseleave", null);
         if (this.path) this.path.on("mouseover", null);
+    }
+
+    blur() {
+        this.sel.classed("focusing", false);
+        this.sel.selectAll("path").classed("focus", false);
     }
 
     mouseover(d) {
         this._model.cur = d && d.ancestors().reverse();
         this.sel.classed("focusing", true);
         this.path.classed("focus", (node) => this._model.cur.indexOf(node) >= 0);
-    }
-
-    mouseleave() {
-        this._model.cur = null;
-        this.sel.classed("focusing", false);
-        this.sel.selectAll("path").classed("focus", false);
     }
 
     clicked(d) {
@@ -303,6 +299,13 @@ class Page {
         this.model = null;
         this.handleLogKeyUp = (e) => { if (e.keyCode == 27) this.showChart(); };
         this.chart.addListener("nodeActivated", (node) => this.showLog(node));
+        let mouseleave = () => {
+            if (this.chart.active) {
+                this.model.cur = null;
+                this.chart.blur();
+            }
+        };
+        this.chart.cont.on("mouseleave", mouseleave);
     }
 
     showChart() {
