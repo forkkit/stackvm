@@ -141,7 +141,7 @@ window.addEventListener("keyup", (e) => {
     if (e.keyCode == 27) hideLog();
 });
 
-function showLog() {
+function showLog(node) {
     cont.selectAll("path").on("mouseover", null);
     cont.on("mouseleave", null);
     chart.style.display = "none";
@@ -150,30 +150,15 @@ function showLog() {
     d3Select(trail).selectAll("li").on("click", (_, i) => {
         log.tBodies[i].scrollIntoView();
     });
-}
 
-function hideLog() {
-    cont.selectAll("path").on("mouseover", mouseover);
-    cont.on("mouseleave", mouseleave);
-    chart.style.display = "";
-    log.style.display = "none";
-    trail.className = "";
-    d3Select(trail).selectAll("li").on("click", null);
-}
-
-function clicked(d) {
-    showLog();
-
-    updateBreadcrumbs(d);
     let ids = model.cur.map(({data: {id}}) => id);
 
-    let data = d.data;
     let que = [];
-    while (data.parent_id !== null) {
-        que.unshift(data);
-        data = model.byID[data.parent_id];
+    while (node.parent_id !== null) {
+        que.unshift(node);
+        node = model.byID[node.parent_id];
     }
-    que.unshift(data);
+    que.unshift(node);
 
     let sel = d3Select(log).selectAll("tbody").data(que);
     sel = sel.merge(sel.enter().append("tbody"));
@@ -204,6 +189,20 @@ function clicked(d) {
             Object.entries(extra).map(([k, v]) => `${k}=${v}`).join(" ")]);
     sel = sel.merge(sel.enter().append("td"));
     sel.text(i => i);
+}
+
+function hideLog() {
+    cont.selectAll("path").on("mouseover", mouseover);
+    cont.on("mouseleave", mouseleave);
+    chart.style.display = "";
+    log.style.display = "none";
+    trail.className = "";
+    d3Select(trail).selectAll("li").on("click", null);
+}
+
+function clicked(d) {
+    updateBreadcrumbs(d);
+    showLog(d.data);
 }
 
 function mouseover(d) {
