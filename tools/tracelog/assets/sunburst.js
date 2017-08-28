@@ -160,8 +160,8 @@ class SunburstChart extends EventEmitter {
     }
 
     size() {
-        const width = document.body.clientWidth;
-        const height = document.body.clientHeight;
+        const width = this.el.parentNode.clientWidth;
+        const height = this.el.parentNode.clientHeight;
         const radius = Math.min(width, height) / 2;
         this.partition.size([2 * Math.PI, radius * radius]);
         this.sel
