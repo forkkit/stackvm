@@ -151,8 +151,6 @@ function showLog(node) {
         log.tBodies[i].scrollIntoView();
     });
 
-    let ids = model.cur.map(({data: {id}}) => id);
-
     let que = [];
     while (node.parent_id !== null) {
         que.unshift(node);
@@ -165,11 +163,11 @@ function showLog(node) {
 
     sel = sel.selectAll("tr")
         .data(({id, records}, j) => {
-            let nextID = ids[j+1];
-            if (nextID) {
+            const next = que[j+1];
+            if (next) {
                 for (let i = 0; i < records.length; i++) {
                     if (records[i].kind === "copy" &&
-                        records[i].extra["child"] === nextID) {
+                        records[i].extra["child"] === next.id) {
                         records = records.slice(0, i);
                         break;
                     }
