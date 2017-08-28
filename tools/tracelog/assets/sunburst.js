@@ -281,16 +281,48 @@ class LogTable {
     }
 }
 
-let model = null;
+class Page {
+    constructor(chartEl, trailEl, logEl) {
+        this.chart = new SunburstChart(chartEl);
+        this.trail = new SunburstTrail(trailEl);
+        this.log = new LogTable(logEl);
+        this.handleLogKeyUp = (e) => { if (e.keyCode == 27) this.showChart(); };
+        this.chart.addListener("nodeActivated", (node) => this.showLog(node));
+    }
 
-const chart = new SunburstChart(document.querySelector("#chart"));
-const trail = new SunburstTrail(document.querySelector("#sequence"));
-const log = new LogTable(document.querySelector("#log"));
+    showChart() {
+        this.chart.el.style.display = "";
+        this.log.el.style.display = "none";
+        this.trail.deactivate();
+        this.chart.activate();
+        window.removeEventListener("keyup", this.handleLogKeyUp);
+    }
 
-chart.addListener("nodeActivated", (node) => showLog(node));
+    showLog(node) {
+        this.chart.el.style.display = "none";
+        this.log.el.style.display = "";
+        this.chart.deactivate();
+        this.trail.activate((_, i) => this.log.focus(i));
+        window.addEventListener("keyup", this.handleLogKeyUp);
+        this.log.show(node);
+    }
 
-window.addEventListener("resize", updateSize);
-updateSize();
+    load(data) {
+        let model = new SunburstModel(data);
+        this.trail.model = model;
+        this.chart.model = model;
+        this.log.model = model;
+        this.size();
+    }
+
+    size() {
+        this.chart.size();
+    }
+}
+
+let pg = new Page(document.querySelector("#chart"), document.querySelector("#sequence"), document.querySelector("#log"));
+window.addEventListener("resize", () => pg.size());
+pg.size();
 
 const mainScript = document.querySelector("script.main");
 if (mainScript) {
@@ -298,37 +330,6 @@ if (mainScript) {
     if (dataVar) {
         let dat = window[dataVar];
         if (!(dat instanceof Promise)) dat = Promise.resolve(dat);
-        dat.then(load);
+        dat.then((data) => pg.load(data));
     }
-}
-
-function updateSize() {
-    chart.size();
-}
-
-function load(data) {
-    model = new SunburstModel(data);
-    trail.model = model;
-    chart.model = model;
-    log.model = model;
-    updateSize();
-}
-
-window.addEventListener("keyup", (e) => {
-    if (e.keyCode == 27) hideLog();
-});
-
-function showLog(node) {
-    chart.deactivate();
-    chart.el.style.display = "none";
-    log.el.style.display = "";
-    trail.activate((_, i) => log.focus(i));
-    log.show(node);
-}
-
-function hideLog() {
-    chart.activate();
-    chart.el.style.display = "";
-    log.el.style.display = "none";
-    trail.deactivate();
 }
