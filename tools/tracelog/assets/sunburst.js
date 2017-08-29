@@ -75,10 +75,14 @@ class SunburstModel extends EventEmitter {
         });
 
         resultIDs.forEach((resultID) => {
-            let node = this.byID.get(resultID);
-            let ridi = node.idi;
-            for (; node; node = this.byID.get(node.parent_id)) {
-                this.results.set(node.idi, ridi);
+            let res = this.byID.get(resultID);
+            for (let node = res; node; node = this.byID.get(node.parent_id)) {
+                this.results.set(node.idi, {
+                    nodeID: node.id,
+                    nodeIDI: node.idi,
+                    resultID: res.id,
+                    resultIDI: res.idi,
+                });
             }
         });
 
@@ -194,7 +198,8 @@ class SunburstChart extends EventEmitter {
             .attr("class", ({depth, data: {idi}}) => {
                 let parts = [`fillColor${depth % numColors + 1}`];
                 if (this._model.results.has(idi)) {
-                    parts.push(this._model.results.get(idi) === idi ? "goal" : "goalPath");
+                    let res = this._model.results.get(idi);
+                    parts.push(res.resultIDI === idi ? "goal" : "goalPath");
                 }
                 return parts.join(" ");
             });
