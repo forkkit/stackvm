@@ -46,8 +46,8 @@ class SunburstModel extends EventEmitter {
         this.records = records;
         this.byID = new Map();
         this.kids = new Map();
-        this.rootID = null;
         this.results = new Map();
+        this.rootID = null;
         this.root = null;
         this._cur = null;
 
