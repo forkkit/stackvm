@@ -46,9 +46,6 @@ ul li {
     float: left;
 }
 
-#sequence.active {
-}
-
 #sequence.active li {
     cursor: pointer;
     float: none;
