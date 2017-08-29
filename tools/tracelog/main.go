@@ -707,7 +707,7 @@ type sessionWriterFunc func(sessions, machID) error
 func (swf sessionWriterFunc) WriteSession(ss sessions, mid machID) error { return swf(ss, mid) }
 func (swf sessionWriterFunc) Close() error                               { return nil }
 
-//go:generate ../../node_modules/.bin/rollup -c
+//go:generate ../../node_modules/.bin/rollup -c assets/rollup.config.js
 //go:generate mkdir -p ./assets/smashed
 //go:generate ../../node_modules/.bin/html-inline -b assets -i assets/sunburst.tmpl -o assets/smashed/sunburst.tmpl
 //go:generate go-bindata -prefix ./assets/smashed/ ./assets/smashed/
@@ -765,7 +765,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		tlDir := path.Join(path.Dir(exe), "tools/tracelog")
+		asDir := path.Join(path.Dir(exe), "tools/tracelog/assets")
 
 		rollupPath, err := exec.LookPath("rollup")
 		if err == nil {
@@ -775,9 +775,9 @@ func main() {
 			log.Fatalf("no rollup: %v", err)
 		}
 
-		rollup := exec.Command(rollupPath, "-c", path.Join(tlDir, "rollup.config.js"), "-w")
+		rollup := exec.Command(rollupPath, "-c", path.Join(asDir, "rollup.config.js"), "-w")
 		rollup.Env = append(os.Environ(), "ROLLUP_DEV=1")
-		rollup.Dir = tlDir
+		rollup.Dir = path.Clean(path.Join(asDir, ".."))
 		rollup.Stdout = os.Stdout
 		rollup.Stderr = os.Stderr
 		if err := rollup.Start(); err != nil {
@@ -789,7 +789,6 @@ func main() {
 			}
 		}()
 
-		asDir := path.Join(tlDir, "assets")
 		sw = newWebDevDumper(asDir, "sunburst.tmpl")
 	} else if terse {
 		sw = sessionWriterFunc(printSession)
