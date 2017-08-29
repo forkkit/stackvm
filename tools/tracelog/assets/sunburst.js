@@ -344,6 +344,7 @@ class Links {
         this.el = thel(el);
         this.sel = d3Select(this.el);
         this._model = null;
+        this.groups = null;
         this.links = null;
     }
 
@@ -353,12 +354,24 @@ class Links {
     }
 
     update() {
-        let resIDs = [];
-        for (const [idi, res] of this._model.results.entries()) {
-            if (idi === res.resultIDI) resIDs.push(res.resultID);
+        let dat = [];
+        for (const [name, ids] of this._model.byOutcome) {
+            dat.push({name, ids});
         }
-        this.links = this.sel.selectAll("li").data(resIDs);
-        let enter = this.links.enter().append("li").append("a");
+        dat.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+
+        this.groups = this.sel.selectAll("details").data(dat);
+        let enter = this.groups.enter().append("details");
+        enter.append("summary");
+        enter.append("ul");
+        this.groups = this.groups.merge(enter);
+        this.groups.select("summary")
+            .text(({name}) => name);
+
+        this.links = this.groups.select("ul")
+            .selectAll("li")
+            .data(({ids}) => ids);
+        enter = this.links.enter().append("li").append("a");
         this.links = this.links.select("a").merge(enter);
         this.links
             .attr("href", (idi) => `#${idi}`)
