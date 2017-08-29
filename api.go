@@ -511,6 +511,32 @@ func (mb *machBuilder) finish() error {
 	return nil
 }
 
+// NameOption retruns the name string for an option code.
+func NameOption(code uint8) string {
+	switch code & 0x7f {
+	case optCodeEnd:
+		return "end"
+	case optCodeStackSize:
+		return "stackSize"
+	case optCodeQueueSize:
+		return "queueSize"
+	case optCodeMaxOps:
+		return "maxOps"
+	case optCodeMaxCopies:
+		return "maxCopies"
+	case optCodeEntry:
+		return "entry"
+	case optCodeInput:
+		return "input"
+	case optCodeOutput:
+		return "output"
+	case optCodeVersion:
+		return "version"
+	default:
+		return fmt.Sprintf("?<%02x>", code)
+	}
+}
+
 // ResolveOption constructs an option Op.
 func ResolveOption(name string, arg uint32, have bool) (op Op) {
 	switch name {
