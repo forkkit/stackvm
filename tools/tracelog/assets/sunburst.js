@@ -346,6 +346,7 @@ class Page {
     }
 
     showChart() {
+        window.location.hash = "";
         this.chart.el.style.display = "";
         this.log.el.style.display = "none";
         this.trail.deactivate();
@@ -354,12 +355,28 @@ class Page {
     }
 
     showLog(node) {
+        window.location.hash = `#${node.id}`;
         this.chart.el.style.display = "none";
         this.log.el.style.display = "";
         this.chart.deactivate();
         this.trail.activate((_, i) => this.log.focus(i));
         window.addEventListener("keyup", this.handleLogKeyUp);
         this.log.show(node);
+    }
+
+    nav() {
+        if (!this.model) return;
+        let m = /^#(.+)$/.exec(window.location.hash);
+        if (!m) return;
+        let id = m[1];
+        if (!this.model.byID.has(id)) return;
+        let path = this.model.findPath(id);
+        if (path === null) {
+            window.location.hash = "";
+            return;
+        }
+        this.model.cur = path;
+        this.showLog(path[path.length-1].data);
     }
 
     load(data) {
@@ -370,6 +387,7 @@ class Page {
             this.chart.model = this.model;
             this.log.model = this.model;
             this.size();
+            this.nav();
         });
     }
 
@@ -380,4 +398,5 @@ class Page {
 
 let pg = new Page("#chart", "#sequence", "#log");
 window.addEventListener("resize", () => pg.size());
+window.addEventListener("hashchange", () => pg.nav());
 pg.load(window[document.querySelector("script.main").dataset.var]);
