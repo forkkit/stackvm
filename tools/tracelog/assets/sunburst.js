@@ -46,12 +46,12 @@ class SunburstModel extends EventEmitter {
         this.records = records;
         this.byID = new Map();
         this.kids = new Map();
+        this.byOutcome = new Map();
         this.results = new Map();
         this.rootID = null;
         this.root = null;
         this._cur = null;
 
-        let resultIDs = [];
         this.records.forEach(d => {
             if (d.parent_id === null) {
                 if (this.rootID !== null) {
@@ -61,9 +61,6 @@ class SunburstModel extends EventEmitter {
             }
             let idm = midPat.exec(d.id);
             d.idi = parseInt(idm && idm[3]);
-            if (d.error === "" && d.values !== "") {
-                resultIDs.push(d.id);
-            }
             this.byID.set(d.id, d);
             if (d.parent_id !== null) {
                 if (this.kids.has(d.parent_id)) {
@@ -72,9 +69,10 @@ class SunburstModel extends EventEmitter {
                     this.kids.set(d.parent_id, [d.id]);
                 }
             }
+            this.addOutcome(d);
         });
 
-        resultIDs.forEach((resultID) => {
+        (this.byOutcome.get("values") || []).forEach((resultID) => {
             let res = this.byID.get(resultID);
             for (let node = res; node; node = this.byID.get(node.parent_id)) {
                 this.results.set(node.idi, {
@@ -93,6 +91,20 @@ class SunburstModel extends EventEmitter {
             .sum(() => 1)
             .sort(({data: {idi: a}}, {data: {idi: b}}) => a - b);
         // .sort(({value: a}, {value: b}) => a - b);
+    }
+
+    addOutcome(d) {
+        let name = "unknown";
+        if (d.error !== "") {
+            name = `err=${d.error}`;
+        } else if (d.values !== "") {
+            name = "values";
+        }
+        if (this.byOutcome.has(name)) {
+            this.byOutcome.get(name).push(d.id);
+        } else {
+            this.byOutcome.set(name, [d.id]);
+        }
     }
 
     findPath(id) {
