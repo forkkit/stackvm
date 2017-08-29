@@ -317,7 +317,7 @@ class LogTable {
                         }
                     }
                 }
-                return records.map(r => Object.assign({mid, depth}, r));
+                return records.map(r => Object.assign({depth, mid}, r));
             });
 
         rows = rows.merge(rows.enter().append("tr"));
