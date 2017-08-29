@@ -328,6 +328,8 @@ class LogTable {
         this.extraPluck = ["ps", "cs", "values"];
         this.extraIgnore = new Set([
             "parent", "child",
+            "cbp", "csp",
+            "pbp", "psp",
         ].concat(this.extraPluck));
     }
 
