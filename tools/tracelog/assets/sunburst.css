@@ -60,11 +60,9 @@ ul li {
 
 #chart #bound { opacity: 0; }
 
-#chart path                   { opacity: 0.8; }
-#chart path.goalPath          { opacity: 1; }
-#chart.focusing path          { opacity: 0.2; }
-#chart.focusing path.goalPath { opacity: 0.4; }
-#chart.focusing path.focus    { opacity: 1; }
+#chart path                { opacity: 0.8; }
+#chart.focusing path       { opacity: 0.2; }
+#chart.focusing path.focus { opacity: 1; }
 
 #chart path.goal { stroke: red; }
 
@@ -76,7 +74,17 @@ ul li {
 .fillColor3 { fill: hsl(211, 75%, 45%); }
 .fillColor4 { fill: hsl(211, 75%, 50%); }
 
+.goalPath.fillColor1, .goal.fillColor1 { fill: hsl(155, 75%, 30%); }
+.goalPath.fillColor2, .goal.fillColor2 { fill: hsl(155, 75%, 35%); }
+.goalPath.fillColor3, .goal.fillColor3 { fill: hsl(155, 75%, 40%); }
+.goalPath.fillColor4, .goal.fillColor4 { fill: hsl(155, 75%, 45%); }
+
 .bgColor1 { background-color: hsl(211, 50%, 30%); }
 .bgColor2 { background-color: hsl(211, 50%, 35%); }
 .bgColor3 { background-color: hsl(211, 50%, 40%); }
 .bgColor4 { background-color: hsl(211, 50%, 45%); }
+
+.goalPath.bgColor1, .goal.bgColor1 { background-color: hsl(155, 50%, 25%); }
+.goalPath.bgColor2, .goal.bgColor2 { background-color: hsl(155, 50%, 30%); }
+.goalPath.bgColor3, .goal.bgColor3 { background-color: hsl(155, 50%, 35%); }
+.goalPath.bgColor4, .goal.bgColor4 { background-color: hsl(155, 50%, 40%); }
