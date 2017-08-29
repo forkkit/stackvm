@@ -287,6 +287,39 @@ class SunburstTrail {
     }
 }
 
+class RecordAssembler {
+    constructor(model, nodeOrID) {
+        this.model = model;
+        this.node = null;
+        this.nodes = [];
+        if (typeof nodeOrID === "string") {
+            this.node = this.model.byID.get(nodeOrID);
+        } else {
+            this.node = nodeOrID;
+        }
+        for (
+            let node = this.node;
+            node;
+            node = this.model.byID.get(node.parent_id)
+        ) this.nodes.unshift(node);
+    }
+
+    records(depth) {
+        let {records} = this.nodes[depth];
+        const next = this.nodes[depth+1];
+        if (next) {
+            for (let i = 0; i < records.length; i++) {
+                if (records[i].kind === "copy" &&
+                    records[i].extra["child"] === next.id) {
+                    records = records.slice(0, i);
+                    break;
+                }
+            }
+        }
+        return records;
+    }
+}
+
 class LogTable {
     constructor(el) {
         this.el = thel(el);
@@ -299,30 +332,16 @@ class LogTable {
     }
 
     show(node) {
-        let que = [];
-        while (node.parent_id !== null) {
-            que.unshift(node);
-            node = this.model.byID.get(node.parent_id);
-        }
-        que.unshift(node);
+        const ra = new RecordAssembler(this.model, node);
 
-        let bodies = this.sel.selectAll("tbody").data(que);
+        let bodies = this.sel.selectAll("tbody").data(ra.nodes);
         bodies.exit().remove();
         bodies = bodies.merge(bodies.enter().append("tbody"));
 
         let rows = bodies.selectAll("tr")
-            .data(({id, idi, records}, depth) => {
+            .data(({id, idi}, depth) => {
                 let mid = midPat.exec(id)[3];
-                const next = que[depth+1];
-                if (next) {
-                    for (let i = 0; i < records.length; i++) {
-                        if (records[i].kind === "copy" &&
-                            records[i].extra["child"] === next.id) {
-                            records = records.slice(0, i);
-                            break;
-                        }
-                    }
-                }
+                let records = ra.records(depth);
                 return records.map(r => Object.assign({depth, idi, mid}, r));
             });
         rows.exit().remove();
