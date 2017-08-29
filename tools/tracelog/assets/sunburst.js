@@ -302,6 +302,7 @@ class LogTable {
         que.unshift(node);
 
         let bodies = this.sel.selectAll("tbody").data(que);
+        bodies.exit().remove();
         bodies = bodies.merge(bodies.enter().append("tbody"));
 
         let rows = bodies.selectAll("tr")
@@ -319,7 +320,7 @@ class LogTable {
                 }
                 return records.map(r => Object.assign({depth, mid}, r));
             });
-
+        rows.exit().remove();
         rows = rows.merge(rows.enter().append("tr"));
         rows.attr("class", ({depth}) => `bgColor${depth % numColors + 1}`);
 
@@ -333,7 +334,7 @@ class LogTable {
                     .map(([k, v]) => `${k}=${v}`).join(" ");
                 return [mid, action, count, ip, ps, cs, values, ex];
             });
-
+        cells.exit().remove();
         cells = cells.merge(cells.enter().append("td"));
         cells.text(i => i);
     }
