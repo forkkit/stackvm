@@ -9,17 +9,40 @@ body {
     color: #fff;
 }
 
-#sequence {
-    position: fixed;
+a, a:visited {
+    color: lightblue;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+ul {
     margin: 0;
     padding: 0;
+}
+
+ul li {
+    list-style: none;
+    padding: 0.1em 0.2em;
+}
+
+#sequence {
+    position: fixed;
+}
+
+#links {
+    position: fixed;
+    right: 0;
+    max-height: 75%;
+    overflow: auto;
+    padding: 0.2em 0.4em;
 }
 
 #sequence li {
     color: #fff;
     float: left;
-    list-style: none;
-    padding: 0.1em 0.2em;
 }
 
 #sequence.active {

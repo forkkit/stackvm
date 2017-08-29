@@ -327,11 +327,39 @@ class LogTable {
     }
 }
 
+class Links {
+    constructor(el) {
+        this.el = thel(el);
+        this.sel = d3Select(this.el);
+        this._model = null;
+        this.links = null;
+    }
+
+    set model(model) {
+        this._model = model;
+        this.update();
+    }
+
+    update() {
+        let resIDs = [];
+        for (const [idi, res] of this._model.results.entries()) {
+            if (idi === res.resultIDI) resIDs.push(res.resultID);
+        }
+        this.links = this.sel.selectAll("li").data(resIDs);
+        let enter = this.links.enter().append("li").append("a");
+        this.links = this.links.select("a").merge(enter);
+        this.links
+            .attr("href", (idi) => `#${idi}`)
+            .text((idi) => idi);
+    }
+}
+
 class Page {
-    constructor(chartEl, trailEl, logEl) {
+    constructor(chartEl, trailEl, logEl, linksEl) {
         this.chart = new SunburstChart(chartEl);
         this.trail = new SunburstTrail(trailEl);
         this.log = new LogTable(logEl);
+        this.links = new Links(thel(linksEl));
         this.model = null;
         this.handleLogKeyUp = (e) => { if (e.keyCode == 27) this.showChart(); };
         this.chart.addListener("nodeActivated", (node) => this.showLog(node));
@@ -386,6 +414,7 @@ class Page {
             this.trail.model = this.model;
             this.chart.model = this.model;
             this.log.model = this.model;
+            this.links.model = this.model;
             this.size();
             this.nav();
         });
@@ -396,7 +425,7 @@ class Page {
     }
 }
 
-let pg = new Page("#chart", "#sequence", "#log");
+let pg = new Page("#chart", "#sequence", "#log", "#links");
 window.addEventListener("resize", () => pg.size());
 window.addEventListener("hashchange", () => pg.nav());
 pg.load(window[document.querySelector("script.main").dataset.var]);
