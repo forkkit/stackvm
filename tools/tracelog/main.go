@@ -646,6 +646,12 @@ func (wdd *webDevDumper) Close() error {
 	if err := wdd.rollup.Start(); err != nil {
 		return fmt.Errorf("failed to start rollup: %v", err)
 	}
+	defer func() {
+		if wdd.rollup.Process != nil {
+			wdd.rollup.Process.Kill()
+		}
+	}()
+
 	go func() {
 		if err := wdd.rollup.Wait(); err != nil {
 			log.Fatalf("rollup failed: %v", err)
