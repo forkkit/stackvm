@@ -269,8 +269,9 @@ class SunburstTrail {
             .append("li")
             .on("click", this.activationCallback));
         this.items
-            .attr("class", ({depth}) => `bgColor${depth % numColors + 1}`)
-            .text(({data}) => data.idi);
+            .attr("class", ({depth, data: {idi}}) => this._model.decorateClass(
+                idi, `bgColor${depth % numColors + 1}`))
+            .text(({data: {idi}}) => idi);
     }
 
     activate(callback) {
