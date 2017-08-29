@@ -311,7 +311,7 @@ class LogTable {
         bodies = bodies.merge(bodies.enter().append("tbody"));
 
         let rows = bodies.selectAll("tr")
-            .data(({id, records}, depth) => {
+            .data(({id, idi, records}, depth) => {
                 let mid = midPat.exec(id)[3];
                 const next = que[depth+1];
                 if (next) {
@@ -323,11 +323,12 @@ class LogTable {
                         }
                     }
                 }
-                return records.map(r => Object.assign({depth, mid}, r));
+                return records.map(r => Object.assign({depth, idi, mid}, r));
             });
         rows.exit().remove();
         rows = rows.merge(rows.enter().append("tr"));
-        rows.attr("class", ({depth}) => `bgColor${depth % numColors + 1}`);
+        rows.attr("class", ({depth, idi}) => this.model.decorateClass(
+            idi, `bgColor${depth % numColors + 1}`));
 
         let cells = rows.selectAll("td")
             .data(({mid, action, count, ip, extra}) => {
