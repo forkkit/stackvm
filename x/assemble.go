@@ -63,6 +63,7 @@ const (
 	optTK tokenKind = iota + 1
 	opTK
 	dataTK
+	allocTK
 )
 
 type token struct {
@@ -88,6 +89,8 @@ func (tok token) Name() string {
 		return tok.Op.Name()
 	case dataTK:
 		return ".data"
+	case allocTK:
+		return ".alloc"
 	default:
 		return fmt.Sprintf("UNKNOWN<%v>", tok.kind)
 	}
@@ -104,6 +107,8 @@ func (tok token) String() string {
 		return tok.Op.String()
 	case dataTK:
 		return fmt.Sprintf(".data %d", tok.Arg)
+	case allocTK:
+		return fmt.Sprintf(".alloc %d", tok.Arg)
 	default:
 		return fmt.Sprintf("UNKNOWN<%v>", tok.kind)
 	}
@@ -114,6 +119,19 @@ func (tok token) EncodeInto(p []byte) int {
 	case dataTK:
 		stackvm.ByteOrder.PutUint32(p, tok.Arg)
 		return 4
+	case allocTK:
+		n := 0
+		for i := uint32(0); i < tok.Arg; i++ {
+			p[n] = 0
+			n++
+			p[n] = 0
+			n++
+			p[n] = 0
+			n++
+			p[n] = 0
+			n++
+		}
+		return n
 	default:
 		return tok.Op.EncodeInto(p)
 	}
@@ -123,6 +141,8 @@ func (tok token) NeededSize() int {
 	switch tok.kind {
 	case dataTK:
 		return 4
+	case allocTK:
+		return 4 * int(tok.Arg)
 	default:
 		return tok.Op.NeededSize()
 	}
@@ -137,6 +157,7 @@ func optToken(name string, arg uint32, have bool) token {
 
 func opToken(op stackvm.Op) token { return token{kind: opTK, Op: op} }
 func dataToken(d uint32) token    { return token{kind: dataTK, Op: stackvm.Op{Arg: d}} }
+func allocToken(n uint32) token   { return token{kind: allocTK, Op: stackvm.Op{Arg: n}} }
 
 type ref struct{ site, targ, off int }
 
@@ -606,11 +627,7 @@ func (sc *scanner) handleAlloc() error {
 		return fmt.Errorf("invalid .alloc %v, must be positive", n)
 	}
 	// TODO: should be in bytes, not words
-	// TODO: would like to avoid N*append
-	dt := dataToken(0)
-	for i := 0; i < n; i++ {
-		sc.prog.add(dt)
-	}
+	sc.prog.add(allocToken(uint32(n)))
 	return nil
 }
 
