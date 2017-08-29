@@ -325,6 +325,10 @@ class LogTable {
         this.el = thel(el);
         this.sel = d3Select(this.el);
         this.model = null;
+        this.extraPluck = ["ps", "cs", "values"];
+        this.extraIgnore = new Set([
+            "parent", "child",
+        ].concat(this.extraPluck));
     }
 
     focus(i) {
@@ -351,13 +355,12 @@ class LogTable {
 
         let cells = rows.selectAll("td")
             .data(({mid, action, count, ip, extra}) => {
-                let ps = extra.ps || "";
-                let cs = extra.cs || "";
-                let values = extra.values || "";
-                let ex = Object.entries(extra)
-                    .filter(([k]) => ["ps", "cs", "values", "parent", "child"].indexOf(k) < 0)
-                    .map(([k, v]) => `${k}=${v}`).join(" ");
-                return [mid, action, count, ip, ps, cs, values, ex];
+                let r = [mid, action, count, ip];
+                r = r.concat(this.extraPluck.map((k) => extra[k] || ""));
+                r.push(Object.entries(extra)
+                    .filter(([k]) => !this.extraIgnore.has(k))
+                    .map(([k, v]) => `${k}=${v}`).join(" "));
+                return r;
             });
         cells.exit().remove();
         cells = cells.merge(cells.enter().append("td"));
