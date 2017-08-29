@@ -71,10 +71,10 @@ ul li {
 #log { margin: 0 auto; }
 #log td { padding: 0.2em 0.5em; }
 
-.fillColor1 { fill: hsl(211, 50%, 30%); }
-.fillColor2 { fill: hsl(211, 50%, 35%); }
-.fillColor3 { fill: hsl(211, 50%, 40%); }
-.fillColor4 { fill: hsl(211, 50%, 45%); }
+.fillColor1 { fill: hsl(211, 75%, 35%); }
+.fillColor2 { fill: hsl(211, 75%, 40%); }
+.fillColor3 { fill: hsl(211, 75%, 45%); }
+.fillColor4 { fill: hsl(211, 75%, 50%); }
 
 .bgColor1 { background-color: hsl(211, 50%, 30%); }
 .bgColor2 { background-color: hsl(211, 50%, 35%); }
