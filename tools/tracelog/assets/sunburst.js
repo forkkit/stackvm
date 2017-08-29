@@ -107,6 +107,15 @@ class SunburstModel extends EventEmitter {
         }
     }
 
+    decorateClass(idi, name) {
+        let parts = name.split(/\s+/);
+        if (this.results.has(idi)) {
+            let res = this.results.get(idi);
+            parts.push(res.resultIDI === idi ? "goal" : "goalPath");
+        }
+        return parts.join(" ");
+    }
+
     findPath(id) {
         let idis = [];
         for (
@@ -230,14 +239,8 @@ class SunburstChart extends EventEmitter {
         this.path
             .attr("display", ({depth}) => depth ? null : "none")
             .attr("d", this.arc)
-            .attr("class", ({depth, data: {idi}}) => {
-                let parts = [`fillColor${depth % numColors + 1}`];
-                if (this._model.results.has(idi)) {
-                    let res = this._model.results.get(idi);
-                    parts.push(res.resultIDI === idi ? "goal" : "goalPath");
-                }
-                return parts.join(" ");
-            });
+            .attr("class", ({depth, data: {idi}}) => this._model.decorateClass(
+                idi, `fillColor${depth % numColors + 1}`));
     }
 }
 
