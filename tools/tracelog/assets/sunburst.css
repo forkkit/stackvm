@@ -44,6 +44,12 @@ ul li {
 #sequence li {
     color: #fff;
     float: left;
+    margin: 0.1em;
+}
+
+#sequence li.goal {
+    border: 0.1em solid red;
+    margin: 0;
 }
 
 #sequence.active li {
