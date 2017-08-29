@@ -95,6 +95,29 @@ class SunburstModel extends EventEmitter {
         // .sort(({value: a}, {value: b}) => a - b);
     }
 
+    findPath(id) {
+        let idis = [];
+        for (
+            let node = this.byID.get(id);
+            node;
+            node = this.byID.get(node.parent_id)
+        ) idis.unshift(node.idi);
+        let g = this.root, path = [g];
+        if (idis[0] !== g.data.idi) return [];
+        idis.shift();
+        descend: for (let i = 0; i < idis.length; i++) {
+            for (const kid of g.children) {
+                if (kid.data.idi === idis[i]) {
+                    g = kid;
+                    path.push(g);
+                    continue descend;
+                }
+            }
+            return null;
+        }
+        return path;
+    }
+
     get cur() {
         return this._cur;
     }
