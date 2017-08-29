@@ -45,9 +45,9 @@ func (lf logfTracer) End(m *stackvm.Mach) {
 func (lf logfTracer) Queue(m, n *stackvm.Mach) {
 	mid, _ := m.Tracer().Context(n, "id")
 	if vs, err := m.Values(); err != nil {
-		lf.note(m, "+++", "Copy", "child=%v values_err=%q", mid, err)
+		lf.note(m, "+++", "Copy", "values_err=%q child=%v", err, mid)
 	} else {
-		lf.note(m, "+++", "Copy", "child=%v values=%v", mid, vs)
+		lf.note(m, "+++", "Copy", "values=%v child=%v", vs, mid)
 	}
 }
 
