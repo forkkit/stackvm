@@ -267,9 +267,10 @@ class SunburstTrail {
         items.exit().remove();
         this.items = items.merge(items.enter()
             .append("li")
+            .on("click", this.activationCallback));
+        this.items
             .attr("class", ({depth}) => `bgColor${depth % numColors + 1}`)
-            .on("click", this.activationCallback)
-        ).text(({data}) => data.idi);
+            .text(({data}) => data.idi);
     }
 
     activate(callback) {
