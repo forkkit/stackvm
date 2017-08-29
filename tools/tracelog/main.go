@@ -599,8 +599,9 @@ func (hd *htmlDumper) Close() (err error) {
 
 type webDevDumper struct {
 	sessionWriter
-	buf bytes.Buffer
-	wds webDevServer
+	rollup *exec.Cmd
+	buf    bytes.Buffer
+	wds    webDevServer
 }
 
 type webDevServer struct {
@@ -610,22 +611,48 @@ type webDevServer struct {
 	data     []byte
 }
 
-func newWebDevDumper(dir string, tmplName string) sessionWriter {
+func newWebDevDumper(dir string, tmplName string) (sessionWriter, error) {
+	rollupPath, err := exec.LookPath("rollup")
+	if err == nil {
+		rollupPath, err = filepath.Abs(rollupPath)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("no rollup: %v", err)
+	}
+
 	var wdd webDevDumper
 	wdd.sessionWriter = newJSONDumper(nopWriteCloser{&wdd.buf})
 	wdd.wds.fs = http.FileServer(http.Dir(dir))
 	wdd.wds.tmplFile = path.Join(dir, tmplName)
-	return &wdd
+
+	wdd.rollup = exec.Command(rollupPath, "-c", path.Join(dir, "rollup.config.js"), "-w")
+	wdd.rollup.Env = append(os.Environ(), "ROLLUP_DEV=1")
+	wdd.rollup.Dir = path.Clean(path.Join(dir, ".."))
+	wdd.rollup.Stdout = os.Stdout
+	wdd.rollup.Stderr = os.Stderr
+
+	return &wdd, nil
 }
 
 func (wdd *webDevDumper) Close() error {
 	err := wdd.sessionWriter.Close()
-	if err == nil {
-		wdd.wds.mtime = time.Now()
-		wdd.wds.data = wdd.buf.Bytes()
-		err = wdd.wds.run()
+	if err != nil {
+		return err
 	}
-	return err
+
+	wdd.wds.mtime = time.Now()
+	wdd.wds.data = wdd.buf.Bytes()
+
+	if err := wdd.rollup.Start(); err != nil {
+		return fmt.Errorf("failed to start rollup: %v", err)
+	}
+	go func() {
+		if err := wdd.rollup.Wait(); err != nil {
+			log.Fatalf("rollup failed: %v", err)
+		}
+	}()
+
+	return wdd.wds.run()
 }
 
 func (wds webDevServer) run() error {
@@ -761,35 +788,14 @@ func main() {
 		}
 	} else if fmtWebDev {
 		exe, err := os.Executable()
+		if err == nil {
+			sw, err = newWebDevDumper(
+				path.Join(path.Dir(exe), "tools/tracelog/assets"),
+				"sunburst.tmpl")
+		}
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		asDir := path.Join(path.Dir(exe), "tools/tracelog/assets")
-
-		rollupPath, err := exec.LookPath("rollup")
-		if err == nil {
-			rollupPath, err = filepath.Abs(rollupPath)
-		}
-		if err != nil {
-			log.Fatalf("no rollup: %v", err)
-		}
-
-		rollup := exec.Command(rollupPath, "-c", path.Join(asDir, "rollup.config.js"), "-w")
-		rollup.Env = append(os.Environ(), "ROLLUP_DEV=1")
-		rollup.Dir = path.Clean(path.Join(asDir, ".."))
-		rollup.Stdout = os.Stdout
-		rollup.Stderr = os.Stderr
-		if err := rollup.Start(); err != nil {
-			log.Fatalf("failed to start rollup: %v", err)
-		}
-		go func() {
-			if err := rollup.Wait(); err != nil {
-				log.Fatalf("rollup failed: %v", err)
-			}
-		}()
-
-		sw = newWebDevDumper(asDir, "sunburst.tmpl")
 	} else if terse {
 		sw = sessionWriterFunc(printSession)
 	}
