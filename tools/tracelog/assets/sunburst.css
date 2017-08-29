@@ -5,7 +5,7 @@ html, body, main {
 }
 
 body {
-    background-color: rgb(27, 33, 44);
+    background-color: hsl(211, 10%, 10%);
     color: #fff;
 }
 
@@ -38,6 +38,7 @@ ul li {
     max-height: 75%;
     overflow: auto;
     padding: 0.2em 0.4em;
+    background-color: hsl(211, 10%, 20%);
 }
 
 #sequence li {
@@ -67,12 +68,12 @@ ul li {
 #log { margin: 0 auto; }
 #log td { padding: 0.2em 0.5em; }
 
-.fillColor1 { fill: #5687d1 }
-.fillColor2 { fill: #7b615c }
-.fillColor3 { fill: #6ab975 }
-.fillColor4 { fill: #a173d1 }
+.fillColor1 { fill: hsl(211, 50%, 30%); }
+.fillColor2 { fill: hsl(211, 50%, 35%); }
+.fillColor3 { fill: hsl(211, 50%, 40%); }
+.fillColor4 { fill: hsl(211, 50%, 45%); }
 
-.bgColor1 { background-color: #5687d1 }
-.bgColor2 { background-color: #7b615c }
-.bgColor3 { background-color: #6ab975 }
-.bgColor4 { background-color: #a173d1 }
+.bgColor1 { background-color: hsl(211, 50%, 30%); }
+.bgColor2 { background-color: hsl(211, 50%, 35%); }
+.bgColor3 { background-color: hsl(211, 50%, 40%); }
+.bgColor4 { background-color: hsl(211, 50%, 45%); }
