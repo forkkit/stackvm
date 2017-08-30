@@ -220,10 +220,15 @@ func (m *Mach) CSP() uint32 { return m.csp }
 // has halted with 0 status code, 0 or more pairs of output ranges may be left
 // on the control stack.
 func (m *Mach) Values() ([][]uint32, error) {
+	_, vals, err := m.outValues()
+	return vals, err
+}
+
+func (m *Mach) outValues() ([]region, [][]uint32, error) {
 	done := false
 	if m.err != nil {
 		if arg, ok := m.halted(); !ok || arg != 0 {
-			return nil, m.err
+			return nil, nil, m.err
 		}
 		done = true
 	}
@@ -232,11 +237,11 @@ func (m *Mach) Values() ([][]uint32, error) {
 	if done {
 		cs, err := m.fetchCS()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if len(cs) > 0 {
 			if len(cs)%2 != 0 {
-				return nil, fmt.Errorf("invalid control stack length %d", len(cs))
+				return nil, nil, fmt.Errorf("invalid control stack length %d", len(cs))
 			}
 			outputs = append(make([]region, 0, len(outputs)+len(cs)/2), outputs...)
 			for i := 0; i < len(cs); i += 2 {
@@ -246,18 +251,18 @@ func (m *Mach) Values() ([][]uint32, error) {
 	}
 
 	if len(outputs) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	res := make([][]uint32, 0, len(outputs))
 	for _, rg := range outputs {
 		ns, err := m.fetchMany(rg.from, rg.to)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		res = append(res, ns)
 	}
-	return res, nil
+	return outputs, res, nil
 }
 
 // Stacks returns the current values on the parameter and control
