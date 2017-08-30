@@ -691,6 +691,8 @@ func (sc *scanner) handleDataDirective(s string) error {
 	switch s {
 	case "alloc":
 		return sc.handleAlloc()
+	case "string":
+		return sc.handleString()
 	case "in":
 		return sc.handleInput()
 	case "out":
@@ -1007,6 +1009,15 @@ func (sc *scanner) handleAlloc() error {
 	}
 	// TODO: should be in bytes, not words
 	sc.addProgTok(allocToken(uint32(n)))
+	return nil
+}
+
+func (sc *scanner) handleString() error {
+	str, err := sc.expectString("string literal")
+	if err != nil {
+		return err
+	}
+	sc.prog.add(stringToken(str))
 	return nil
 }
 
