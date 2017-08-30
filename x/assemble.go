@@ -318,6 +318,10 @@ func (sec *section) addRef(tok token, name string, off int) {
 	sec.maxBytes += 6
 }
 
+func (sec *section) addLabel(name string) {
+	sec.labels[name] = len(sec.toks)
+}
+
 type assemblerState uint8
 
 const (
@@ -546,8 +550,7 @@ func (sc *scanner) handleEntry() error {
 		}
 		return fmt.Errorf("duplicate .entry %q, already set to ???", name)
 	}
-	sc.prog.labels[".entry"] = len(sc.prog.toks)
-
+	sc.prog.addLabel(".entry")
 	sc.addRefOpt("entry", name, 0)
 
 	return sc.setState(assemblerText)
@@ -569,7 +572,7 @@ func (sc *scanner) handleLabel(name string) error {
 	if i, defined := sc.prog.labels[name]; defined && i >= 0 {
 		return fmt.Errorf("label %q already defined", name)
 	}
-	sc.prog.labels[name] = len(sc.prog.toks)
+	sc.prog.addLabel(name)
 	return nil
 }
 
