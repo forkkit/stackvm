@@ -611,6 +611,7 @@ func (sc *scanner) finishIn() error {
 }
 
 func (sc *scanner) finishOut() error {
+	nameLabel := fmt.Sprintf(".%s.name", sc.pendOut)
 	endLabel := "." + sc.pendOut + ".end"
 	if i, defined := sc.prog.labels[endLabel]; defined && i >= 0 {
 		return fmt.Errorf("label %q already defined", endLabel)
@@ -618,6 +619,9 @@ func (sc *scanner) finishOut() error {
 	sc.prog.addLabel(endLabel)
 	sc.addRefOpt("output", sc.pendOut, 0)
 	sc.addRefOpt("output", endLabel, 0)
+	sc.addRefOpt("name", nameLabel, 0)
+	sc.prog.addLabel(nameLabel)
+	sc.prog.add(stringToken(sc.pendOut))
 	sc.pendOut = ""
 	return nil
 }
