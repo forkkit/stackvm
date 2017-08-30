@@ -59,6 +59,8 @@ func (name NoSuchOpError) Error() string {
 //   must appear in star/end pairs.
 // - 0x07 output: its required parameter is an endpoint of an output region;
 //   must appear in start/end pairs.
+// - 0x08 name: its required parameter is the address of a string name for
+//   the last output region.
 // - 0x7f version: reserved for future use, where its parameter will be the
 //   required machine/program version; passing a version value is currently
 //   unsupported.
@@ -371,6 +373,10 @@ const (
 	// in start/end pairs.
 	optCodeOutput = 0x07
 
+	// its required parameter is the address of a string name for the last
+	// output region.
+	optCodeName = 0x08
+
 	// reserved for future use, where its parameter will be the required
 	// machine/program version; passing a version value is currently
 	// unsupported.
@@ -511,6 +517,11 @@ func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
 			return false, fmt.Errorf("unpaired output opt code, got %#02x instead", code)
 		}
 		rg := region{from: start, to: end}
+		if addr, named, err := mb.mayReadOptCode(0x80 | optCodeName); err != nil {
+			return false, err
+		} else if named {
+			rg.name = addr
+		}
 		mb.Mach.ctx.outputs = append(mb.Mach.ctx.outputs, rg)
 
 	case optCodeEnd:
@@ -550,6 +561,8 @@ func NameOption(code uint8) string {
 		return "input"
 	case optCodeOutput:
 		return "output"
+	case optCodeName:
+		return "name"
 	case optCodeVersion:
 		return "version"
 	default:
@@ -576,6 +589,8 @@ func ResolveOption(name string, arg uint32, have bool) (op Op) {
 		op.Code = optCodeInput
 	case "output":
 		op.Code = optCodeOutput
+	case "name":
+		op.Code = optCodeName
 	case "version":
 		op.Code = optCodeVersion
 	default:
