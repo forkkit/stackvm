@@ -522,11 +522,11 @@ func (sc *scanner) setState(state assemblerState) error {
 	case assemblerText:
 		if sc.pendIn != "" {
 			// define a label to end a pending .in label
-			return sc.handleLabel("." + sc.pendIn + "_end")
+			return sc.handleLabel("." + sc.pendIn + ".end")
 		}
 		if sc.pendOut != "" {
 			// define a label to end a pending .out label
-			return sc.handleLabel("." + sc.pendOut + "_end")
+			return sc.handleLabel("." + sc.pendOut + ".end")
 		}
 	}
 	return nil
