@@ -64,10 +64,12 @@ const (
 	opTK
 	dataTK
 	allocTK
+	stringTK
 )
 
 type token struct {
 	kind tokenKind
+	str  string
 	stackvm.Op
 }
 
@@ -91,6 +93,8 @@ func (tok token) Name() string {
 		return ".data"
 	case allocTK:
 		return ".alloc"
+	case stringTK:
+		return ".string"
 	default:
 		return fmt.Sprintf("UNKNOWN<%v>", tok.kind)
 	}
@@ -109,6 +113,8 @@ func (tok token) String() string {
 		return fmt.Sprintf(".data %d", tok.Arg)
 	case allocTK:
 		return fmt.Sprintf(".alloc %d", tok.Arg)
+	case stringTK:
+		return fmt.Sprintf(".string %q", tok.str)
 	default:
 		return fmt.Sprintf("UNKNOWN<%v>", tok.kind)
 	}
@@ -132,6 +138,15 @@ func (tok token) EncodeInto(p []byte) int {
 			n++
 		}
 		return n
+	case stringTK:
+		n := 0
+		stackvm.ByteOrder.PutUint32(p, uint32(len(tok.str)))
+		n += 4
+		for i := 0; i < len(tok.str); i++ {
+			p[n] = tok.str[i]
+			n++
+		}
+		return n
 	default:
 		return tok.Op.EncodeInto(p)
 	}
@@ -143,6 +158,8 @@ func (tok token) NeededSize() int {
 		return 4
 	case allocTK:
 		return 4 * int(tok.Arg)
+	case stringTK:
+		return 4 + len(tok.str)
 	default:
 		return tok.Op.NeededSize()
 	}
@@ -158,6 +175,7 @@ func optToken(name string, arg uint32, have bool) token {
 func opToken(op stackvm.Op) token { return token{kind: opTK, Op: op} }
 func dataToken(d uint32) token    { return token{kind: dataTK, Op: stackvm.Op{Arg: d}} }
 func allocToken(n uint32) token   { return token{kind: allocTK, Op: stackvm.Op{Arg: n}} }
+func stringToken(s string) token  { return token{kind: stringTK, str: s} }
 
 type ref struct{ site, targ, off int }
 
