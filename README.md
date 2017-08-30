@@ -52,6 +52,7 @@ For bleeding edge, see the [`dev`][dev] branch.
   - forking/branching call/ret
 - unsure if should add subroutine definition support to the assembler, or just
   start on a compiler
+- support naming dynamic output values
 
 [intsearch]: https://github.com/jcorbin/intsearch
 [intcstack]: https://github.com/jcorbin/intsearch/tree/c_stack_machine_2015-11
