@@ -480,7 +480,8 @@ func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
 		if code != 0x80|optCodeInput {
 			return false, fmt.Errorf("unpaired input opt code, got %#02x instead", code)
 		}
-		mb.inputs = append(mb.inputs, region{start, end})
+		rg := region{from: start, to: end}
+		mb.inputs = append(mb.inputs, rg)
 
 	case 0x80 | optCodeOutput:
 		start := arg
@@ -491,7 +492,8 @@ func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
 		if code != 0x80|optCodeOutput {
 			return false, fmt.Errorf("unpaired output opt code, got %#02x instead", code)
 		}
-		mb.Mach.ctx.outputs = append(mb.Mach.ctx.outputs, region{start, end})
+		rg := region{from: start, to: end}
+		mb.Mach.ctx.outputs = append(mb.Mach.ctx.outputs, rg)
 
 	case optCodeEnd:
 		return true, nil
