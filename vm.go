@@ -1081,6 +1081,16 @@ func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
 	return
 }
 
+func (m *Mach) fetchString(addr uint32) (string, error) {
+	sn, err := m.fetch(addr)
+	if err != nil {
+		return "", nil
+	}
+	bs := make([]byte, sn)
+	fn := m.fetchBytes(addr+4, bs)
+	return string(bs[:fn]), nil
+}
+
 func (m *Mach) storeBytes(addr uint32, bs []byte) {
 	n := 0
 	var pg *page
