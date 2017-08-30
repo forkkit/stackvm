@@ -226,6 +226,33 @@ func (m *Mach) Values() ([][]uint32, error) {
 	return vals, err
 }
 
+// NamedValues returns any output values from the machine, along with any
+// declared names. Statically decalde output values carry the name of their
+// label. There's currently no support for dynamically declared outputs to be
+// named
+func (m *Mach) NamedValues() (map[string][]uint32, error) {
+	outputs, vals, err := m.outValues()
+	if err != nil {
+		return nil, err
+	}
+	if len(vals) == 0 {
+		return nil, nil
+	}
+	nvs := make(map[string][]uint32, len(vals))
+	for i, v := range vals {
+		if rg := outputs[i]; rg.name != 0 {
+			name, err := m.fetchString(rg.name)
+			if err != nil {
+				return nil, err
+			}
+			nvs[name] = v
+			continue
+		}
+		nvs[fmt.Sprintf("unnamed_output_%d", i)] = v
+	}
+	return nvs, nil
+}
+
 func (m *Mach) outValues() ([]region, [][]uint32, error) {
 	done := false
 	if m.err != nil {
