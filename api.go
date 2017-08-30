@@ -251,7 +251,7 @@ func (m *Mach) Values() ([][]uint32, error) {
 
 	res := make([][]uint32, 0, len(outputs))
 	for _, rg := range outputs {
-		ns, err := m.fetchMany(rg)
+		ns, err := m.fetchMany(rg.from, rg.to)
 		if err != nil {
 			return nil, err
 		}

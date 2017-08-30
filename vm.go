@@ -993,7 +993,7 @@ func (m *Mach) fetchPS() ([]uint32, error) {
 			return nil, stackRangeError{"param", "over"}
 		}
 		if psp > 0 {
-			vs, err := m.fetchMany(region{m.pbp, psp})
+			vs, err := m.fetchMany(m.pbp, psp)
 			if err != nil {
 				return nil, err
 			}
@@ -1015,18 +1015,18 @@ func (m *Mach) fetchCS() ([]uint32, error) {
 	if csp > m.cbp {
 		return nil, stackRangeError{"control", "under"}
 	}
-	return m.fetchMany(region{m.cbp, csp})
+	return m.fetchMany(m.cbp, csp)
 }
 
-func (m *Mach) fetchMany(rg region) ([]uint32, error) {
-	if rg.from == rg.to {
+func (m *Mach) fetchMany(from, to uint32) ([]uint32, error) {
+	if from == to {
 		return nil, nil
 	}
 
-	if rg.from < rg.to {
-		ns := make([]uint32, 0, (rg.to-rg.from)/4)
-		for ; rg.from < rg.to; rg.from += 4 {
-			val, err := m.fetch(rg.from)
+	if from < to {
+		ns := make([]uint32, 0, (to-from)/4)
+		for ; from < to; from += 4 {
+			val, err := m.fetch(from)
 			if err != nil {
 				return nil, err
 			}
@@ -1035,10 +1035,10 @@ func (m *Mach) fetchMany(rg region) ([]uint32, error) {
 		return ns, nil
 	}
 
-	// rg.to < rg.from
-	ns := make([]uint32, 0, (rg.from-rg.to)/4)
-	for ; rg.from > rg.to; rg.from -= 4 {
-		val, err := m.fetch(rg.from)
+	// to < from
+	ns := make([]uint32, 0, (from-to)/4)
+	for ; from > to; from -= 4 {
+		val, err := m.fetch(from)
 		if err != nil {
 			return nil, err
 		}
