@@ -318,6 +318,12 @@ func (sec *section) addRef(tok token, name string, off int) {
 	sec.maxBytes += 6
 }
 
+func (sec *section) stubLabel(name string) {
+	if _, defined := sec.labels[name]; !defined {
+		sec.labels[name] = -1
+	}
+}
+
 func (sec *section) addLabel(name string) {
 	sec.labels[name] = len(sec.toks)
 }
@@ -737,9 +743,7 @@ func (sc *scanner) expect(desc string) (interface{}, error) {
 }
 
 func (asm *assembler) refLabel(name string) {
-	if _, defined := asm.prog.labels[name]; !defined {
-		asm.prog.labels[name] = -1
-	}
+	asm.prog.stubLabel(name)
 }
 
 type encoder struct {
