@@ -431,6 +431,19 @@ func (mb *machBuilder) readOptCode() (uint8, uint32, error) {
 	return code, arg, nil
 }
 
+func (mb *machBuilder) mayReadOptCode(ifCode uint8) (uint32, bool, error) {
+	n, arg, code, ok := readVarCode(mb.buf[mb.n:])
+	mb.n += n
+	if !ok {
+		return 0, false, errVarOpts
+	}
+	if code != ifCode {
+		mb.n -= n
+		return 0, false, nil
+	}
+	return arg, true, nil
+}
+
 func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
 	switch code {
 
