@@ -245,7 +245,7 @@ func (m *Mach) outValues() ([]region, [][]uint32, error) {
 			}
 			outputs = append(make([]region, 0, len(outputs)+len(cs)/2), outputs...)
 			for i := 0; i < len(cs); i += 2 {
-				outputs = append(outputs, region{cs[i], cs[i+1]})
+				outputs = append(outputs, region{from: cs[i], to: cs[i+1]})
 			}
 		}
 	}
