@@ -1,6 +1,7 @@
 package stackvm_test
 
 import (
+	"fmt"
 	"testing"
 
 	. "github.com/jcorbin/stackvm/x"
@@ -298,4 +299,29 @@ func TestMach_queueSize(t *testing.T) {
 			Result: NoResult.WithExpectedHaltCodes(1, 2),
 		},
 	}.Run(t)
+}
+
+func TestMach_inNout(t *testing.T) {
+	prog := MustAssemble(
+		".data",
+		".in", "N:", 0,
+		".out", "M:", 0,
+
+		".entry", "main:",
+		":N", "fetch", // N :
+		"dup", "mul", // N*N :
+		":M", "storeTo", // :   -- M=N*N
+		"halt",
+	)
+
+	var tcs TestCases
+	for n := uint32(0); n < 10; n++ {
+		tcs = append(tcs, TestCase{
+			Name:   fmt.Sprintf("square(%d)", n),
+			Prog:   prog,
+			Input:  [][]uint32{[]uint32{n}},
+			Result: Result{Values: [][]uint32{[]uint32{n * n}}},
+		})
+	}
+	tcs.Run(t)
 }
