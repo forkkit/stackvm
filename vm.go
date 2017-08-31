@@ -52,6 +52,7 @@ func init() {
 }
 
 type region struct {
+	name     uint32
 	from, to uint32
 }
 
