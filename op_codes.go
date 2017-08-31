@@ -53,6 +53,8 @@ const (
 	opCodeBitost  = opCode(0x62)
 	opCodeBitseta = opCode(0x63)
 	opCodeBitosta = opCode(0x64)
+	opCodeUtf8Enc = opCode(0x68)
+	opCodeUtf8Dec = opCode(0x69)
 	opCodeHnz     = opCode(0x7d)
 	opCodeHz      = opCode(0x7e)
 	opCodeHalt    = opCode(0x7f)

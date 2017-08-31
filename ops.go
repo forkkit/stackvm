@@ -136,7 +136,8 @@ var ops = [128]opDef{
 	addrop("bitosta"),
 	noop, noop, noop,
 	// 0x68
-	noop, noop, noop, noop, noop, noop, noop, noop,
+	justop("utf8enc"), justop("utf8dec"),
+	noop, noop, noop, noop, noop, noop,
 	// 0x70
 	noop, noop, noop, noop, noop, noop, noop, noop,
 	// 0x78

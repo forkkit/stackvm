@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync/atomic"
+	"unicode/utf8"
 	"unsafe"
 )
 
@@ -631,6 +632,24 @@ func (m *Mach) step() {
 		} else {
 			m.pa = 0
 		}
+
+	// string ops
+	case opCodeUtf8Enc:
+		var (
+			b    [4]byte
+			addr uint32
+		)
+		if addr, m.err = m.pop(); m.err != nil {
+			break
+		}
+		m.pa = uint32(utf8.EncodeRune(b[:], rune(m.pa))) // TODO: underflow check
+		m.storeBytes(addr, b[:m.pa])
+
+	case opCodeUtf8Dec:
+		var b [4]byte
+		r, n := utf8.DecodeRune(b[:m.fetchBytes(m.pa, b[:])]) // TODO: underflow check
+		m.pa = uint32(r)
+		m.err = m.push(uint32(n))
 
 	// control stack
 	case opCodeMark:
