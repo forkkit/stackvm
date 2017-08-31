@@ -60,7 +60,7 @@ func (name NoSuchOpError) Error() string {
 // - 0x07 output: its required parameter is an endpoint of an output region;
 //   must appear in start/end pairs.
 // - 0x08 name: its required parameter is the address of a string name for
-//   the last output region.
+//   the last output or input region.
 // - 0x7f version: reserved for future use, where its parameter will be the
 //   required machine/program version; passing a version value is currently
 //   unsupported.
@@ -396,7 +396,7 @@ const (
 	optCodeOutput = 0x07
 
 	// its required parameter is the address of a string name for the last
-	// output region.
+	// output or input region.
 	optCodeName = 0x08
 
 	// reserved for future use, where its parameter will be the required
@@ -538,6 +538,11 @@ func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
 			return false, fmt.Errorf("unpaired input opt code, got %#02x instead", code)
 		}
 		rg := region{from: start, to: end}
+		if addr, named, err := mb.mayReadOptCode(0x80 | optCodeName); err != nil {
+			return false, err
+		} else if named {
+			rg.name = addr
+		}
 		mb.inputs = append(mb.inputs, rg)
 
 	case 0x80 | optCodeOutput:
