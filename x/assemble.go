@@ -521,12 +521,10 @@ func (sc *scanner) setState(state assemblerState) error {
 	switch state {
 	case assemblerText:
 		if sc.pendIn != "" {
-			// define a label to end a pending .in label
-			return sc.handleLabel("." + sc.pendIn + ".end")
+			return sc.finishIn()
 		}
 		if sc.pendOut != "" {
-			// define a label to end a pending .out label
-			return sc.handleLabel("." + sc.pendOut + ".end")
+			return sc.finishOut()
 		}
 	}
 	return nil
@@ -564,21 +562,45 @@ func (sc *scanner) handleEntry() error {
 
 func (sc *scanner) handleLabel(name string) error {
 	if sc.pendIn != "" {
-		sc.addRefOpt("input", sc.pendIn, 0)
-		sc.addRefOpt("input", name, 0)
-		sc.pendIn = ""
+		if err := sc.finishIn(); err != nil {
+			return err
+		}
 	}
 
 	if sc.pendOut != "" {
-		sc.addRefOpt("output", sc.pendOut, 0)
-		sc.addRefOpt("output", name, 0)
-		sc.pendOut = ""
+		if err := sc.finishOut(); err != nil {
+			return err
+		}
 	}
 
 	if i, defined := sc.prog.labels[name]; defined && i >= 0 {
 		return fmt.Errorf("label %q already defined", name)
 	}
 	sc.prog.addLabel(name)
+	return nil
+}
+
+func (sc *scanner) finishIn() error {
+	endLabel := "." + sc.pendIn + ".end"
+	if i, defined := sc.prog.labels[endLabel]; defined && i >= 0 {
+		return fmt.Errorf("label %q already defined", endLabel)
+	}
+	sc.prog.addLabel(endLabel)
+	sc.addRefOpt("input", sc.pendIn, 0)
+	sc.addRefOpt("input", endLabel, 0)
+	sc.pendIn = ""
+	return nil
+}
+
+func (sc *scanner) finishOut() error {
+	endLabel := "." + sc.pendOut + ".end"
+	if i, defined := sc.prog.labels[endLabel]; defined && i >= 0 {
+		return fmt.Errorf("label %q already defined", endLabel)
+	}
+	sc.prog.addLabel(endLabel)
+	sc.addRefOpt("output", sc.pendOut, 0)
+	sc.addRefOpt("output", endLabel, 0)
+	sc.pendOut = ""
 	return nil
 }
 
