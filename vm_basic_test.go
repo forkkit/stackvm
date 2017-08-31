@@ -129,25 +129,23 @@ func TestMach_operational_errors(t *testing.T) {
 }
 
 func TestMach_data_refs(t *testing.T) {
-	TestCases{
-		{
-			Name: "mod-10 check",
-			Prog: []interface{}{
-				".data",
-				"d:", 4, 2, 7, 9, 8,
+	TestCase{
+		Name: "mod-10 check",
+		Prog: []interface{}{
+			".data",
+			"d:", 4, 2, 7, 9, 8,
 
-				".text",
-				".entry", "main:",
-				":d", "fetch", // d[0] :
-				4 * 1, ":d", "push", "fetch", // d[0] d[1] :
-				4 * 2, ":d", "push", "fetch", // d[0] d[1] d[2] :
-				4 * 3, ":d", "push", "fetch", // d[0] d[1] d[2] d[3] :
-				4 * 4, ":d", "push", "fetch", // d[0] d[1] d[2] d[3] d[4] :
-				"add", "add", "add", "add", // s=d[0]+d[1]+d[2]+d[3]+d[4] :
-				10, "mod", // s%10 :
-				1, "hnz", // : -- error halt if non-zero
-				"halt", // : normal halt
-			},
+			".text",
+			".entry", "main:",
+			":d", "fetch", // d[0] :
+			4 * 1, ":d", "push", "fetch", // d[0] d[1] :
+			4 * 2, ":d", "push", "fetch", // d[0] d[1] d[2] :
+			4 * 3, ":d", "push", "fetch", // d[0] d[1] d[2] d[3] :
+			4 * 4, ":d", "push", "fetch", // d[0] d[1] d[2] d[3] d[4] :
+			"add", "add", "add", "add", // s=d[0]+d[1]+d[2]+d[3]+d[4] :
+			10, "mod", // s%10 :
+			1, "hnz", // : -- error halt if non-zero
+			"halt", // : normal halt
 		},
 	}.Run(t)
 }
