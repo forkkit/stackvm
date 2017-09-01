@@ -320,7 +320,7 @@ func TestMach_inNout(t *testing.T) {
 			Name:   fmt.Sprintf("square(%d)", n),
 			Prog:   prog,
 			Input:  [][]uint32{[]uint32{n}},
-			Result: Result{Values: [][]uint32{[]uint32{n * n}}},
+			Result: Result{Values: map[string][]uint32{"M": []uint32{n * n}}},
 		})
 	}
 	tcs.Run(t)
