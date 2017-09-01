@@ -298,7 +298,7 @@ func (nr noResult) result(res Result) {
 // used as a TestCaseResult when only a single final result is expected.
 type Result struct {
 	Err    string
-	Values [][]uint32
+	Values interface{}
 }
 
 // WithExpectedHaltCodes creates a TestCaseResult that expects any number of
@@ -312,7 +312,20 @@ func (r Result) take(m *stackvm.Mach) (res Result, err error) {
 	if merr := m.Err(); merr != nil {
 		res.Err = errors.Cause(merr).Error()
 	} else {
-		res.Values, err = m.Values()
+		switch r.Values.(type) {
+		case map[string][]uint32:
+			res.Values, err = m.NamedValues()
+		case [][]uint32:
+			res.Values, err = m.Values()
+		case nil:
+			var vals [][]uint32
+			vals, err = m.Values()
+			if vals != nil {
+				res.Values = vals
+			}
+		default:
+			res.Values, err = m.Values()
+		}
 	}
 	return
 }
