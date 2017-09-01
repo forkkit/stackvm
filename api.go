@@ -124,12 +124,12 @@ func Handler(h MachHandler) MachBuildOpt {
 func Input(vals []uint32) MachBuildOpt {
 	return func(mb *machBuilder) error {
 		if mb.nextIn >= len(mb.inputs) {
-			return fmt.Errorf("unsupported input[%d], only %d are defined", mb.nextIn+1, mb.inputs)
+			return fmt.Errorf("unsupported input[%d], only %d are defined", mb.nextIn+1, len(mb.inputs))
 		}
 		rg := mb.inputs[mb.nextIn]
 		mb.nextIn++
 		if n := rg.to - rg.from; len(vals) > int(n) {
-			return fmt.Errorf("too many values for input[%d], max is %d", len(vals), n)
+			return fmt.Errorf("too many values for input[%d], max is %d, got %d", mb.nextIn, n, len(vals))
 		}
 		buf := make([]byte, len(vals)*4)
 		for i, val := range vals {
