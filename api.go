@@ -140,6 +140,36 @@ func Input(vals []uint32) MachBuildOpt {
 	}
 }
 
+// NamedInput passes a named collection of input values to a New()ly built
+// machine. For each NamedInput(...) the loaded program must have defined an
+// input region with that name. Furthermore the number of values must fit with
+// the corresponding input region, but do not have to fill it.
+func NamedInput(name string, vals []uint32) MachBuildOpt {
+	return func(mb *machBuilder) error {
+		for _, rg := range mb.inputs {
+			if rg.name == 0 {
+				continue
+			}
+			rgName, err := mb.Mach.fetchString(rg.name)
+			if err != nil {
+				return err
+			}
+			if rgName == name {
+				if n := rg.to - rg.from; len(vals) > int(n) {
+					return fmt.Errorf("too many values for input[name=%q], max is %d, got %d", rgName, n, len(vals))
+				}
+				buf := make([]byte, len(vals)*4)
+				for i, val := range vals {
+					ByteOrder.PutUint32(buf[4*i:], val)
+				}
+				mb.Mach.storeBytes(rg.from, buf)
+				return nil
+			}
+		}
+		return fmt.Errorf("no named input region %q defined", name)
+	}
+}
+
 func (m *Mach) String() string {
 	var buf bytes.Buffer
 	buf.WriteString("Mach")
