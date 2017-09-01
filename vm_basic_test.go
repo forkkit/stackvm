@@ -319,7 +319,7 @@ func TestMach_inNout(t *testing.T) {
 		tcs = append(tcs, TestCase{
 			Name:   fmt.Sprintf("square(%d)", n),
 			Prog:   prog,
-			Input:  [][]uint32{[]uint32{n}},
+			Input:  map[string][]uint32{"N": []uint32{n}},
 			Result: Result{Values: map[string][]uint32{"M": []uint32{n * n}}},
 		})
 	}
