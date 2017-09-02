@@ -2,6 +2,8 @@ package tracer
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/jcorbin/stackvm"
 	"github.com/jcorbin/stackvm/internal/errors"
@@ -35,19 +37,19 @@ func (lf logfTracer) Begin(m *stackvm.Mach) {
 func (lf logfTracer) End(m *stackvm.Mach) {
 	if err := m.Err(); err != nil {
 		lf.note(m, "===", "End", "err=%q", errors.Cause(err))
-	} else if vs, err := m.Values(); err != nil {
+	} else if nvs, err := m.NamedValues(); err != nil {
 		lf.note(m, "===", "End", "values_err=%q", err)
 	} else {
-		lf.note(m, "===", "End", "values=%v", vs)
+		lf.note(m, "===", "End", "%s", namedValueParts(nvs))
 	}
 }
 
 func (lf logfTracer) Queue(m, n *stackvm.Mach) {
 	mid, _ := m.Tracer().Context(n, "id")
-	if vs, err := m.Values(); err != nil {
+	if nvs, err := m.NamedValues(); err != nil {
 		lf.note(m, "+++", "Copy", "values_err=%q child=%v", err, mid)
 	} else {
-		lf.note(m, "+++", "Copy", "values=%v child=%v", vs, mid)
+		lf.note(m, "+++", "Copy", "%s child=%v", namedValueParts(nvs), mid)
 	}
 }
 
@@ -96,4 +98,13 @@ func (lf logfTracer) note(m *stackvm.Mach, mark string, note interface{}, args .
 		parts = append(parts, args...)
 	}
 	lf(format, parts...)
+}
+
+func namedValueParts(nvs map[string][]uint32) string {
+	parts := make([]string, 0, len(nvs))
+	for n, vs := range nvs {
+		parts = append(parts, fmt.Sprintf("out_%s=%v", n, vs))
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, " ")
 }
