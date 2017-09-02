@@ -438,7 +438,11 @@ func (mb *machBuilder) build(buf []byte) error {
 		return err
 	}
 
-	return mb.finish()
+	prog := mb.buf[mb.n:]
+	mb.Mach.opc = makeOpCache(len(prog))
+	mb.Mach.storeBytes(mb.base, prog)
+	// TODO mark code segment, update data
+	return nil
 }
 
 func (mb *machBuilder) handleOpts() error {
@@ -559,14 +563,6 @@ func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
 	}
 
 	return false, nil
-}
-
-func (mb *machBuilder) finish() error {
-	prog := mb.buf[mb.n:]
-	mb.Mach.opc = makeOpCache(len(prog))
-	mb.Mach.storeBytes(mb.base, prog)
-	// TODO mark code segment, update data
-	return nil
 }
 
 // NameOption retruns the name string for an option code.
