@@ -264,8 +264,6 @@ func (sess *session) handleEndKV(k, v string) {
 	switch k {
 	case "err":
 		sess.err = v
-	case "values":
-		sess.values = v
 	default:
 		sess.extra[k] = v
 	}
@@ -324,7 +322,6 @@ type session struct {
 	mid, pid machID
 	recs     []record
 	err      string
-	values   string
 	extra    map[string]string
 	unknown  []string
 }
@@ -439,7 +436,7 @@ func printSession(sessions sessions, mid machID) (err error) {
 	if sess.err != "" {
 		_, err = fmt.Printf("%s\terr=%v\n", sessions.fullID(sess), sess.err)
 	} else {
-		_, err = fmt.Printf("%s\tvalues=%v\n", sessions.fullID(sess), sess.values)
+		_, err = fmt.Printf("%s\textra=%v\n", sessions.fullID(sess), sess.extra)
 	}
 	return
 }
@@ -474,7 +471,6 @@ type sessDat struct {
 	ID       string            `json:"id"`
 	ParentID *string           `json:"parent_id"`
 	Error    string            `json:"error"`
-	Values   string            `json:"values"`
 	Records  []recDat          `json:"records"`
 	Extra    map[string]string `json:"extra"`
 	Unknown  []string          `json:"unknown"`
@@ -484,7 +480,6 @@ func (sess *session) toJSON() sessDat {
 	dat := sessDat{
 		ID:      sess.mid.String(),
 		Error:   sess.err,
-		Values:  sess.values,
 		Records: make([]recDat, len(sess.recs)),
 		Extra:   sess.extra,
 		Unknown: sess.unknown,
