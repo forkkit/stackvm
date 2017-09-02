@@ -92,13 +92,8 @@ func (name NoSuchOpError) Error() string {
 // TODO: document operations.
 func New(prog []byte, mbos ...MachBuildOpt) (*Mach, error) {
 	var mb machBuilder
-	if err := mb.build(prog); err != nil {
+	if err := mb.build(prog, mbos...); err != nil {
 		return nil, err
-	}
-	for _, mbo := range mbos {
-		if err := mbo(&mb); err != nil {
-			return nil, err
-		}
 	}
 	return &mb.Mach, nil
 }
@@ -423,7 +418,7 @@ type machBuilder struct {
 	n   int
 }
 
-func (mb *machBuilder) build(buf []byte) error {
+func (mb *machBuilder) build(buf []byte, mbos ...MachBuildOpt) error {
 	mb.queueSize = defaultQueueSize
 
 	mb.Mach.ctx.MachHandler = defaultHandler
@@ -442,6 +437,13 @@ func (mb *machBuilder) build(buf []byte) error {
 	mb.Mach.opc = makeOpCache(len(prog))
 	mb.Mach.storeBytes(mb.base, prog)
 	// TODO mark code segment, update data
+
+	for _, mbo := range mbos {
+		if err := mbo(mb); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
