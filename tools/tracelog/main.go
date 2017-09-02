@@ -138,19 +138,8 @@ func parseRecord(mid machID, rest []byte) (rec record) {
 }
 
 var (
-	actPat = regexp.MustCompile(`(` +
-		`^\+\+\+ +Copy` +
-		`)|(` +
-		`=== +Begin` + // @0x00ce stacks=[0x0000:0x003c]
-		`)|(` +
-		`^=== +End` +
-		`)|(` +
-		`^=== +Handle` +
-		`)`)
-
 	markPat = regexp.MustCompile(`^(\+\+\+|===|\.\.\.|>>>)\s*`)
-
-	midPat = regexp.MustCompile(`(\d+)\((\d+):(\d+)\)`)
+	midPat  = regexp.MustCompile(`(\d+)\((\d+):(\d+)\)`)
 )
 
 func scanKVs(s string, each func(k, v string)) {
@@ -283,38 +272,32 @@ func (sess *session) handleEndKV(k, v string) {
 }
 
 func (sess *session) add(rec record) record {
-	switch amatch := actPat.FindStringSubmatch(rec.act); {
-	case amatch == nil:
-	case amatch[1] != "": // copy
-		rec.kind = copyLine
-		rec.cid, rec.rest = scanChildKV(rec.rest)
-
-	case amatch[2] != "": // begin
-		rec.kind = beginLine
-
-	case amatch[3] != "": // end
-		rec.kind = endLine
-		scanKVs(rec.rest, sess.handleEndKV)
-
-	case amatch[4] != "": // handle
-		rec.kind = hndlLine
-	}
-
-	if rec.kind == unknownLine {
-		if m := markPat.FindStringSubmatchIndex(rec.act); m != nil {
-			switch rec.act[m[2]:m[3]] {
-			case ">>>":
-				rec.kind = preOpLine
-			case "...":
-				rec.kind = postOpLine
-			default:
-				rec.kind = genericLine
+	if m := markPat.FindStringSubmatchIndex(rec.act); m != nil {
+		mark := rec.act[m[2]:m[3]]
+		rec.act = rec.act[m[1]:]
+		switch mark {
+		case ">>>":
+			rec.kind = preOpLine
+		case "...":
+			rec.kind = postOpLine
+		case "+++":
+			rec.kind = copyLine
+			rec.cid, rec.rest = scanChildKV(rec.rest)
+		case "===":
+			switch rec.act {
+			case "Begin":
+				rec.kind = beginLine
+			case "End":
+				rec.kind = endLine
+				scanKVs(rec.rest, sess.handleEndKV)
+			case "Handle":
+				rec.kind = hndlLine
 			}
-			rec.act = rec.act[m[1]:]
+		default:
+			rec.kind = genericLine
 		}
-		rec.act = strings.TrimSpace(rec.act)
 	}
-
+	rec.act = strings.TrimSpace(rec.act)
 	sess.recs = append(sess.recs, rec)
 	return rec
 }
