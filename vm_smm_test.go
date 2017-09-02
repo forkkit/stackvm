@@ -31,7 +31,7 @@ var smmTest = TestCase{
 		//   m o n e y
 
 		".data",
-		"used:", 0,
+		".out", "used:", 0,
 		".out", "values:", ".alloc", 8,
 		// 0 1 2 3 4 5 6 7
 		// d e y n r o s m
@@ -113,6 +113,7 @@ var smmTest = TestCase{
 	},
 
 	Result: Result{Values: map[string][]uint32{
+		"used": {1<<7 | 1<<5 | 1<<2 | 1<<6 | 1<<8 | 1<<0 | 1<<9 | 1<<1},
 		"values": {
 			7, // d
 			5, // e
