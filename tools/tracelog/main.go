@@ -291,9 +291,21 @@ func (sess *session) add(rec record) record {
 
 	case amatch[4] != "": // handle
 		rec.kind = hndlLine
+	}
 
-	default:
-		rec.kind = genericLine
+	if rec.kind == unknownLine {
+		if m := markPat.FindStringSubmatchIndex(rec.act); m != nil {
+			switch rec.act[m[2]:m[3]] {
+			case ">>>":
+				rec.kind = preOpLine
+			case "...":
+				rec.kind = postOpLine
+			default:
+				rec.kind = genericLine
+			}
+			rec.act = rec.act[m[1]:]
+		}
+		rec.act = strings.TrimSpace(rec.act)
 	}
 
 	sess.recs = append(sess.recs, rec)
@@ -488,22 +500,9 @@ func (sess *session) toJSON() sessDat {
 	}
 
 	for i, rec := range sess.recs {
-		// TODO: push this munging back into primary code
-		kind, act := rec.kind, rec.act
-		if m := markPat.FindStringSubmatchIndex(act); m != nil {
-			switch act[m[2]:m[3]] {
-			case ">>>":
-				kind = preOpLine
-			case "...":
-				kind = postOpLine
-			}
-			act = act[m[1]:]
-		}
-		act = strings.TrimSpace(act)
-
 		rd := recDat{
-			Kind:   kind.String(),
-			Action: act,
+			Kind:   rec.kind.String(),
+			Action: rec.act,
 			Count:  rec.count,
 			IP:     int(rec.ip),
 			Extra:  make(map[string]interface{}),
