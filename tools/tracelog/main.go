@@ -325,7 +325,7 @@ type session struct {
 	recs     []record
 	err      string
 	values   string
-	extra    []string
+	unknown  []string
 }
 
 func (mid machID) String() string {
@@ -350,7 +350,7 @@ func (ss sessions) session(mid machID) *session {
 
 func (ss sessions) extend(mid machID, s string) {
 	sess := ss.session(mid)
-	sess.extra = append(sess.extra, s)
+	sess.unknown = append(sess.unknown, s)
 }
 
 func (ss sessions) idPath(sess *session) []machID {
@@ -472,7 +472,7 @@ type sessDat struct {
 	Error    string   `json:"error"`
 	Values   string   `json:"values"`
 	Records  []recDat `json:"records"`
-	Extra    []string `json:"extra"`
+	Unknown  []string `json:"unknown"`
 }
 
 func (sess *session) toJSON() sessDat {
@@ -481,7 +481,7 @@ func (sess *session) toJSON() sessDat {
 		Error:   sess.err,
 		Values:  sess.values,
 		Records: make([]recDat, len(sess.recs)),
-		Extra:   sess.extra,
+		Unknown: sess.unknown,
 	}
 
 	if sess.pid != zeroMachID {
