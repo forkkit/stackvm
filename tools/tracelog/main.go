@@ -271,6 +271,17 @@ func scanChildKV(s string) (cid machID, r string) {
 	return
 }
 
+func (sess *session) handleEndKV(k, v string) {
+	switch k {
+	case "err":
+		sess.err = v
+	case "values":
+		sess.values = v
+	default:
+		log.Printf("UNKNOWN End key/val: %q = %q\n", k, v)
+	}
+}
+
 func (sess *session) add(rec record) record {
 	switch amatch := actPat.FindStringSubmatch(rec.act); {
 	case amatch == nil:
@@ -283,16 +294,7 @@ func (sess *session) add(rec record) record {
 
 	case amatch[3] != "": // end
 		rec.kind = endLine
-		scanKVs(rec.rest, func(k, v string) {
-			switch k {
-			case "err":
-				sess.err = v
-			case "values":
-				sess.values = v
-			default:
-				log.Printf("UNKNOWN End key/val: %q = %q\n", k, v)
-			}
-		})
+		scanKVs(rec.rest, sess.handleEndKV)
 
 	case amatch[4] != "": // handle
 		rec.kind = hndlLine
