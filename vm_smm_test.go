@@ -53,9 +53,13 @@ var smmTest = TestCase{
 		".include", smmLib,
 
 		".data",
+		// ".out", "letters:",
+		// // TODO: .string
+		// 8,
+		// 'd', 'e', 'y', 'n', 'r', 'o', 's', 'm',
+
 		".out", "values:", ".alloc", 8,
 		// 0 1 2 3 4 5 6 7
-		// d e y n r o s m
 
 		".entry",
 
