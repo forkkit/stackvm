@@ -267,7 +267,7 @@ func (sess *session) handleEndKV(k, v string) {
 	case "values":
 		sess.values = v
 	default:
-		log.Printf("UNKNOWN End key/val: %q = %q\n", k, v)
+		sess.extra[k] = v
 	}
 }
 
@@ -325,6 +325,7 @@ type session struct {
 	recs     []record
 	err      string
 	values   string
+	extra    map[string]string
 	unknown  []string
 }
 
@@ -342,7 +343,10 @@ func (rec record) String() string {
 func (ss sessions) session(mid machID) *session {
 	sess := ss[mid]
 	if sess == nil {
-		sess = &session{mid: mid}
+		sess = &session{
+			mid:   mid,
+			extra: make(map[string]string),
+		}
 		ss[mid] = sess
 	}
 	return sess
@@ -467,12 +471,13 @@ type recDat struct {
 }
 
 type sessDat struct {
-	ID       string   `json:"id"`
-	ParentID *string  `json:"parent_id"`
-	Error    string   `json:"error"`
-	Values   string   `json:"values"`
-	Records  []recDat `json:"records"`
-	Unknown  []string `json:"unknown"`
+	ID       string            `json:"id"`
+	ParentID *string           `json:"parent_id"`
+	Error    string            `json:"error"`
+	Values   string            `json:"values"`
+	Records  []recDat          `json:"records"`
+	Extra    map[string]string `json:"extra"`
+	Unknown  []string          `json:"unknown"`
 }
 
 func (sess *session) toJSON() sessDat {
@@ -481,6 +486,7 @@ func (sess *session) toJSON() sessDat {
 		Error:   sess.err,
 		Values:  sess.values,
 		Records: make([]recDat, len(sess.recs)),
+		Extra:   sess.extra,
 		Unknown: sess.unknown,
 	}
 
