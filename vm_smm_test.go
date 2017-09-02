@@ -112,16 +112,18 @@ var smmTest = TestCase{
 		"ret", // :
 	},
 
-	Result: Result{Values: [][]uint32{{
-		7, // d
-		5, // e
-		2, // y
-		6, // n
-		8, // r
-		0, // o
-		9, // s
-		1, // m
-	}}}.WithExpectedHaltCodes(1, 2, 3),
+	Result: Result{Values: map[string][]uint32{
+		"values": {
+			7, // d
+			5, // e
+			2, // y
+			6, // n
+			8, // r
+			0, // o
+			9, // s
+			1, // m
+		},
+	}}.WithExpectedHaltCodes(1, 2, 3),
 }
 
 func TestMach_send_more_money(t *testing.T)      { smmTest.Run(t) }

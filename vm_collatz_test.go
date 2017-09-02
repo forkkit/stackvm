@@ -81,7 +81,7 @@ func TestMach_collatz_sequence(t *testing.T) {
 				[]uint32{uint32(n)},
 			},
 			Result: Result{
-				Values: [][]uint32{vals},
+				Values: map[string][]uint32{"unnamed_output_0": vals},
 			},
 		})
 	}
@@ -133,10 +133,10 @@ var collatzExplore = TestCase{
 	},
 
 	Result: Results{
-		{Values: [][]uint32{{2, 4, 8, 16, 32, 64}}},
-		{Values: [][]uint32{{2, 4, 8, 16, 5, 10}}},
-		{Values: [][]uint32{{2, 4, 1, 2, 4, 8}}},
-		{Values: [][]uint32{{2, 4, 1, 2, 4, 1}}},
+		{Values: map[string][]uint32{"unnamed_output_0": {2, 4, 8, 16, 32, 64}}},
+		{Values: map[string][]uint32{"unnamed_output_0": {2, 4, 8, 16, 5, 10}}},
+		{Values: map[string][]uint32{"unnamed_output_0": {2, 4, 1, 2, 4, 8}}},
+		{Values: map[string][]uint32{"unnamed_output_0": {2, 4, 1, 2, 4, 1}}},
 	}.WithExpectedHaltCodes(1),
 }
 
