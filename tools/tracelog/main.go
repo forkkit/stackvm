@@ -252,26 +252,31 @@ emit:
 	}
 }
 
+func scanChildKV(s string) (cid machID, r string) {
+	var parts []string
+	scanKVs(s, func(k, v string) {
+		switch k {
+		case "child":
+			if match := midPat.FindStringSubmatch(v); match != nil {
+				cid[0], _ = strconv.Atoi(match[1])
+				cid[1], _ = strconv.Atoi(match[2])
+				cid[2], _ = strconv.Atoi(match[3])
+				parts = append(parts, fmt.Sprintf("child=%v", cid))
+			}
+		default:
+			parts = append(parts, fmt.Sprintf("%s=%s", k, v))
+		}
+	})
+	r = strings.Join(parts, " ")
+	return
+}
+
 func (sess *session) add(rec record) record {
 	switch amatch := actPat.FindStringSubmatch(rec.act); {
 	case amatch == nil:
 	case amatch[1] != "": // copy
 		rec.kind = copyLine
-		var parts []string
-		scanKVs(rec.rest, func(k, v string) {
-			switch k {
-			case "child":
-				if match := midPat.FindStringSubmatch(v); match != nil {
-					rec.cid[0], _ = strconv.Atoi(match[1])
-					rec.cid[1], _ = strconv.Atoi(match[2])
-					rec.cid[2], _ = strconv.Atoi(match[3])
-					parts = append(parts, fmt.Sprintf("child=%v", rec.cid))
-				}
-			default:
-				parts = append(parts, fmt.Sprintf("%s=%s", k, v))
-			}
-		})
-		rec.rest = strings.Join(parts, " ")
+		rec.cid, rec.rest = scanChildKV(rec.rest)
 
 	case amatch[2] != "": // begin
 		rec.kind = beginLine
