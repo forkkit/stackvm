@@ -66,23 +66,29 @@ func (lf logfTracer) Handle(m *stackvm.Mach, err error) {
 }
 
 func (lf logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
-	lf.note(m, ">>>", op, "%s", lf.stackAnnotation(m))
+	ps, cs, err := m.Stacks()
+	if err != nil {
+		lf.note(m, ">>>", op,
+			"pbp=0x%04x psp=0x%04x csp=0x%04x cbp=0x%04x stacks_err=%q",
+			m.PBP(), m.PSP(), m.CSP(), m.CBP(), err)
+	} else {
+		lf.note(m, ">>>", op,
+			"ps=%v cs=%v psp=0x%04x csp=0x%04x",
+			ps, cs, m.PSP(), m.CSP())
+	}
 }
 
 func (lf logfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
-	lf.note(m, "...", op, "%s", lf.stackAnnotation(m))
-}
-
-func (lf logfTracer) stackAnnotation(m *stackvm.Mach) string {
 	ps, cs, err := m.Stacks()
 	if err != nil {
-		return fmt.Sprintf(
+		lf.note(m, "...", op,
 			"pbp=0x%04x psp=0x%04x csp=0x%04x cbp=0x%04x stacks_err=%q",
 			m.PBP(), m.PSP(), m.CSP(), m.CBP(), err)
+	} else {
+		lf.note(m, "...", op,
+			"ps=%v cs=%v psp=0x%04x csp=0x%04x",
+			ps, cs, m.PSP(), m.CSP())
 	}
-	return fmt.Sprintf(
-		"ps=%v cs=%v psp=0x%04x csp=0x%04x",
-		ps, cs, m.PSP(), m.CSP())
 }
 
 func (lf logfTracer) note(m *stackvm.Mach, mark string, note interface{}, args ...interface{}) {
