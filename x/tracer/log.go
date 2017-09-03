@@ -14,13 +14,15 @@ const noteWidth = 15
 // NewLogTracer creates a tracer that logs machine state using a printf-style
 // string "logging" function
 func NewLogTracer(f func(string, ...interface{})) stackvm.Tracer {
-	return logfTracer{
+	return &logfTracer{
 		f: f,
 	}
 }
 
 type logfTracer struct {
-	f func(string, ...interface{})
+	f          func(string, ...interface{})
+	afterName  string
+	afterFetch uint32
 }
 
 func (lf logfTracer) Context(m *stackvm.Mach, key string) (interface{}, bool) {
@@ -69,7 +71,7 @@ func (lf logfTracer) Handle(m *stackvm.Mach, err error) {
 	}
 }
 
-func (lf logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
+func (lf *logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 	ps, cs, err := m.Stacks()
 	if err != nil {
 		lf.note(m, ">>>", op,
@@ -79,20 +81,53 @@ func (lf logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 		lf.note(m, ">>>", op,
 			"ps=%v cs=%v psp=0x%04x csp=0x%04x",
 			ps, cs, m.PSP(), m.CSP())
+	}
+
+	if lf.afterFetch != 0 {
+		lf.afterName = lf.nameAddr(m, lf.afterFetch)
+		if lf.afterName == "" {
+			lf.afterFetch = 0
+		}
 	}
 }
 
-func (lf logfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
+func (lf *logfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
+	var extra string
+
+	if lf.afterName != "" {
+		if val, err := m.Fetch(lf.afterFetch); err == nil {
+			extra = fmt.Sprintf("%s=%v ", lf.afterName, val)
+		}
+		lf.afterName = ""
+		lf.afterFetch = 0
+	}
+
 	ps, cs, err := m.Stacks()
 	if err != nil {
 		lf.note(m, "...", op,
-			"pbp=0x%04x psp=0x%04x csp=0x%04x cbp=0x%04x stacks_err=%q",
-			m.PBP(), m.PSP(), m.CSP(), m.CBP(), err)
+			"%spbp=0x%04x psp=0x%04x csp=0x%04x cbp=0x%04x stacks_err=%q",
+			extra, m.PBP(), m.PSP(), m.CSP(), m.CBP(), err)
 	} else {
 		lf.note(m, "...", op,
-			"ps=%v cs=%v psp=0x%04x csp=0x%04x",
-			ps, cs, m.PSP(), m.CSP())
+			"%sps=%v cs=%v psp=0x%04x csp=0x%04x",
+			extra, ps, cs, m.PSP(), m.CSP())
 	}
+}
+
+func (lf logfTracer) nameAddr(m *stackvm.Mach, addr uint32) string {
+	outputs, err := m.Outputs()
+	if err != nil {
+		return ""
+	}
+	for _, rg := range outputs {
+		if addr >= rg.From && addr < rg.To {
+			if n := (rg.To - rg.From) / 4; n > 1 {
+				return fmt.Sprintf("out_%s[%d]", rg.Name, (addr-rg.From)/4)
+			}
+			return rg.Name
+		}
+	}
+	return ""
 }
 
 func (lf logfTracer) note(m *stackvm.Mach, mark string, note interface{}, args ...interface{}) {
