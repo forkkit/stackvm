@@ -31,7 +31,11 @@ func (lf logfTracer) Context(m *stackvm.Mach, key string) (interface{}, bool) {
 }
 
 func (lf logfTracer) Begin(m *stackvm.Mach) {
-	lf.note(m, "===", "Begin", "pbp=0x%04x cbp=0x%04x", m.PBP(), m.CBP())
+	if nvs, err := m.NamedValues(); err != nil {
+		lf.note(m, "===", "Begin", "values_err=%q pbp=0x%04x cbp=0x%04x", err, m.PBP(), m.CBP())
+	} else {
+		lf.note(m, "===", "Begin", "%s pbp=0x%04x cbp=0x%04x", namedValueParts(nvs), m.PBP(), m.CBP())
+	}
 }
 
 func (lf logfTracer) End(m *stackvm.Mach) {
