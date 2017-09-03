@@ -278,24 +278,23 @@ func (m *Mach) NamedValues() (map[string][]uint32, error) {
 	return nvs, nil
 }
 
-func (m *Mach) outValues() ([]region, [][]uint32, error) {
+func (m *Mach) outputs() ([]region, error) {
 	done := false
 	if m.err != nil {
 		if arg, ok := m.halted(); !ok || arg != 0 {
-			return nil, nil, m.err
+			return nil, m.err
 		}
 		done = true
 	}
-
 	outputs := m.ctx.outputs
 	if done {
 		cs, err := m.fetchCS()
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		if len(cs) > 0 {
 			if len(cs)%2 != 0 {
-				return nil, nil, fmt.Errorf("invalid control stack length %d", len(cs))
+				return nil, fmt.Errorf("invalid control stack length %d", len(cs))
 			}
 			outputs = append(make([]region, 0, len(outputs)+len(cs)/2), outputs...)
 			for i := 0; i < len(cs); i += 2 {
@@ -303,11 +302,17 @@ func (m *Mach) outValues() ([]region, [][]uint32, error) {
 			}
 		}
 	}
+	return outputs, nil
+}
 
+func (m *Mach) outValues() ([]region, [][]uint32, error) {
+	outputs, err := m.outputs()
+	if err != nil {
+		return nil, nil, err
+	}
 	if len(outputs) == 0 {
 		return nil, nil, nil
 	}
-
 	res := make([][]uint32, 0, len(outputs))
 	for _, rg := range outputs {
 		ns, err := m.fetchMany(rg.from, rg.to)
