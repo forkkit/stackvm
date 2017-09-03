@@ -83,6 +83,22 @@ func (lf *logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 			ps, cs, m.PSP(), m.CSP())
 	}
 
+	switch op.Name() {
+	case "storeTo":
+		if op.Have {
+			lf.afterFetch = op.Arg
+		} else if len(ps) > 0 {
+			lf.afterFetch = ps[len(ps)-1]
+		}
+
+	case "store":
+		if op.Have && len(ps) > 0 {
+			lf.afterFetch = ps[len(ps)-1]
+		} else if !op.Have && len(ps) > 1 {
+			lf.afterFetch = ps[len(ps)-2]
+		}
+	}
+
 	if lf.afterFetch != 0 {
 		lf.afterName = lf.nameAddr(m, lf.afterFetch)
 		if lf.afterName == "" {
