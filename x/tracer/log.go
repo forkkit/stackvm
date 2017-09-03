@@ -65,10 +65,12 @@ func (lf logfTracer) Handle(m *stackvm.Mach, err error) {
 	}
 }
 
-func (lf logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) { lf.noteStack(m, ">>>", op) }
-func (lf logfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op)  { lf.noteStack(m, "...", "") }
-func (lf logfTracer) noteStack(m *stackvm.Mach, mark string, note interface{}) {
-	lf.note(m, mark, note, "%s", lf.stackAnnotation(m))
+func (lf logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
+	lf.note(m, ">>>", op, "%s", lf.stackAnnotation(m))
+}
+
+func (lf logfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
+	lf.note(m, "...", "", "%s", lf.stackAnnotation(m))
 }
 
 func (lf logfTracer) stackAnnotation(m *stackvm.Mach) string {
