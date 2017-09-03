@@ -278,6 +278,33 @@ func (m *Mach) NamedValues() (map[string][]uint32, error) {
 	return nvs, nil
 }
 
+// Region describes an output region returned by Mach.Outputs.
+type Region struct {
+	Name     string
+	From, To uint32
+}
+
+// Outputs returns a slice of the machine's (currently) defined output regions,
+// as would be used by Values or NamedValues.
+func (m *Mach) Outputs() ([]Region, error) {
+	outputs, err := m.outputs()
+	if len(outputs) == 0 || err != nil {
+		return nil, err
+	}
+	rgs := make([]Region, len(outputs))
+	for i, rg := range outputs {
+		rgs[i] = Region{From: rg.from, To: rg.to}
+		if rg.name != 0 {
+			name, err := m.fetchString(rg.name)
+			if err != nil {
+				return nil, err
+			}
+			rgs[i].Name = name
+		}
+	}
+	return rgs, nil
+}
+
 func (m *Mach) outputs() ([]region, error) {
 	done := false
 	if m.err != nil {
