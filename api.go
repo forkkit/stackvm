@@ -202,6 +202,10 @@ func (m *Mach) EachPage(f func(addr uint32, p *[_pageSize]byte) error) error {
 	return nil
 }
 
+// Fetch fetches a single word from memory, returning it or an
+// error.
+func (m *Mach) Fetch(addr uint32) (uint32, error) { return m.fetch(addr) }
+
 var zeroPageData [_pageSize]byte
 
 // WriteTo writes all machine memory to the given io.Writer, returning the
