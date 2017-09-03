@@ -287,6 +287,7 @@ func (m *Mach) outputs() ([]region, error) {
 		done = true
 	}
 	outputs := m.ctx.outputs
+	outputs = outputs[:len(outputs):len(outputs)]
 	if done {
 		cs, err := m.fetchCS()
 		if err != nil {
