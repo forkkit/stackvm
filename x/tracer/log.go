@@ -14,10 +14,14 @@ const noteWidth = 15
 // NewLogTracer creates a tracer that logs machine state using a printf-style
 // string "logging" function
 func NewLogTracer(f func(string, ...interface{})) stackvm.Tracer {
-	return logfTracer(f)
+	return logfTracer{
+		f: f,
+	}
 }
 
-type logfTracer func(string, ...interface{})
+type logfTracer struct {
+	f func(string, ...interface{})
+}
 
 func (lf logfTracer) Context(m *stackvm.Mach, key string) (interface{}, bool) {
 	if key != "logf" {
@@ -26,7 +30,7 @@ func (lf logfTracer) Context(m *stackvm.Mach, key string) (interface{}, bool) {
 	mid, _ := m.Tracer().Context(m, "id")
 	pfx := fmt.Sprintf("%v       ... ", mid)
 	return func(format string, args ...interface{}) {
-		lf(pfx+format, args...)
+		lf.f(pfx+format, args...)
 	}, true
 }
 
@@ -112,7 +116,7 @@ func (lf logfTracer) note(m *stackvm.Mach, mark string, note interface{}, args .
 		}
 		parts = append(parts, args...)
 	}
-	lf(format, parts...)
+	lf.f(format, parts...)
 }
 
 func namedValueParts(nvs map[string][]uint32) string {
