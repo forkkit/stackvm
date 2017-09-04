@@ -414,7 +414,10 @@ class LogTable {
 
         //// setup basic columns
         let cols = ["ID", "#", "IP", "Action"];
-        this.fmt = [fmt.num(10), fmt.num(10), fmt.hex, fmt.id];
+        this.fmt = [fmt.num(10), fmt.num(10), fmt.hex];
+        this.fmt.push((action) => action.replace(
+            /([@+-])0x([0-9a-fA-F]+)/,
+            (_m, sign, str) => sign + fmt.hex(parseInt(str, 16))));
 
         // discover max widths from data
         let idWidth = 0;
