@@ -528,12 +528,10 @@ class LogTable {
         let fex = fmt.entries(LogTable.extraFmts, (k) => !this.extraIgnore.has(k));
 
         let cells = rows.selectAll("td")
-            .data(({idi, count, ip, action, extra}) => {
-                let r = [idi, count, ip, action];
-                r = r.concat(this.extraPluck.map((k) => extra[k] || ""));
-                r.push(fex(extra));
-                return r;
-            });
+            .data(({idi, count, ip, action, extra}) => [idi, count, ip, action]
+                .concat(this.extraPluck.map((k) => extra[k] || ""))
+                .concat([fex(extra)])
+        );
         cells.exit().remove();
         cells = cells.merge(cells.enter().append("td"));
         cells.text(this.raw
