@@ -444,10 +444,7 @@ class LogTable {
 
         //// setup basic columns
         let cols = ["ID", "#", "IP", "Action"];
-        this.fmt = [fmt.num(10), fmt.num(10), fmt.hex];
-        this.fmt.push((action) => action.replace(
-            /([@+-])0x([0-9a-fA-F]+)/,
-            (_m, sign, str) => sign + fmt.hex(parseInt(str, 16))));
+        this.fmt = LogTable.baseFmt.concat([LogTable.mungeActionFmt]);
 
         // discover max widths from data
         let idWidth = 0;
@@ -530,6 +527,12 @@ class LogTable {
             : (d, i) => this.fmt[i](d));
     }
 }
+
+LogTable.baseFmt = [fmt.num(10), fmt.num(10), fmt.hex];
+
+LogTable.mungeActionFmt = (action) => action.replace(
+    /([@+-])0x([0-9a-fA-F]+)/,
+    (_m, sign, str) => sign + fmt.hex(parseInt(str, 16)));
 
 class Links {
     constructor(el) {
