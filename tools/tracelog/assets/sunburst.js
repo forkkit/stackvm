@@ -311,6 +311,9 @@ class RecordAssembler {
         for (let i = 0; i < records.length; i++) {
             let rec = records[i];
             switch (rec.kind) {
+            case "preOp":
+                break;
+
             case "copy":
                 if (next && rec.extra["child"] === next.id) {
                     return out;
