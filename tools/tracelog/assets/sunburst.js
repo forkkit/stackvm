@@ -368,6 +368,7 @@ class RecordAssembler {
         let {records} = this.nodes[depth];
         const next = this.nodes[depth+1];
         let out = [];
+        let copy = null;
         for (let i = 0; i < records.length; i++) {
             let rec = records[i];
             switch (rec.kind) {
@@ -378,11 +379,21 @@ class RecordAssembler {
             case "preOp":
                 break;
 
+            case "postOp":
+                if (copy) {
+                    rec = Object.assign({}, rec, {
+                        extra: Object.assign({}, copy.extra, rec.extra),
+                    });
+                    copy = null;
+                }
+                out.push(rec);
+                break;
+
             case "copy":
                 if (next && rec.extra["child"] === next.id) {
                     return out;
                 }
-                if (i !== 0) out.push(rec);
+                if (i !== 0) copy = rec;
                 break;
 
             default:
