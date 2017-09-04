@@ -322,7 +322,7 @@ class RecordAssembler {
                 if (next && rec.extra["child"] === next.id) {
                     return out;
                 }
-                out.push(rec);
+                if (i !== 0) out.push(rec);
                 break;
 
             default:
