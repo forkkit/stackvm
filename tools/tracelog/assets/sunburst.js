@@ -41,9 +41,9 @@ const midPat = /^(\d+)\((\d+):(\d+)\)$/;
 const numColors = 4;
 
 class SunburstModel extends EventEmitter {
-    constructor(records) {
+    constructor(sessions) {
         super();
-        this.records = records;
+        this.sessions = sessions;
         this.byID = new Map();
         this.kids = new Map();
         this.byOutcome = new Map();
@@ -52,7 +52,7 @@ class SunburstModel extends EventEmitter {
         this.root = null;
         this._cur = null;
 
-        this.records.forEach(d => {
+        this.sessions.forEach(d => {
             if (d.parent_id === null) {
                 if (this.rootID !== null) {
                     throw new Error("only one root supported");
@@ -227,7 +227,7 @@ class SunburstChart extends EventEmitter {
 
     draw() {
         this.path = this.cont
-            .data([this._model.records])
+            .data([this._model.sessions])
             .selectAll("path")
             .data(this.partition(this._model.root).descendants());
         let enter = this.path
