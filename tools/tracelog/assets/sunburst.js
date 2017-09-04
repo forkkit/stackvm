@@ -1,5 +1,7 @@
 "use strict";
 
+import "./sunburst.css";
+
 class EventEmitter {
     constructor() {
         this.events = new Map();
