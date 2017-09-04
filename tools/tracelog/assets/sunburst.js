@@ -28,6 +28,10 @@ class EventEmitter {
     }
 }
 
+let fmt = {};
+
+fmt.id = (x) => x;
+
 import {
     hierarchy as d3Hierarchy,
     partition as d3Partition
@@ -346,6 +350,7 @@ class LogTable {
         ].concat(this.extraPluck));
         this.head = this.el.tHead || this.el.appendChild(document.createElement("thead"));
         this.header = d3Select(this.head.appendChild(document.createElement("tr")));
+        this.fmt = null;
     }
 
     set model(model) {
@@ -353,12 +358,15 @@ class LogTable {
 
         //// setup basic columns
         let cols = ["ID", "#", "IP", "Action"];
+        this.fmt = [fmt.id, fmt.id, fmt.id, fmt.id];
 
         //// setup columns for plucked extra values
         cols = cols.concat(this.extraPluck);
+        this.fmt = this.fmt.concat(this.extraPluck.map((k) => fmt.id));
 
         //// setup final catch-all extra column
         cols.push("Extra");
+        this.fmt.push(fmt.id);
 
         //// update header
         let colsel = this.header.selectAll("th").data(cols);
@@ -399,7 +407,7 @@ class LogTable {
             });
         cells.exit().remove();
         cells = cells.merge(cells.enter().append("td"));
-        cells.text(i => i);
+        cells.text((d, i) => this.fmt[i](d));
         this.head.scrollIntoView();
     }
 }

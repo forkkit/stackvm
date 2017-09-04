@@ -765,7 +765,7 @@ func (o Op) String() string {
 	case opImmAddr:
 		return fmt.Sprintf("@%#04x %s", o.Arg, def.name)
 	case opImmOffset:
-		return fmt.Sprintf("%+#04x %s", o.Arg, def.name)
+		return fmt.Sprintf("%+#05x %s", int32(o.Arg), def.name)
 	}
 	return fmt.Sprintf("INVALID(%#x %x %q)", o.Arg, o.Code, def.name)
 }
