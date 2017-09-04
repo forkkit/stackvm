@@ -337,7 +337,7 @@ class LogTable {
 
     set model(model) {
         this._model = model;
-        let cols = ["ID", "Action", "#", "IP"];
+        let cols = ["ID", "#", "IP", "Action"];
         cols = cols.concat(this.extraPluck);
         cols.push("Extra");
         let colsel = this.header.selectAll("th").data(cols);
@@ -369,8 +369,8 @@ class LogTable {
             idi, `bgColor${depth % numColors + 1}`));
 
         let cells = rows.selectAll("td")
-            .data(({mid, action, count, ip, extra}) => {
-                let r = [mid, action, count, ip];
+            .data(({mid, count, ip, action, extra}) => {
+                let r = [mid, count, ip, action];
                 r = r.concat(this.extraPluck.map((k) => extra[k] || ""));
                 r.push(Object.entries(extra)
                     .filter(([k]) => !this.extraIgnore.has(k))
