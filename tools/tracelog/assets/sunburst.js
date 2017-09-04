@@ -432,6 +432,7 @@ class LogTable {
         ].concat(this.extraPluck));
         this.head = this.el.tHead || this.el.appendChild(document.createElement("thead"));
         this.header = d3Select(this.head.appendChild(document.createElement("tr")));
+        this.raw = false;
         this.fmt = null;
         this.ra = null;
     }
@@ -487,8 +488,11 @@ class LogTable {
         this.el.tBodies[i].scrollIntoView();
     }
 
-    show(node) {
-        this.ra = new RecordAssembler(this._model, node);
+    show(node, raw) {
+        this.raw = !!raw;
+        this.ra = this.raw
+            ? new RawRecordAssembler(this._model, node)
+            : new RecordAssembler(this._model, node);
         this.update();
         this.head.scrollIntoView();
     }
@@ -519,7 +523,9 @@ class LogTable {
             });
         cells.exit().remove();
         cells = cells.merge(cells.enter().append("td"));
-        cells.text((d, i) => this.fmt[i](d));
+        cells.text(this.raw
+            ? fmt.id
+            : (d, i) => this.fmt[i](d));
     }
 }
 
