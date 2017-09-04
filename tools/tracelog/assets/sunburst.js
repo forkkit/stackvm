@@ -34,6 +34,20 @@ let fmt = {};
 
 fmt.id = (x) => x;
 
+fmt.entries = (kfmts, filter) => {
+    if (typeof filter === "function") {
+        return (o) => Object.entries(o)
+            .filter(([k]) => filter(k))
+            .map(([k, v]) => [fmt.id(k), (kfmts[k] || fmt.id)(v)])
+            .map(([k, v]) => `${k}=${v}`)
+            .join(" ");
+    }
+    return (o) => Object.entries(o)
+        .map(([k, v]) => [fmt.id(k), (kfmts[k] || fmt.id)(v)])
+        .map(([k, v]) => `${k}=${v}`)
+        .join(" ");
+};
+
 fmt.parseInt = (base) => (s) => parseInt(s, base);
 
 fmt.hex = (n) => {
@@ -511,13 +525,13 @@ class LogTable {
         rows.attr("class", ({depth, idi}) => this._model.decorateClass(
             idi, `bgColor${depth % numColors + 1}`));
 
+        let fex = fmt.entries(LogTable.extraFmts, (k) => !this.extraIgnore.has(k));
+
         let cells = rows.selectAll("td")
             .data(({idi, count, ip, action, extra}) => {
                 let r = [idi, count, ip, action];
                 r = r.concat(this.extraPluck.map((k) => extra[k] || ""));
-                r.push(Object.entries(extra)
-                    .filter(([k]) => !this.extraIgnore.has(k))
-                    .map(([k, v]) => `${k}=${v}`).join(" "));
+                r.push(fex(extra));
                 return r;
             });
         cells.exit().remove();
@@ -533,6 +547,9 @@ LogTable.baseFmt = [fmt.num(10), fmt.num(10), fmt.hex];
 LogTable.mungeActionFmt = (action) => action.replace(
     /([@+-])0x([0-9a-fA-F]+)/,
     (_m, sign, str) => sign + fmt.hex(parseInt(str, 16)));
+
+LogTable.extraFmts = {
+};
 
 class Links {
     constructor(el) {
