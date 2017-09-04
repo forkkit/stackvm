@@ -32,6 +32,13 @@ let fmt = {};
 
 fmt.id = (x) => x;
 
+fmt.hex = (n) => {
+    let s = n.toString(16);
+    s = "0" + s;
+    if (s.length % 2 == 1) s = "0" + s;
+    return s;
+};
+
 fmt.num = (base) => {
     base = base || 10;
     return (n) => n.toString(base);
@@ -363,7 +370,7 @@ class LogTable {
 
         //// setup basic columns
         let cols = ["ID", "#", "IP", "Action"];
-        this.fmt = [fmt.num(10), fmt.num(10), fmt.num(16), fmt.id];
+        this.fmt = [fmt.num(10), fmt.num(10), fmt.hex, fmt.id];
 
         //// setup columns for plucked extra values
         cols = cols.concat(this.extraPluck);
