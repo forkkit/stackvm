@@ -451,13 +451,15 @@ class LogTable {
         this.raw = false;
         this.fmt = null;
         this.ra = null;
+        this.cols = null;
+        this.rawCols = ["ID", "#", "IP", "Action", "Extra"];
     }
 
     set model(model) {
         this._model = model;
 
         //// setup basic columns
-        let cols = ["ID", "#", "IP", "Action"];
+        this.cols = ["ID", "#", "IP", "Action"];
         this.fmt = LogTable.baseFmt.concat([LogTable.mungeActionFmt]);
 
         // discover max widths from data
@@ -476,7 +478,7 @@ class LogTable {
         this.fmt[2] = fmt.padded("0", ipWidth, this.fmt[2]);
 
         //// setup columns for plucked extra values
-        cols = cols.concat(this.extraPluck);
+        this.cols = this.cols.concat(this.extraPluck);
         this.fmt = this.fmt.concat(this.extraPluck.map((k) => {
             switch (k) {
             case "cs":
@@ -487,14 +489,8 @@ class LogTable {
         }));
 
         //// setup final catch-all extra column
-        cols.push("Extra");
+        this.cols.push("Extra");
         this.fmt.push(fmt.id);
-
-        //// update header
-        let colsel = this.header.selectAll("th").data(cols);
-        colsel.exit().remove();
-        colsel = colsel.merge(colsel.enter().append("th"));
-        colsel.text((col) => col);
     }
 
     focus(i) {
@@ -511,6 +507,11 @@ class LogTable {
     }
 
     update() {
+        let colsel = this.header.selectAll("th").data(this.raw ? this.rawCols : this.cols);
+        colsel.exit().remove();
+        colsel = colsel.merge(colsel.enter().append("th"));
+        colsel.text((col) => col);
+
         let bodies = this.sel.selectAll("tbody").data(this.ra.nodes);
         bodies.exit().remove();
         bodies = bodies.merge(bodies.enter().append("tbody"));
@@ -525,10 +526,13 @@ class LogTable {
         rows.attr("class", ({depth, idi}) => this._model.decorateClass(
             idi, `bgColor${depth % numColors + 1}`));
 
-        let fex = fmt.entries(LogTable.extraFmts, (k) => !this.extraIgnore.has(k));
+        let fex = this.raw
+            ? fmt.entries(LogTable.extraFmts)
+            : fmt.entries(LogTable.extraFmts, (k) => !this.extraIgnore.has(k));
 
-        let cells = rows.selectAll("td")
-            .data(({idi, count, ip, action, extra}) => [idi, count, ip, action]
+        let cells = rows.selectAll("td").data(this.raw
+            ? ({idi, count, ip, action, extra}) => [idi, count, ip, action, fex(extra)]
+            : ({idi, count, ip, action, extra}) => [idi, count, ip, action]
                 .concat(this.extraPluck.map((k) => extra[k] || ""))
                 .concat([fex(extra)])
         );
