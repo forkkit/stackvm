@@ -67,7 +67,13 @@ ul li {
 #chart path.goal { stroke: red; }
 
 #log { margin: 0 auto; }
+#log th,
 #log td { padding: 0.2em 0.5em; }
+
+#log th {
+    background-color: hsl(211, 75%, 35%);
+    border-bottom: 0.1em solid hsl(180, 75%, 50%);
+}
 
 .fillColor1 { fill: hsl(211, 75%, 35%); }
 .fillColor2 { fill: hsl(211, 75%, 40%); }

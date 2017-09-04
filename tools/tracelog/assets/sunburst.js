@@ -331,10 +331,19 @@ class LogTable {
             "cbp", "csp",
             "pbp", "psp",
         ].concat(this.extraPluck));
+        this.head = this.el.tHead || this.el.appendChild(document.createElement("thead"));
+        this.header = d3Select(this.head.appendChild(document.createElement("tr")));
     }
 
     set model(model) {
         this._model = model;
+        let cols = ["ID", "Action", "#", "IP"];
+        cols = cols.concat(this.extraPluck);
+        cols.push("Extra");
+        let colsel = this.header.selectAll("th").data(cols);
+        colsel.exit().remove();
+        colsel = colsel.merge(colsel.enter().append("th"));
+        colsel.text((col) => col);
     }
 
     focus(i) {
