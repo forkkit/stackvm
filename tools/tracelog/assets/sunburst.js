@@ -379,10 +379,9 @@ class LogTable {
         bodies = bodies.merge(bodies.enter().append("tbody"));
 
         let rows = bodies.selectAll("tr")
-            .data(({id, idi}, depth) => {
-                let mid = midPat.exec(id)[3];
+            .data(({idi}, depth) => {
                 let records = ra.records(depth);
-                return records.map(r => Object.assign({depth, idi, mid}, r));
+                return records.map(r => Object.assign({depth, idi}, r));
             });
         rows.exit().remove();
         rows = rows.merge(rows.enter().append("tr"));
@@ -390,8 +389,8 @@ class LogTable {
             idi, `bgColor${depth % numColors + 1}`));
 
         let cells = rows.selectAll("td")
-            .data(({mid, count, ip, action, extra}) => {
-                let r = [mid, count, ip, action];
+            .data(({idi, count, ip, action, extra}) => {
+                let r = [idi, count, ip, action];
                 r = r.concat(this.extraPluck.map((k) => extra[k] || ""));
                 r.push(Object.entries(extra)
                     .filter(([k]) => !this.extraIgnore.has(k))
