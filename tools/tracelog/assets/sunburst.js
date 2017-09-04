@@ -613,9 +613,9 @@ class Page {
 
     nav() {
         if (!this.model) return;
-        let m = /^#(.+)$/.exec(window.location.hash);
-        if (!m) return;
-        let id = m[1];
+        let parts = window.location.hash.split(/#/).slice(1);
+        if (!parts.length) return;
+        let id = parts[0];
         if (!this.model.byID.has(id)) return;
         let path = this.model.findPath(id);
         if (path === null) {
