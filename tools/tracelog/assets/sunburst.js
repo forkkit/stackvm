@@ -307,16 +307,22 @@ class RecordAssembler {
     records(depth) {
         let {records} = this.nodes[depth];
         const next = this.nodes[depth+1];
-        if (next) {
-            for (let i = 0; i < records.length; i++) {
-                if (records[i].kind === "copy" &&
-                    records[i].extra["child"] === next.id) {
-                    records = records.slice(0, i);
-                    break;
+        let out = [];
+        for (let i = 0; i < records.length; i++) {
+            let rec = records[i];
+            switch (rec.kind) {
+            case "copy":
+                if (next && rec.extra["child"] === next.id) {
+                    return out;
                 }
+                out.push(rec);
+                break;
+
+            default:
+                out.push(rec);
             }
         }
-        return records;
+        return out;
     }
 }
 
