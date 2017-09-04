@@ -1,6 +1,6 @@
 "use strict";
 
-import "./sunburst.css";
+import "./sunburst.scss";
 
 class EventEmitter {
     constructor() {

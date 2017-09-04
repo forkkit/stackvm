@@ -1,0 +1,101 @@
+$normalH: 211; // the normal state hue
+$goalH: 155;   // the goal state hue
+$highH: 180;   // highlight hue
+
+html, body, main {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: hsl($normalH, 10%, 10%);
+    color: #fff;
+}
+
+a, a:visited {
+    color: lightblue;
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
+}
+
+ul {
+    margin: 0;
+    padding: 0;
+    li {
+        list-style: none;
+        padding: 0.1em 0.2em;
+    }
+}
+
+#sequence {
+    position: fixed;
+
+    li {
+        color: #fff;
+        float: left;
+        margin: 0.1em;
+        &.goal {
+            border: 0.1em solid red;
+            margin: 0;
+        }
+    }
+
+    &.active li {
+        cursor: pointer;
+        float: none;
+        margin: 0.1em;
+    }
+}
+
+#links {
+    position: fixed;
+    right: 0;
+    max-height: 75%;
+    overflow: auto;
+    padding: 0.2em 0.4em;
+    background-color: hsl($normalH, 10%, 20%);
+}
+
+#chart {
+    #bound { opacity: 0; }
+    path.goal { stroke: red; }
+    path { opacity: 0.8; }
+    &.focusing {
+        path       { opacity: 0.2; }
+        path.focus { opacity: 1; }
+    }
+}
+
+#log {
+    margin: 0 auto;
+    th, td { padding: 0.2em 0.5em; }
+    td {
+        white-space: pre;
+        font-family: monospace;
+    }
+    th {
+        background-color: hsl($normalH, 75%, 35%);
+        border-bottom: 0.1em solid hsl($highH, 75%, 50%);
+    }
+}
+
+.fillColor1 { fill: hsl($normalH, 75%, 35%); }
+.fillColor2 { fill: hsl($normalH, 75%, 40%); }
+.fillColor3 { fill: hsl($normalH, 75%, 45%); }
+.fillColor4 { fill: hsl($normalH, 75%, 50%); }
+
+.goalPath.fillColor1, .goal.fillColor1 { fill: hsl($goalH, 75%, 30%); }
+.goalPath.fillColor2, .goal.fillColor2 { fill: hsl($goalH, 75%, 35%); }
+.goalPath.fillColor3, .goal.fillColor3 { fill: hsl($goalH, 75%, 40%); }
+.goalPath.fillColor4, .goal.fillColor4 { fill: hsl($goalH, 75%, 45%); }
+
+.bgColor1 { background-color: hsl($normalH, 50%, 30%); }
+.bgColor2 { background-color: hsl($normalH, 50%, 35%); }
+.bgColor3 { background-color: hsl($normalH, 50%, 40%); }
+.bgColor4 { background-color: hsl($normalH, 50%, 45%); }
+
+.goalPath.bgColor1, .goal.bgColor1 { background-color: hsl($goalH, 50%, 25%); }
+.goalPath.bgColor2, .goal.bgColor2 { background-color: hsl($goalH, 50%, 30%); }
+.goalPath.bgColor3, .goal.bgColor3 { background-color: hsl($goalH, 50%, 35%); }
+.goalPath.bgColor4, .goal.bgColor4 { background-color: hsl($goalH, 50%, 40%); }
