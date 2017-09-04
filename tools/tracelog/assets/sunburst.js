@@ -350,9 +350,17 @@ class LogTable {
 
     set model(model) {
         this._model = model;
+
+        //// setup basic columns
         let cols = ["ID", "#", "IP", "Action"];
+
+        //// setup columns for plucked extra values
         cols = cols.concat(this.extraPluck);
+
+        //// setup final catch-all extra column
         cols.push("Extra");
+
+        //// update header
         let colsel = this.header.selectAll("th").data(cols);
         colsel.exit().remove();
         colsel = colsel.merge(colsel.enter().append("th"));
