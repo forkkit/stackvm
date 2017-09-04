@@ -56,6 +56,7 @@ ul {
     &.active li {
         cursor: pointer;
         float: none;
+        text-align: right;
         margin: 0.1em;
     }
 }
