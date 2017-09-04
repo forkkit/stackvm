@@ -8,6 +8,11 @@ $fillSat: 100%;
 $bgSat: 75%;
 $fgSat: 25%;
 
+@mixin bgColor($hue, $light) {
+    background-color: hsluv($hue, $bgSat, percentage($light));
+    color: hsluv($hue, $fgSat, 75%);
+}
+
 html, body, main {
     height: 100%;
     margin: 0;
@@ -83,8 +88,7 @@ ul {
         font-family: monospace;
     }
     th {
-        background-color: hsluv($normalH, $bgSat, 35%);
-        color: hsluv($normalH, $fgSat, 95%);
+        @include bgColor($normalH, 0.4);
         border-bottom: 0.1em solid hsluv($highH, $bgSat, 50%);
     }
 }
@@ -99,36 +103,12 @@ ul {
 .goalPath.fillColor3, .goal.fillColor3 { fill: hsluv($goalH, $fillSat, 45%); }
 .goalPath.fillColor4, .goal.fillColor4 { fill: hsluv($goalH, $fillSat, 50%); }
 
-.bgColor1 {
-    background-color: hsluv($normalH, $bgSat, 30%);
-    color: hsluv($normalH, $fgSat, 85%);
-}
-.bgColor2 {
-    background-color: hsluv($normalH, $bgSat, 35%);
-    color: hsluv($normalH, $fgSat, 90%);
-}
-.bgColor3 {
-    background-color: hsluv($normalH, $bgSat, 40%);
-    color: hsluv($normalH, $fgSat, 95%);
-}
-.bgColor4 {
-    background-color: hsluv($normalH, $bgSat, 45%);
-    color: hsluv($normalH, $fgSat, 100%);
-}
+.bgColor1 { @include bgColor($normalH, 0.25); }
+.bgColor2 { @include bgColor($normalH, 0.30); }
+.bgColor3 { @include bgColor($normalH, 0.35); }
+.bgColor4 { @include bgColor($normalH, 0.40); }
 
-.goalPath.bgColor1, .goal.bgColor1 {
-    background-color: hsluv($goalH, $bgSat, 25%);
-    color: hsluv($goalH, $fgSat, 85%);
-}
-.goalPath.bgColor2, .goal.bgColor2 {
-    background-color: hsluv($goalH, $bgSat, 30%);
-    color: hsluv($goalH, $fgSat, 90%);
-}
-.goalPath.bgColor3, .goal.bgColor3 {
-    background-color: hsluv($goalH, $bgSat, 35%);
-    color: hsluv($goalH, $fgSat, 95%);
-}
-.goalPath.bgColor4, .goal.bgColor4 {
-    background-color: hsluv($goalH, $bgSat, 40%);
-    color: hsluv($goalH, $fgSat, 100%);
-}
+.goalPath.bgColor1, .goal.bgColor1 { @include bgColor($goalH, 0.25); }
+.goalPath.bgColor2, .goal.bgColor2 { @include bgColor($goalH, 0.30); }
+.goalPath.bgColor3, .goal.bgColor3 { @include bgColor($goalH, 0.35); }
+.goalPath.bgColor4, .goal.bgColor4 { @include bgColor($goalH, 0.40); }
