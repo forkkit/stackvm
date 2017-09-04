@@ -433,6 +433,7 @@ class LogTable {
         this.head = this.el.tHead || this.el.appendChild(document.createElement("thead"));
         this.header = d3Select(this.head.appendChild(document.createElement("tr")));
         this.fmt = null;
+        this.ra = null;
     }
 
     set model(model) {
@@ -487,15 +488,19 @@ class LogTable {
     }
 
     show(node) {
-        const ra = new RecordAssembler(this._model, node);
+        this.ra = new RecordAssembler(this._model, node);
+        this.update();
+        this.head.scrollIntoView();
+    }
 
-        let bodies = this.sel.selectAll("tbody").data(ra.nodes);
+    update() {
+        let bodies = this.sel.selectAll("tbody").data(this.ra.nodes);
         bodies.exit().remove();
         bodies = bodies.merge(bodies.enter().append("tbody"));
 
         let rows = bodies.selectAll("tr")
             .data(({idi}, depth) => {
-                let records = ra.records(depth);
+                let records = this.ra.records(depth);
                 return records.map(r => Object.assign({depth, idi}, r));
             });
         rows.exit().remove();
@@ -515,7 +520,6 @@ class LogTable {
         cells.exit().remove();
         cells = cells.merge(cells.enter().append("td"));
         cells.text((d, i) => this.fmt[i](d));
-        this.head.scrollIntoView();
     }
 }
 
