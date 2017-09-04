@@ -325,7 +325,7 @@ class LogTable {
         this.el = thel(el);
         this.sel = d3Select(this.el);
         this._model = null;
-        this.extraPluck = ["ps", "cs", "values"];
+        this.extraPluck = ["ps", "cs"];
         this.extraIgnore = new Set([
             "parent", "child",
             "cbp", "csp",
