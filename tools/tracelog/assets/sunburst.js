@@ -450,6 +450,7 @@ class LogTable {
         this.header = d3Select(this.head.appendChild(document.createElement("tr")));
         this.raw = false;
         this.fmt = null;
+        this.rawFmt = LogTable.baseFmt.concat([fmt.id, fmt.entries(LogTable.extraFmts)]);
         this.ra = null;
         this.cols = null;
         this.rawCols = ["ID", "#", "IP", "Action", "Extra"];
@@ -490,7 +491,7 @@ class LogTable {
 
         //// setup final catch-all extra column
         this.cols.push("Extra");
-        this.fmt.push(fmt.id);
+        this.fmt.push(fmt.entries(LogTable.extraFmts, (k) => !this.extraIgnore.has(k)));
     }
 
     focus(i) {
@@ -526,20 +527,16 @@ class LogTable {
         rows.attr("class", ({depth, idi}) => this._model.decorateClass(
             idi, `bgColor${depth % numColors + 1}`));
 
-        let fex = this.raw
-            ? fmt.entries(LogTable.extraFmts)
-            : fmt.entries(LogTable.extraFmts, (k) => !this.extraIgnore.has(k));
-
         let cells = rows.selectAll("td").data(this.raw
-            ? ({idi, count, ip, action, extra}) => [idi, count, ip, action, fex(extra)]
+            ? ({idi, count, ip, action, extra}) => [idi, count, ip, action, extra]
             : ({idi, count, ip, action, extra}) => [idi, count, ip, action]
                 .concat(this.extraPluck.map((k) => extra[k] || ""))
-                .concat([fex(extra)])
+                .concat([extra])
         );
         cells.exit().remove();
         cells = cells.merge(cells.enter().append("td"));
         cells.text(this.raw
-            ? fmt.id
+            ? (d, i) => this.rawFmt[i](d)
             : (d, i) => this.fmt[i](d));
     }
 }
