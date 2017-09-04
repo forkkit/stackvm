@@ -89,15 +89,15 @@ ul {
     }
 }
 
-.fillColor1 { fill: hsluv($normalH, $fillSat, 35%); }
-.fillColor2 { fill: hsluv($normalH, $fillSat, 40%); }
-.fillColor3 { fill: hsluv($normalH, $fillSat, 45%); }
-.fillColor4 { fill: hsluv($normalH, $fillSat, 50%); }
+.fillColor1 { fill: hsluv($normalH, $fillSat, 30%); }
+.fillColor2 { fill: hsluv($normalH, $fillSat, 35%); }
+.fillColor3 { fill: hsluv($normalH, $fillSat, 40%); }
+.fillColor4 { fill: hsluv($normalH, $fillSat, 45%); }
 
-.goalPath.fillColor1, .goal.fillColor1 { fill: hsluv($goalH, $fillSat, 30%); }
-.goalPath.fillColor2, .goal.fillColor2 { fill: hsluv($goalH, $fillSat, 35%); }
-.goalPath.fillColor3, .goal.fillColor3 { fill: hsluv($goalH, $fillSat, 40%); }
-.goalPath.fillColor4, .goal.fillColor4 { fill: hsluv($goalH, $fillSat, 45%); }
+.goalPath.fillColor1, .goal.fillColor1 { fill: hsluv($goalH, $fillSat, 35%); }
+.goalPath.fillColor2, .goal.fillColor2 { fill: hsluv($goalH, $fillSat, 40%); }
+.goalPath.fillColor3, .goal.fillColor3 { fill: hsluv($goalH, $fillSat, 45%); }
+.goalPath.fillColor4, .goal.fillColor4 { fill: hsluv($goalH, $fillSat, 50%); }
 
 .bgColor1 {
     background-color: hsluv($normalH, $bgSat, 30%);
