@@ -597,8 +597,10 @@ class Page {
         window.removeEventListener("keyup", this.handleLogKeyUp);
     }
 
-    showLog(node) {
-        let canonical =  `#${node.id}`;
+    showLog(node, tags) {
+        tags = [];
+        let parts = ["", node.id].concat(tags);
+        let canonical = parts.join("#");
         if (window.location.hash !== canonical) {
             window.location.hash = canonical;
             return;
@@ -623,7 +625,7 @@ class Page {
             return;
         }
         this.model.cur = path;
-        this.showLog(path[path.length-1].data);
+        this.showLog(path[path.length-1].data, parts.slice(1));
     }
 
     load(data) {
