@@ -28,7 +28,7 @@ a, a:visited {
     color: hsluv($highH, 80%, 60%);
     text-decoration: none;
     &:hover { color: hsluv($highH, 80%, 90%); }
-    &:active { color: hsluv($highH, 90%, 100%); }
+    &:active { text-decoration: underline; }
 }
 
 ul {
