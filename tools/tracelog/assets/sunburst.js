@@ -32,6 +32,11 @@ let fmt = {};
 
 fmt.id = (x) => x;
 
+fmt.num = (base) => {
+    base = base || 10;
+    return (n) => n.toString(base);
+};
+
 import {
     hierarchy as d3Hierarchy,
     partition as d3Partition
@@ -358,7 +363,7 @@ class LogTable {
 
         //// setup basic columns
         let cols = ["ID", "#", "IP", "Action"];
-        this.fmt = [fmt.id, fmt.id, fmt.id, fmt.id];
+        this.fmt = [fmt.num(10), fmt.num(10), fmt.num(16), fmt.id];
 
         //// setup columns for plucked extra values
         cols = cols.concat(this.extraPluck);
