@@ -311,6 +311,10 @@ class RecordAssembler {
         for (let i = 0; i < records.length; i++) {
             let rec = records[i];
             switch (rec.kind) {
+            case "begin":
+                if (depth === 0) out.push(rec);
+                break;
+
             case "preOp":
                 break;
 
