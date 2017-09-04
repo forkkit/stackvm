@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Browser code to support stackvm",
   "scripts": {
+    "postinstall": "ln -nsf ../../node_modules node_modules/hsluv-sass/node_modules",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -15,6 +16,7 @@
     "d3": "^4.10.0",
     "debounce": "^1.0.2",
     "eslint": "^4.5.0",
+    "hsluv-sass": "^1.0.0",
     "html-inline": "^1.2.0",
     "rollup": "^0.48.2",
     "rollup-plugin-cleanup": "^1.0.1",

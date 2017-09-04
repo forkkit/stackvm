@@ -1,6 +1,12 @@
+@import "../../../node_modules/hsluv-sass/src/_hsluv";
+
 $normalH: 211; // the normal state hue
 $goalH: 155;   // the goal state hue
 $highH: 180;   // highlight hue
+
+$fillSat: 100%;
+$bgSat: 75%;
+$fgSat: 25%;
 
 html, body, main {
     height: 100%;
@@ -9,14 +15,15 @@ html, body, main {
 }
 
 body {
-    background-color: hsl($normalH, 10%, 10%);
-    color: #fff;
+    background-color: hsluv($normalH, 10%, 10%);
+    color: hsluv($normalH, 10%, 100%);
 }
 
 a, a:visited {
-    color: lightblue;
+    color: hsluv($highH, 80%, 60%);
     text-decoration: none;
-    &:hover { text-decoration: underline; }
+    &:hover { color: hsluv($highH, 80%, 90%); }
+    &:active { color: hsluv($highH, 90%, 100%); }
 }
 
 ul {
@@ -36,7 +43,7 @@ ul {
         float: left;
         margin: 0.1em;
         &.goal {
-            border: 0.1em solid red;
+            border: 0.1em solid hsluv($highH, 100%, 80%);
             margin: 0;
         }
     }
@@ -54,12 +61,13 @@ ul {
     max-height: 75%;
     overflow: auto;
     padding: 0.2em 0.4em;
-    background-color: hsl($normalH, 10%, 20%);
+    background-color: hsluv($normalH, 10%, 20%);
+    color: hsluv($normalH, 10%, 80%);
 }
 
 #chart {
     #bound { opacity: 0; }
-    path.goal { stroke: red; }
+    path.goal { stroke: hsluv($highH, 100%, 80%); }
     path { opacity: 0.8; }
     &.focusing {
         path       { opacity: 0.2; }
@@ -75,27 +83,52 @@ ul {
         font-family: monospace;
     }
     th {
-        background-color: hsl($normalH, 75%, 35%);
-        border-bottom: 0.1em solid hsl($highH, 75%, 50%);
+        background-color: hsluv($normalH, $bgSat, 35%);
+        color: hsluv($normalH, $fgSat, 95%);
+        border-bottom: 0.1em solid hsluv($highH, $bgSat, 50%);
     }
 }
 
-.fillColor1 { fill: hsl($normalH, 75%, 35%); }
-.fillColor2 { fill: hsl($normalH, 75%, 40%); }
-.fillColor3 { fill: hsl($normalH, 75%, 45%); }
-.fillColor4 { fill: hsl($normalH, 75%, 50%); }
+.fillColor1 { fill: hsluv($normalH, $fillSat, 35%); }
+.fillColor2 { fill: hsluv($normalH, $fillSat, 40%); }
+.fillColor3 { fill: hsluv($normalH, $fillSat, 45%); }
+.fillColor4 { fill: hsluv($normalH, $fillSat, 50%); }
 
-.goalPath.fillColor1, .goal.fillColor1 { fill: hsl($goalH, 75%, 30%); }
-.goalPath.fillColor2, .goal.fillColor2 { fill: hsl($goalH, 75%, 35%); }
-.goalPath.fillColor3, .goal.fillColor3 { fill: hsl($goalH, 75%, 40%); }
-.goalPath.fillColor4, .goal.fillColor4 { fill: hsl($goalH, 75%, 45%); }
+.goalPath.fillColor1, .goal.fillColor1 { fill: hsluv($goalH, $fillSat, 30%); }
+.goalPath.fillColor2, .goal.fillColor2 { fill: hsluv($goalH, $fillSat, 35%); }
+.goalPath.fillColor3, .goal.fillColor3 { fill: hsluv($goalH, $fillSat, 40%); }
+.goalPath.fillColor4, .goal.fillColor4 { fill: hsluv($goalH, $fillSat, 45%); }
 
-.bgColor1 { background-color: hsl($normalH, 50%, 30%); }
-.bgColor2 { background-color: hsl($normalH, 50%, 35%); }
-.bgColor3 { background-color: hsl($normalH, 50%, 40%); }
-.bgColor4 { background-color: hsl($normalH, 50%, 45%); }
+.bgColor1 {
+    background-color: hsluv($normalH, $bgSat, 30%);
+    color: hsluv($normalH, $fgSat, 85%);
+}
+.bgColor2 {
+    background-color: hsluv($normalH, $bgSat, 35%);
+    color: hsluv($normalH, $fgSat, 90%);
+}
+.bgColor3 {
+    background-color: hsluv($normalH, $bgSat, 40%);
+    color: hsluv($normalH, $fgSat, 95%);
+}
+.bgColor4 {
+    background-color: hsluv($normalH, $bgSat, 45%);
+    color: hsluv($normalH, $fgSat, 100%);
+}
 
-.goalPath.bgColor1, .goal.bgColor1 { background-color: hsl($goalH, 50%, 25%); }
-.goalPath.bgColor2, .goal.bgColor2 { background-color: hsl($goalH, 50%, 30%); }
-.goalPath.bgColor3, .goal.bgColor3 { background-color: hsl($goalH, 50%, 35%); }
-.goalPath.bgColor4, .goal.bgColor4 { background-color: hsl($goalH, 50%, 40%); }
+.goalPath.bgColor1, .goal.bgColor1 {
+    background-color: hsluv($goalH, $bgSat, 25%);
+    color: hsluv($goalH, $fgSat, 85%);
+}
+.goalPath.bgColor2, .goal.bgColor2 {
+    background-color: hsluv($goalH, $bgSat, 30%);
+    color: hsluv($goalH, $fgSat, 90%);
+}
+.goalPath.bgColor3, .goal.bgColor3 {
+    background-color: hsluv($goalH, $bgSat, 35%);
+    color: hsluv($goalH, $fgSat, 95%);
+}
+.goalPath.bgColor4, .goal.bgColor4 {
+    background-color: hsluv($goalH, $bgSat, 40%);
+    color: hsluv($goalH, $fgSat, 100%);
+}
