@@ -34,16 +34,27 @@ let fmt = {};
 
 fmt.id = (x) => x;
 
+fmt.escapeHTML = (unsafe) => unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+fmt.escaped = (f) => (...args) => fmt.escapeHTML(f(...args));
+
+fmt.feid = fmt.escaped(fmt.id);
+
 fmt.entries = (kfmts, filter) => {
     if (typeof filter === "function") {
         return (o) => Object.entries(o)
             .filter(([k]) => filter(k))
-            .map(([k, v]) => [fmt.id(k), (kfmts[k] || fmt.id)(v)])
+            .map(([k, v]) => [fmt.feid(k), (kfmts[k] || fmt.feid)(v)])
             .map(([k, v]) => `${k}=${v}`)
             .join(" ");
     }
     return (o) => Object.entries(o)
-        .map(([k, v]) => [fmt.id(k), (kfmts[k] || fmt.id)(v)])
+        .map(([k, v]) => [fmt.feid(k), (kfmts[k] || fmt.feid)(v)])
         .map(([k, v]) => `${k}=${v}`)
         .join(" ");
 };
@@ -450,7 +461,7 @@ class LogTable {
         this.header = d3Select(this.head.appendChild(document.createElement("tr")));
         this.raw = false;
         this.fmt = null;
-        this.rawFmt = LogTable.baseFmt.concat([fmt.id, fmt.entries(LogTable.extraFmts)]);
+        this.rawFmt = LogTable.baseFmt.concat([fmt.feid, fmt.entries(LogTable.extraFmts)]);
         this.ra = null;
         this.cols = null;
         this.rawCols = ["ID", "#", "IP", "Action", "Extra"];
@@ -485,7 +496,7 @@ class LogTable {
             case "cs":
                 return fmt.replaceAll(/\d+/g, fmt.dec2hex);
             default:
-                return fmt.id;
+                return fmt.feid;
             }
         }));
 
@@ -535,7 +546,7 @@ class LogTable {
         );
         cells.exit().remove();
         cells = cells.merge(cells.enter().append("td"));
-        cells.text(this.raw
+        cells.html(this.raw
             ? (d, i) => this.rawFmt[i](d)
             : (d, i) => this.fmt[i](d));
     }
@@ -543,9 +554,9 @@ class LogTable {
 
 LogTable.baseFmt = [fmt.num(10), fmt.num(10), fmt.hex];
 
-LogTable.mungeActionFmt = (action) => action.replace(
+LogTable.mungeActionFmt = fmt.escaped((action) => action.replace(
     /([@+-])0x([0-9a-fA-F]+)/,
-    (_m, sign, str) => sign + fmt.hex(parseInt(str, 16)));
+    (_m, sign, str) => sign + fmt.hex(parseInt(str, 16))));
 
 LogTable.extraFmts = {
 };
