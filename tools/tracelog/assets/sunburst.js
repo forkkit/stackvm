@@ -453,7 +453,6 @@ class LogTable {
         this._model = null;
         this.extraPluck = ["ps", "cs"];
         this.extraIgnore = new Set([
-            "parent", "child",
             "cbp", "csp",
             "pbp", "psp",
         ].concat(this.extraPluck));
@@ -559,6 +558,8 @@ LogTable.mungeActionFmt = fmt.escaped((action) => action.replace(
     (_m, sign, str) => sign + fmt.hex(parseInt(str, 16))));
 
 LogTable.extraFmts = {
+    child: (id) => `<a href="#${id}">${id}</a>`,
+    parent: (id) => `<a href="#${id}">${id}</a>`,
 };
 
 class Links {

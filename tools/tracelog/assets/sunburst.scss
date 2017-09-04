@@ -11,6 +11,10 @@ $fgSat: 25%;
 @mixin bgColor($hue, $light) {
     background-color: hsluv($hue, $bgSat, percentage($light));
     color: hsluv($hue, $fgSat, 75%);
+
+    a { color: hsluv($hue, 90%, 85%); }
+    a:hover { color: hsluv($hue, 90%, 95%); }
+    a:active { text-decoration: underline; }
 }
 
 html, body, main {
