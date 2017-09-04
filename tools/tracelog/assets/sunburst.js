@@ -573,7 +573,11 @@ class Page {
     }
 
     showLog(node) {
-        window.location.hash = `#${node.id}`;
+        let canonical =  `#${node.id}`;
+        if (window.location.hash !== canonical) {
+            window.location.hash = canonical;
+            return;
+        }
         this.chart.el.style.display = "none";
         this.log.el.style.display = "";
         this.chart.deactivate();
