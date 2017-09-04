@@ -53,6 +53,14 @@ fmt.then = (...fs) => (s) => {
 
 fmt.dec2hex = fmt.then(fmt.parseInt(10), fmt.hex);
 
+fmt.padded = (c, width, fmt) => {
+    return (n) => {
+        let s = fmt(n);
+        if (s.length < width) s = c.repeat(width - s.length) + s;
+        return s;
+    };
+};
+
 fmt.replaceAll = (pat, f) => (s) => {
     let i = 0, j = 0, t = "";
     let pass = (thru) => {
@@ -407,6 +415,21 @@ class LogTable {
         //// setup basic columns
         let cols = ["ID", "#", "IP", "Action"];
         this.fmt = [fmt.num(10), fmt.num(10), fmt.hex, fmt.id];
+
+        // discover max widths from data
+        let idWidth = 0;
+        let cntWidth = 0;
+        let ipWidth = 0;
+        this._model.sessions.forEach(({idi, records}) => {
+            idWidth = Math.max(idWidth, this.fmt[0](idi).length);
+            records.forEach(({count, ip}) => {
+                cntWidth = Math.max(cntWidth, this.fmt[1](count).length);
+                ipWidth = Math.max(ipWidth, this.fmt[2](ip).length);
+            });
+        });
+        this.fmt[0] = fmt.padded(" ", idWidth, this.fmt[0]);
+        this.fmt[1] = fmt.padded(" ", cntWidth, this.fmt[1]);
+        this.fmt[2] = fmt.padded("0", ipWidth, this.fmt[2]);
 
         //// setup columns for plucked extra values
         cols = cols.concat(this.extraPluck);
