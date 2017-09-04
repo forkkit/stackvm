@@ -380,6 +380,7 @@ class LogTable {
         cells.exit().remove();
         cells = cells.merge(cells.enter().append("td"));
         cells.text(i => i);
+        this.head.scrollIntoView();
     }
 }
 
