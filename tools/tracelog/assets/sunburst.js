@@ -32,6 +32,8 @@ let fmt = {};
 
 fmt.id = (x) => x;
 
+fmt.parseInt = (base) => (s) => parseInt(s, base);
+
 fmt.hex = (n) => {
     let s = n.toString(16);
     s = "0" + s;
@@ -42,6 +44,40 @@ fmt.hex = (n) => {
 fmt.num = (base) => {
     base = base || 10;
     return (n) => n.toString(base);
+};
+
+fmt.then = (...fs) => (s) => {
+    for (var i = 0; i < fs.length; ++i) s = fs[i](s);
+    return s;
+};
+
+fmt.dec2hex = fmt.then(fmt.parseInt(10), fmt.hex);
+
+fmt.replaceAll = (pat, f) => (s) => {
+    let i = 0, j = 0, t = "";
+    let pass = (thru) => {
+        j = thru;
+        t += s.slice(i, j);
+        i = j;
+    };
+    let emit = (ss, skip) => {
+        t += ss;
+        i = j = j + skip;
+    };
+    if (pat.global) {
+        for (let match = pat.exec(s); match; match = pat.exec(s)) {
+            pass(match.index);
+            emit(f(match[0]), match[0].length);
+        }
+    } else {
+        let match = pat.exec(s);
+        if (match) {
+            pass(match.index);
+            emit(f(match[0]), match[0].length);
+        }
+    }
+    t += s.slice(j);
+    return t;
 };
 
 import {
@@ -374,7 +410,14 @@ class LogTable {
 
         //// setup columns for plucked extra values
         cols = cols.concat(this.extraPluck);
-        this.fmt = this.fmt.concat(this.extraPluck.map((k) => fmt.id));
+        this.fmt = this.fmt.concat(this.extraPluck.map((k) => {
+            switch (k) {
+            case "cs":
+                return fmt.replaceAll(/\d+/g, fmt.dec2hex);
+            default:
+                return fmt.id;
+            }
+        }));
 
         //// setup final catch-all extra column
         cols.push("Extra");
