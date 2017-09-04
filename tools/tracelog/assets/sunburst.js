@@ -347,7 +347,7 @@ class SunburstTrail {
     }
 }
 
-class RecordAssembler {
+class RawRecordAssembler {
     constructor(model, nodeOrID) {
         this.model = model;
         this.node = null;
@@ -364,6 +364,21 @@ class RecordAssembler {
         ) this.nodes.unshift(node);
     }
 
+    records(depth) {
+        let {records} = this.nodes[depth];
+        const next = this.nodes[depth+1];
+        if (!next) return records;
+        for (let i = 0; i < records.length; i++) {
+            if (records[i].kind === "copy" &&
+                records[i].extra["child"] === next.id) {
+                return records.slice(0, i+1);
+            }
+        }
+        return records;
+    }
+}
+
+class RecordAssembler extends RawRecordAssembler {
     records(depth) {
         let {records} = this.nodes[depth];
         const next = this.nodes[depth+1];
