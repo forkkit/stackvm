@@ -598,7 +598,8 @@ class Page {
     }
 
     showLog(node, tags) {
-        tags = [];
+        tags = (tags || []).filter((tag) => tag === "raw");
+        let raw = tags.length === 1;
         let parts = ["", node.id].concat(tags);
         let canonical = parts.join("#");
         if (window.location.hash !== canonical) {
@@ -610,7 +611,7 @@ class Page {
         this.chart.deactivate();
         this.trail.activate((_, i) => this.log.focus(i));
         window.addEventListener("keyup", this.handleLogKeyUp);
-        this.log.show(node);
+        this.log.show(node, raw);
     }
 
     nav() {
