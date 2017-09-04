@@ -324,7 +324,7 @@ class LogTable {
     constructor(el) {
         this.el = thel(el);
         this.sel = d3Select(this.el);
-        this.model = null;
+        this._model = null;
         this.extraPluck = ["ps", "cs", "values"];
         this.extraIgnore = new Set([
             "parent", "child",
@@ -333,12 +333,16 @@ class LogTable {
         ].concat(this.extraPluck));
     }
 
+    set model(model) {
+        this._model = model;
+    }
+
     focus(i) {
         this.el.tBodies[i].scrollIntoView();
     }
 
     show(node) {
-        const ra = new RecordAssembler(this.model, node);
+        const ra = new RecordAssembler(this._model, node);
 
         let bodies = this.sel.selectAll("tbody").data(ra.nodes);
         bodies.exit().remove();
@@ -352,7 +356,7 @@ class LogTable {
             });
         rows.exit().remove();
         rows = rows.merge(rows.enter().append("tr"));
-        rows.attr("class", ({depth, idi}) => this.model.decorateClass(
+        rows.attr("class", ({depth, idi}) => this._model.decorateClass(
             idi, `bgColor${depth % numColors + 1}`));
 
         let cells = rows.selectAll("td")
