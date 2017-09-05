@@ -206,6 +206,17 @@ class SunburstModel extends EventEmitter {
         }
     }
 
+    decorateRecordClass(record, name) {
+        let parts = name.split(/\s+/);
+        if (this.results.has(record.idi)) {
+            let res = this.results.get(record.idi);
+            if (record.count <= res.nodeCount) {
+                parts.push(res.resultIDI === record.idi ? "goal" : "goalPath");
+            }
+        }
+        return parts.join(" ");
+    }
+
     decorateClass(idi, name) {
         let parts = name.split(/\s+/);
         if (this.results.has(idi)) {
@@ -546,8 +557,8 @@ class LogTable {
             });
         rows.exit().remove();
         rows = rows.merge(rows.enter().append("tr"));
-        rows.attr("class", ({depth, idi}) => this._model.decorateClass(
-            idi, `bgColor${depth % numColors + 1}`));
+        rows.attr("class", (record) => this._model.decorateRecordClass(
+            record, `bgColor${record.depth % numColors + 1}`));
 
         let cells = rows.selectAll("td").data(this.raw
             ? ({idi, count, ip, action, extra}) => [idi, count, ip, action, extra]
