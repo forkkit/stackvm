@@ -187,9 +187,8 @@ class SunburstModel extends EventEmitter {
             this.kids.has(id)
                 ? this.kids.get(id).map((cid) => this.byID.get(cid))
                 : []))
-            .sum(() => 1)
+            .sum(({records}) => records.filter(({kind}) => kind === "postOp").length)
             .sort(({data: {idi: a}}, {data: {idi: b}}) => a - b);
-        // .sort(({value: a}, {value: b}) => a - b);
     }
 
     addOutcome(d) {
