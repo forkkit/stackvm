@@ -82,6 +82,11 @@ nav {
     color: hsluv($normalH, 10%, 80%);
 }
 
+#stats {
+    td { padding: 0 0.1em; }
+    td:first-child { text-align: right; }
+}
+
 #chart {
     #bound { opacity: 0; }
     path.goal { stroke: hsluv($highH, 100%, 80%); }

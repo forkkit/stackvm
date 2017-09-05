@@ -629,11 +629,12 @@ class Links {
 }
 
 class Page {
-    constructor(chartEl, trailEl, logEl, linksEl) {
+    constructor(chartEl, trailEl, logEl, linksEl, statsEl) {
         this.chart = new SunburstChart(chartEl);
         this.trail = new SunburstTrail(trailEl);
         this.log = new LogTable(logEl);
         this.links = new Links(thel(linksEl));
+        this.stats = d3Select(thel(statsEl));
         this.model = null;
         this.handleLogKeyUp = (e) => { if (e.keyCode == 27) this.showChart(); };
         this.chart.addListener("nodeActivated", (node) => this.showLog(node));
@@ -696,6 +697,18 @@ class Page {
             this.chart.model = this.model;
             this.log.model = this.model;
             this.links.model = this.model;
+            let stats = {
+                Sessions: this.model.sessions.length,
+                Operations: this.model.root.value,
+            };
+
+            let sel = this.stats.selectAll("tr").data(Object.entries(stats));
+            sel.exit().remove();
+            sel = sel.merge(sel.enter().append("tr"));
+            sel = sel.selectAll("td").data(([k, v]) => [v, k]);
+            sel.exit().remove();
+            sel = sel.merge(sel.enter().append("td")).text((d) => d);
+
             this.size();
             this.nav();
         });
@@ -706,7 +719,7 @@ class Page {
     }
 }
 
-let pg = new Page("#chart", "#sequence", "#log", "#links");
+let pg = new Page("#chart", "#sequence", "#log", "#links", "#stats");
 window.addEventListener("resize", () => pg.size());
 window.addEventListener("hashchange", () => pg.nav());
 pg.load(window[document.querySelector("script.main").dataset.var]);
