@@ -22,6 +22,26 @@ import (
 // TODO: good way to test any higher level construct, like a forth or even just
 // a compiler, would be the case of building the program section for each column.
 
+var smmLib = []interface{}{
+	".data",
+	".out", "used:", 0,
+
+	".text",
+
+	"choose:",                        // &$X : retIp
+	0, "push", ":chooseLoop", "jump", // &$X i=0 : retIp
+	"chooseNext:", 1, "add", // &$X i++ : retIp
+	"chooseLoop:",                        // &$X i : retIp
+	"dup", 9, "lt", ":chooseNext", "fnz", // &$X i : retIp   -- fork next if i < 9
+	"dup", 2, "swap", "storeTo", // $X=i : retIp
+	"dup", // $X $X : retIP   -- dup as arg for fallsthrough to markUsed
+
+	"markUsed:",        // $X : retIp
+	":used", "bitseta", // !used[$x] : retIp   -- set used[$X] if it wasn't
+	2, "hz", // : retIp
+	"ret", // :
+}
+
 var smmTest = TestCase{
 	Name: "send more money (bottom up)",
 	Prog: []interface{}{
@@ -30,8 +50,9 @@ var smmTest = TestCase{
 		// -----------
 		//   m o n e y
 
+		".include", smmLib,
+
 		".data",
-		".out", "used:", 0,
 		".out", "values:", ".alloc", 8,
 		// 0 1 2 3 4 5 6 7
 		// d e y n r o s m
@@ -97,19 +118,6 @@ var smmTest = TestCase{
 
 		//// Done
 		0, "halt",
-
-		"choose:",                        // &$X : retIp
-		0, "push", ":chooseLoop", "jump", // &$X i=0 : retIp
-		"chooseNext:", 1, "add", // &$X i++ : retIp
-		"chooseLoop:",                        // &$X i : retIp
-		"dup", 9, "lt", ":chooseNext", "fnz", // &$X i : retIp   -- fork next if i < 9
-		"dup", 2, "swap", "storeTo", // $X=i : retIp
-		"dup", // $X $X : retIP   -- dup as arg for fallsthrough to markUsed
-
-		"markUsed:",        // $X : retIp
-		":used", "bitseta", // !used[$x] : retIp   -- set used[$X] if it wasn't
-		2, "hz", // : retIp
-		"ret", // :
 	},
 
 	Result: Result{Values: map[string][]uint32{
