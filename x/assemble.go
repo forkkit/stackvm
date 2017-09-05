@@ -371,12 +371,26 @@ func (asm *assembler) addRefOpt(name string, targetName string, off int) {
 }
 
 func (asm *assembler) scan(in []interface{}) error {
-	sc := scanner{
-		assembler: asm,
-		i:         0,
-		in:        in,
-		state:     assemblerText,
-	}
+	sc := scanner{assembler: asm}
+	return sc.scan(in)
+}
+
+func (asm *assembler) finish() {
+	// finish options
+	asm.addOpt("end", 0, false)
+}
+
+type scanner struct {
+	*assembler
+	i     int
+	in    []interface{}
+	state assemblerState
+}
+
+func (sc *scanner) scan(in []interface{}) error {
+	sc.i =         0
+	sc.in =        in
+	sc.state =     assemblerText
 	for ; sc.i < len(sc.in); sc.i++ {
 		switch sc.state {
 		case assemblerData:
@@ -392,18 +406,6 @@ func (asm *assembler) scan(in []interface{}) error {
 		}
 	}
 	return nil
-}
-
-func (asm *assembler) finish() {
-	// finish options
-	asm.addOpt("end", 0, false)
-}
-
-type scanner struct {
-	*assembler
-	i     int
-	in    []interface{}
-	state assemblerState
 }
 
 func (sc *scanner) handleQueueSize() error {
