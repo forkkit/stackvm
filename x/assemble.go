@@ -542,9 +542,28 @@ func (sc *scanner) handleDirective(name string) error {
 		return sc.setState(assemblerData)
 	case "text":
 		return sc.setState(assemblerText)
+	case "include":
+		return sc.handleInclude()
 	default:
 		return fmt.Errorf("invalid directive .%s", name)
 	}
+}
+
+func (sc *scanner) handleInclude() error {
+	val, err := sc.expect("[]interface{}")
+	if err != nil {
+		return err
+	}
+	subProg, ok := val.([]interface{})
+	if !ok {
+		return fmt.Errorf("invalid token %T(%v); expected []interface{}", val, val)
+	}
+	sc.prior, sc.scannerState = append(sc.prior, sc.scannerState), scannerState{
+		i:     -1, // TODO: because of how the loop in sc.scan works, bit regrettable
+		in:    subProg,
+		state: assemblerText,
+	}
+	return nil
 }
 
 func (sc *scanner) setState(state assemblerState) error {
