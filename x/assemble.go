@@ -382,6 +382,7 @@ func (asm *assembler) finish() {
 
 type scanner struct {
 	*assembler
+	prior []scannerState
 	scannerState
 }
 
@@ -397,21 +398,28 @@ func (sc *scanner) scan(in []interface{}) error {
 		in:    in,
 		state: assemblerText,
 	}
-	for ; sc.i < len(sc.in); sc.i++ {
-		switch sc.state {
-		case assemblerData:
-			if err := sc.handleData(sc.in[sc.i]); err != nil {
-				return err
+	for {
+		for ; sc.i < len(sc.in); sc.i++ {
+			switch sc.state {
+			case assemblerData:
+				if err := sc.handleData(sc.in[sc.i]); err != nil {
+					return err
+				}
+			case assemblerText:
+				if err := sc.handleText(sc.in[sc.i]); err != nil {
+					return err
+				}
+			default:
+				return fmt.Errorf("invalid assembler state %d", sc.state)
 			}
-		case assemblerText:
-			if err := sc.handleText(sc.in[sc.i]); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("invalid assembler state %d", sc.state)
 		}
+		if i := len(sc.prior) - 1; i >= 0 {
+			sc.scannerState, sc.prior = sc.prior[i], sc.prior[:i]
+			sc.i++
+			continue
+		}
+		return nil
 	}
-	return nil
 }
 
 func (sc *scanner) handleQueueSize() error {
