@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -20,9 +21,11 @@ import (
 
 var (
 	traceFlag    bool
+	traceTo      string
 	dumpProgFlag bool
 	dumpMemFlag  action.PredicateFlag
 
+	traceFile   *os.File
 	idTracer    = tracer.NewIDTracer()
 	countTracer = tracer.NewCountTracer()
 )
@@ -30,6 +33,8 @@ var (
 func init() {
 	flag.BoolVar(&traceFlag, "stackvm.test.trace", false,
 		"run any stackvm tests with tracing on, even if they pass")
+	flag.StringVar(&traceTo, "stackvm.test.traceTo", "",
+		"write stack vm trace to given file (implies -stackvm.test.trace)")
 	flag.BoolVar(&dumpProgFlag, "stackvm.test.dumpprog", false,
 		"dump assembled program before loading into machine")
 	flag.BoolVar(&dumper.DumpPointers, "stackvm.test.dumptrs", false,
@@ -127,7 +132,7 @@ func (tc TestCase) Run(t *testing.T) {
 		TB:       t,
 		TestCase: tc,
 	}
-	watching := dumpProgFlag || traceFlag
+	watching := dumpProgFlag || traceFlag || traceTo != ""
 	if watching || run.canaryFailed() {
 		run.trace()
 	}
@@ -195,6 +200,19 @@ func (t testCaseRun) canaryFailed() bool {
 }
 
 func (t testCaseRun) trace() {
+	if traceTo != "" {
+		if traceFile == nil {
+			var err error
+			traceFile, err = os.Create(traceTo)
+			if err != nil {
+				panic(fmt.Sprintf("failed to create trace log %q: %v", traceTo, err))
+			}
+		}
+		t.Logf = func(format string, args ...interface{}) {
+			fmt.Fprintf(traceFile, format+"\n", args...)
+		}
+	}
+
 	t.init()
 	trc := tracer.Multi(
 		idTracer,
