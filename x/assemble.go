@@ -382,15 +382,21 @@ func (asm *assembler) finish() {
 
 type scanner struct {
 	*assembler
+	scannerState
+}
+
+type scannerState struct {
 	i     int
 	in    []interface{}
 	state assemblerState
 }
 
 func (sc *scanner) scan(in []interface{}) error {
-	sc.i =         0
-	sc.in =        in
-	sc.state =     assemblerText
+	sc.scannerState = scannerState{
+		i:     0,
+		in:    in,
+		state: assemblerText,
+	}
 	for ; sc.i < len(sc.in); sc.i++ {
 		switch sc.state {
 		case assemblerData:
