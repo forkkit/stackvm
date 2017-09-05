@@ -9,6 +9,50 @@ import (
 	. "github.com/jcorbin/stackvm/x"
 )
 
+var snakeSupportLib = []interface{}{
+	// forall returns N times for ever lo <= n <= hi
+	"forall:",             // lo hi : retIp
+	"swap",                // hi v=lo : retIp
+	":forallLoop", "jump", // hi v : retIp
+	"forallNext:", // hi v : retIp
+	1, "add",      // hi v++ : retIp
+	"forallLoop:",   // hi v : retIp
+	"dup", 3, "dup", // hi v v hi : retIp
+	"lt",                 // hi v v<hi : retIp
+	":forallNext", "fnz", // hi v : retIp   -- fork next if i < hi
+	"swap", "pop", // v : retIp
+	"ret", // v :
+
+	"i2xyz:",        // i : retIp
+	"dup", 3, "mod", // i x=i%3 : retIp
+	"swap", 3, "div", // x i/3 : retIp
+	"dup", 3, "mod", // x i/3 y=i/3%3 : retIp
+	"swap", 3, "div", // x y z=i/3/3 : retIp
+	"ret", // x y z :
+
+	"xyz2i:", // x y z : retIp
+	3, "mul", // x y 3*z : retIp
+	"add",    // x y+3*z : retIp
+	3, "mul", // x 3*(y+3*z) : retIp
+	"add", // i=x+3*(3*z+y) : retIp
+	"ret", // i : retIp
+
+	"vec3addptr:", // x y z p=*[3]uint32 : retIp
+	3, "swap",     // p y z x : retIp
+	4, "dup", "fetch", // p y z x dx=*p : retIp
+	"add",     // p y z x+dx : retIp
+	3, "swap", // x+dx y z p : retIp
+	4, "add", // x+dx y z p+=4 : retIp
+	2, "swap", // x+dx p z y : retIp
+	3, "dup", "fetch", // x+dx p z y dy=*p : retIp
+	"add",     // x+dx p z y+dy : retIp
+	2, "swap", // x+dx y+dy z p : retIp
+	4, "add", // x+dx y+dy z p+=4 : retIp
+	"fetch", // x+dx y+dy z dz=*p : retIp
+	"add",   // x+dx y+dy z+dz : retIp
+	"ret",   // x+dx y+dy z+dz :
+}
+
 func Test_snakeCube(t *testing.T) {
 	N := 3
 	rng := makeFastRNG(15517)
@@ -54,47 +98,7 @@ func Test_snakeCube(t *testing.T) {
 
 			".text",
 
-			// forall returns N times for ever lo <= n <= hi
-			"forall:",             // lo hi : retIp
-			"swap",                // hi v=lo : retIp
-			":forallLoop", "jump", // hi v : retIp
-			"forallNext:", // hi v : retIp
-			1, "add",      // hi v++ : retIp
-			"forallLoop:",   // hi v : retIp
-			"dup", 3, "dup", // hi v v hi : retIp
-			"lt",                 // hi v v<hi : retIp
-			":forallNext", "fnz", // hi v : retIp   -- fork next if i < hi
-			"swap", "pop", // v : retIp
-			"ret", // v :
-
-			"i2xyz:",        // i : retIp
-			"dup", 3, "mod", // i x=i%3 : retIp
-			"swap", 3, "div", // x i/3 : retIp
-			"dup", 3, "mod", // x i/3 y=i/3%3 : retIp
-			"swap", 3, "div", // x y z=i/3/3 : retIp
-			"ret", // x y z :
-
-			"xyz2i:", // x y z : retIp
-			3, "mul", // x y 3*z : retIp
-			"add",    // x y+3*z : retIp
-			3, "mul", // x 3*(y+3*z) : retIp
-			"add", // i=x+3*(3*z+y) : retIp
-			"ret", // i : retIp
-
-			"vec3addptr:", // x y z p=*[3]uint32 : retIp
-			3, "swap",     // p y z x : retIp
-			4, "dup", "fetch", // p y z x dx=*p : retIp
-			"add",     // p y z x+dx : retIp
-			3, "swap", // x+dx y z p : retIp
-			4, "add", // x+dx y z p+=4 : retIp
-			2, "swap", // x+dx p z y : retIp
-			3, "dup", "fetch", // x+dx p z y dy=*p : retIp
-			"add",     // x+dx p z y+dy : retIp
-			2, "swap", // x+dx y+dy z p : retIp
-			4, "add", // x+dx y+dy z p+=4 : retIp
-			"fetch", // x+dx y+dy z dz=*p : retIp
-			"add",   // x+dx y+dy z+dz : retIp
-			"ret",   // x+dx y+dy z+dz :
+			".include", snakeSupportLib,
 
 			//// choose starting position
 			// TODO: prune using some symmetry (probably we can get away with
