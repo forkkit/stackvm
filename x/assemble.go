@@ -370,13 +370,6 @@ func (asm *assembler) addRefOpt(name string, targetName string, off int) {
 	asm.opts.addRef(tok, targetName, off)
 }
 
-type scanner struct {
-	*assembler
-	i     int
-	in    []interface{}
-	state assemblerState
-}
-
 func (asm *assembler) scan(in []interface{}) error {
 	sc := scanner{
 		assembler: asm,
@@ -404,6 +397,13 @@ func (asm *assembler) scan(in []interface{}) error {
 func (asm *assembler) finish() {
 	// finish options
 	asm.addOpt("end", 0, false)
+}
+
+type scanner struct {
+	*assembler
+	i     int
+	in    []interface{}
+	state assemblerState
 }
 
 func (sc *scanner) handleQueueSize() error {
