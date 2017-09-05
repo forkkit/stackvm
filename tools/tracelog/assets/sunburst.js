@@ -160,14 +160,15 @@ class SunburstModel extends EventEmitter {
         });
 
         (this.byOutcome.get("values") || []).forEach((resultID) => {
-            let res = this.byID.get(resultID);
-            for (let node = res; node; node = this.byID.get(node.parent_id)) {
-                this.results.set(node.idi, {
+            let goal = this.byID.get(resultID);
+            for (let node = goal; node; node = this.byID.get(node.parent_id)) {
+                let res = {
                     nodeID: node.id,
                     nodeIDI: node.idi,
-                    resultID: res.id,
-                    resultIDI: res.idi,
-                });
+                    resultID: goal.id,
+                    resultIDI: goal.idi,
+                };
+                this.results.set(node.idi, res);
             }
         });
 
