@@ -161,14 +161,25 @@ class SunburstModel extends EventEmitter {
 
         (this.byOutcome.get("values") || []).forEach((resultID) => {
             let goal = this.byID.get(resultID);
+            var last = goal;
             for (let node = goal; node; node = this.byID.get(node.parent_id)) {
                 let res = {
                     nodeID: node.id,
                     nodeIDI: node.idi,
+                    nodeCount: node.records[node.records.length-1].count,
                     resultID: goal.id,
                     resultIDI: goal.idi,
                 };
+                if (node !== goal) {
+                    let lastCopy = node.records
+                        .filter(({kind}) => kind === "copy")
+                        .map(({count, extra}) => Object.assign({count}, extra))
+                        .filter(({child}) => child === last.id)
+                        .shift();
+                    if (lastCopy) res.nodeCount = lastCopy.count;
+                }
                 this.results.set(node.idi, res);
+                last = node;
             }
         });
 
