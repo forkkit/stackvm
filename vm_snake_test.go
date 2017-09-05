@@ -34,7 +34,7 @@ func Test_snakeCube(t *testing.T) {
 			// unit vectors in x,y,z space. Strategically laid out such that a
 			// direction and its opposite are congruent index-mod-9. The
 			// index-mod-9 property lets us quickly check for 'not same or
-			// opposiite direction' later on.
+			// opposite direction' later on.
 			"vectors:",
 			1, 0, 0,
 			0, 1, 0,
