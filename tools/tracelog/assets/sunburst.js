@@ -284,6 +284,10 @@ class SunburstChart extends EventEmitter {
         this._model = null;
         this.active = false;
         this.activate();
+        this.bound.on("click", () => {
+            let d = this._model.cur[this._model.cur.length - 1];
+            this.emit("nodeActivated", d.data);
+        });
     }
 
     set model(model) {
