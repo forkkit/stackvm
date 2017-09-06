@@ -8,7 +8,16 @@ import (
 // Filtered returns a tracer that calls the given tracer's methods only if the
 // given predicate tests true. Context simply passes through.
 func Filtered(t stackvm.Tracer, p action.Predicate) stackvm.Tracer {
-	return filter{t, p}
+	switch p {
+	case nil:
+		return nil
+	case action.Never:
+		return nil
+	case action.Always:
+		return t
+	default:
+		return filter{t, p}
+	}
 }
 
 type filter struct {
