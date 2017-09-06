@@ -11,9 +11,19 @@ func Multi(ts ...stackvm.Tracer) stackvm.Tracer {
 		return nil
 	case 1:
 		return ts[0]
-	default:
-		return tracers(ts)
 	}
+	var trs tracers
+	for _, t := range ts {
+		if t == nil {
+			continue
+		}
+		if prior, ok := t.(tracers); ok {
+			trs = append(trs, prior...)
+		} else {
+			trs = append(trs, t)
+		}
+	}
+	return trs
 }
 
 type tracers []stackvm.Tracer
