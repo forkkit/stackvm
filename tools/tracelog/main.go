@@ -105,7 +105,7 @@ func (ss sessions) parseAll(r io.Reader) error {
 	return sc.Err()
 }
 
-var midLogPat = regexp.MustCompile(`\w+\.go:\d+: +(\d+)\((\d+):(\d+)\) +(.+)`)
+var midLogPat = regexp.MustCompile(`(?:\w+\.go:\d+: +|^)(\d+)\((\d+):(\d+)\) +(.+)`)
 
 func parseMidLog(line []byte) (mid machID, rest []byte) {
 	if match := midLogPat.FindSubmatch(line); match != nil {
