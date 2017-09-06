@@ -22,6 +22,9 @@ var (
 	traceFlag    bool
 	dumpProgFlag bool
 	dumpMemFlag  action.PredicateFlag
+
+	idTracer    = tracer.NewIDTracer()
+	countTracer = tracer.NewCountTracer()
 )
 
 func init() {
@@ -194,8 +197,8 @@ func (t testCaseRun) canaryFailed() bool {
 func (t testCaseRun) trace() {
 	t.init()
 	trc := tracer.Multi(
-		tracer.NewIDTracer(),
-		tracer.NewCountTracer(),
+		idTracer,
+		countTracer,
 		tracer.NewLogTracer(t.Logf),
 		tracer.Filtered(
 			tracer.FuncTracer(func(m *stackvm.Mach) {
