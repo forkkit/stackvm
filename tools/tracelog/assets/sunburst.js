@@ -738,7 +738,7 @@ class Page {
 
     draw() {
         let stats = {
-            Sessions: this.model.rootSessions.length,
+            Machines: this.model.rootSessions.length,
             Operations: this.model.root.value,
         };
 
