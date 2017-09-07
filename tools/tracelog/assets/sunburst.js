@@ -714,6 +714,7 @@ class Page {
             if (path !== null) {
                 this.model.cur = path;
                 this.showLog(path[path.length-1].data, parts.slice(1));
+                this.size();
                 return;
             }
         }
@@ -730,7 +731,6 @@ class Page {
             this.log.model = this.model;
             this.links.model = this.model;
 
-            this.size();
             this.nav();
         });
     }
