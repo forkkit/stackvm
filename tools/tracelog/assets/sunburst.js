@@ -173,6 +173,10 @@ class SunburstModel extends EventEmitter {
         return this.root && this.root.data && this.root.data.id;
     }
 
+    get rootMID() {
+        return this.root && this.root.data && this.root.data.machID;
+    }
+
     set rootID(rootID) {
         this.byOutcome = new Map();
         this.results = new Map();
@@ -208,6 +212,11 @@ class SunburstModel extends EventEmitter {
                 : []))
             .sum(({records}) => records.filter(({kind}) => kind === "postOp").length)
             .sort(({data: {machID: a}}, {data: {machID: b}}) => a - b);
+    }
+
+    get rootSessions() {
+        let rootMID = this.rootMID;
+        return this.sessions.filter((s) => s.rootMID == rootMID);
     }
 
     addOutcome(d) {
@@ -359,7 +368,7 @@ class SunburstChart extends EventEmitter {
 
     draw() {
         this.path = this.cont
-            .data([this._model.sessions])
+            .data([this._model.rootSessions])
             .selectAll("path")
             .data(this.partition(this._model.root).descendants());
         let enter = this.path
@@ -522,7 +531,7 @@ class LogTable {
         let idWidth = 0;
         let cntWidth = 0;
         let ipWidth = 0;
-        this._model.sessions.forEach(({machID, records}) => {
+        this._model.rootSessions.forEach(({machID, records}) => {
             idWidth = Math.max(idWidth, this.fmt[0](machID).length);
             records.forEach(({count, ip}) => {
                 cntWidth = Math.max(cntWidth, this.fmt[1](count).length);
@@ -729,7 +738,7 @@ class Page {
 
     draw() {
         let stats = {
-            Sessions: this.model.sessions.length,
+            Sessions: this.model.rootSessions.length,
             Operations: this.model.root.value,
         };
 
