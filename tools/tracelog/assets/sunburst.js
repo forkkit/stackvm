@@ -706,15 +706,19 @@ class Page {
         if (!this.model) return;
         let parts = window.location.hash.split(/#/).slice(1);
         if (!parts.length) return;
+
         let id = parts[0];
-        if (!this.model.byID.has(id)) return;
-        let path = this.model.findPath(id);
-        if (path === null) {
-            window.location.hash = "";
-            return;
+
+        if (this.model.byID.has(id)) {
+            let path = this.model.findPath(id);
+            if (path !== null) {
+                this.model.cur = path;
+                this.showLog(path[path.length-1].data, parts.slice(1));
+                return;
+            }
         }
-        this.model.cur = path;
-        this.showLog(path[path.length-1].data, parts.slice(1));
+
+        window.location.hash = "";
     }
 
     load(data) {
