@@ -36,6 +36,12 @@ body {
     color: hsluv($normalH, 10%, 100%);
 }
 
+select {
+    background-color: hsluv($normalH, 10%, 20%);
+    color: hsluv($normalH, 10%, 100%);
+    border: none;
+}
+
 a, a:visited {
     color: hsluv($highH, 80%, 60%);
     text-decoration: none;
@@ -80,6 +86,10 @@ nav {
     padding: 0.2em 0.4em;
     background-color: hsluv($normalH, 10%, 20%);
     color: hsluv($normalH, 10%, 80%);
+
+    select {
+        background-color: hsluv($normalH, 10%, 30%);
+    }
 }
 
 #stats {

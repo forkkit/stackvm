@@ -157,13 +157,13 @@ class SunburstModel extends EventEmitter {
             }
         });
 
-        let rootID = null;
+        let rootMID = 0, rootID = null;
         for (let s of this.sessions) {
             if (this.rootIDs.has(s.id)) {
-                if (this.rootID !== null) {
-                    throw new Error("only one root supported");
+                if (rootMID == 0 || s.machID < rootMID) {
+                    rootMID = s.machID;
+                    rootID = s.id;
                 }
-                rootID = s.id;
             }
         }
         this.rootID = rootID;
@@ -665,12 +665,14 @@ class Links {
 }
 
 class Page {
-    constructor(chartEl, trailEl, logEl, linksEl, statsEl) {
+    constructor(chartEl, trailEl, logEl, linksEl, statsEl, rootsEl) {
+        this.rootsEl = thel(rootsEl);
         this.chart = new SunburstChart(chartEl);
         this.trail = new SunburstTrail(trailEl);
         this.log = new LogTable(logEl);
         this.links = new Links(thel(linksEl));
         this.stats = d3Select(thel(statsEl));
+        this.roots = d3Select(this.rootsEl);
         this.model = null;
         this.handleLogKeyUp = (e) => { if (e.keyCode == 27) this.showChart(); };
         this.chart.addListener("nodeActivated", (node) => this.showLog(node));
@@ -682,6 +684,12 @@ class Page {
         }, 200);
         this.trail.el.addEventListener("mouseover", mouseleave.clear);
         this.chart.cont.on("mouseleave", mouseleave);
+        this.rootsEl.addEventListener("change", (e) => this.onRootChanged(e));
+    }
+
+    onRootChanged(e) {
+        let s = this.model.byID.get(e.target.value);
+        if (s) window.location.hash = `#${s.machID}`;
     }
 
     showChart() {
@@ -723,6 +731,7 @@ class Page {
         if (this.model.byID.has(id)) {
             let idm = midPat.exec(id);
             this.model.rootID = this.model.MID2ID(parseInt(idm[1]));
+            this.rootsEl.value = this.model.rootID;
 
             let path = this.model.findPath(id);
             if (path !== null) {
@@ -744,6 +753,7 @@ class Page {
                     return;
                 }
                 this.model.rootID = node.machID === node.rootMID ? node.id : this.model.MID2ID(node.rootMID);
+                this.rootsEl.value = this.model.rootID;
                 this.size();
                 return;
             }
@@ -760,6 +770,15 @@ class Page {
             this.chart.model = this.model;
             this.log.model = this.model;
             this.links.model = this.model;
+
+            this.roots.style("display", this.model.rootIDs.size > 1 ? "" : "none");
+            let rootSel = this.roots
+                .selectAll("option")
+                .data(Array.from(this.model.rootIDs).sort());
+            rootSel.exit().remove();
+            rootSel = rootSel.merge(rootSel.enter().append("option"));
+            rootSel.attr("value", (d) => d);
+            rootSel.text((d) => d);
 
             this.nav();
         });
@@ -786,7 +805,7 @@ class Page {
     }
 }
 
-let pg = new Page("#chart", "#sequence", "#log", "#links", "#stats");
+let pg = new Page("#chart", "#sequence", "#log", "#links", "#stats", "#root");
 window.addEventListener("resize", () => pg.size());
 window.addEventListener("hashchange", () => pg.nav());
 pg.load(window[document.querySelector("script.main").dataset.var]);
