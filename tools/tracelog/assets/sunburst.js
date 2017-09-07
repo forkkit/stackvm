@@ -180,7 +180,15 @@ class SunburstModel extends EventEmitter {
     set rootID(rootID) {
         this.byOutcome = new Map();
         this.results = new Map();
-        for (let s of this.sessions) this.addOutcome(s);
+
+        this.root = d3Hierarchy(this.byID.get(rootID), ({id}) => (
+            this.kids.has(id)
+                ? this.kids.get(id).map((cid) => this.byID.get(cid))
+                : []))
+            .sum(({records}) => records.filter(({kind}) => kind === "postOp").length)
+            .sort(({data: {machID: a}}, {data: {machID: b}}) => a - b);
+
+        for (let s of this.rootSessions) this.addOutcome(s);
 
         for (let resultID of this.byOutcome.get("values") || []) {
             let goal = this.byID.get(resultID);
@@ -205,13 +213,6 @@ class SunburstModel extends EventEmitter {
                 last = node;
             }
         }
-
-        this.root = d3Hierarchy(this.byID.get(rootID), ({id}) => (
-            this.kids.has(id)
-                ? this.kids.get(id).map((cid) => this.byID.get(cid))
-                : []))
-            .sum(({records}) => records.filter(({kind}) => kind === "postOp").length)
-            .sort(({data: {machID: a}}, {data: {machID: b}}) => a - b);
     }
 
     get rootSessions() {
