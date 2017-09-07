@@ -176,8 +176,10 @@ scanVal:
 	for ; ve < len(s); ve++ {
 		switch s[ve] {
 		case '"':
+			ve++
 			goto scanDQ
 		case '\'':
+			ve++
 			goto scanSQ
 
 		case '[':

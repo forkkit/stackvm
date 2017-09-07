@@ -26,6 +26,10 @@ func Test_scanKVs(t *testing.T) {
 		{"foo='bar'", []string{"foo", "'bar'"}},
 		{`foo="bar"`, []string{"foo", `"bar"`}},
 		{`garbage=[3 {1 4] ('ab"c'} "1'00")`, []string{"garbage", `[3 {1 4] ('ab"c'} "1'00")`}},
+		{`err="lol"`, []string{"err", `"lol"`}},
+		{`err="lol wut"`, []string{"err", `"lol wut"`}},
+		{`err='lol'`, []string{"err", `'lol'`}},
+		{`err='lol wut'`, []string{"err", `'lol wut'`}},
 	} {
 		t.Run(tc.in, func(t *testing.T) {
 			var ss []string
