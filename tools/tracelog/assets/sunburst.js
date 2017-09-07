@@ -767,6 +767,7 @@ class Page {
 
     size() {
         this.chart.size();
+        this.links.update();
         this.draw();
     }
 
