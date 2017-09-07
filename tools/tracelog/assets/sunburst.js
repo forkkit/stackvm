@@ -712,7 +712,10 @@ class Page {
     nav() {
         if (!this.model) return;
         let parts = window.location.hash.split(/#/).slice(1);
-        if (!parts.length) return;
+        if (!parts.length) {
+            window.location.hash = `#${this.model.byID.get(this.model.rootID).machID}`;
+            return;
+        }
 
         let id = parts[0];
 
@@ -721,6 +724,22 @@ class Page {
             if (path !== null) {
                 this.model.cur = path;
                 this.showLog(path[path.length-1].data, parts.slice(1));
+                this.size();
+                return;
+            }
+        }
+
+        let idm = /^\d+$/.exec(id);
+        if (idm) {
+            let mid = parseInt(idm[0]);
+            let id = this.model.MID2ID(mid);
+            let node = this.model.byID.get(id);
+            if (node) {
+                if (mid !== node.rootMID) {
+                    window.location.hash = `#${node.rootMID}`;
+                    return;
+                }
+                this.model.rootID = node.machID === node.rootMID ? node.id : this.model.MID2ID(node.rootMID);
                 this.size();
                 return;
             }
