@@ -136,15 +136,13 @@ class SunburstModel extends EventEmitter {
         this.byOutcome = new Map();
         this.results = new Map();
         this.rootID = null;
+        this.rootIDs = new Set();
         this.root = null;
         this._cur = null;
 
         this.sessions.forEach(d => {
             if (d.parent_id === null) {
-                if (this.rootID !== null) {
-                    throw new Error("only one root supported");
-                }
-                this.rootID = d.id;
+                this.rootIDs.add(d.id);
             }
             let idm = midPat.exec(d.id);
             d.rootMID = parseInt(idm && idm[1]);
@@ -184,6 +182,15 @@ class SunburstModel extends EventEmitter {
                 last = node;
             }
         });
+
+        for (let s of this.sessions) {
+            if (this.rootIDs.has(s.id)) {
+                if (this.rootID !== null) {
+                    throw new Error("only one root supported");
+                }
+                this.rootID = s.id;
+            }
+        }
 
         this.root = d3Hierarchy(this.byID.get(this.rootID), ({id}) => (
             this.kids.has(id)
