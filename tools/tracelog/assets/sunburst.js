@@ -720,6 +720,9 @@ class Page {
         let id = parts[0];
 
         if (this.model.byID.has(id)) {
+            let idm = midPat.exec(id);
+            this.model.rootID = this.model.MID2ID(parseInt(idm[1]));
+
             let path = this.model.findPath(id);
             if (path !== null) {
                 this.model.cur = path;
