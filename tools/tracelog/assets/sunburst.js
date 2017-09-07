@@ -716,17 +716,6 @@ class Page {
             this.chart.model = this.model;
             this.log.model = this.model;
             this.links.model = this.model;
-            let stats = {
-                Sessions: this.model.sessions.length,
-                Operations: this.model.root.value,
-            };
-
-            let sel = this.stats.selectAll("tr").data(Object.entries(stats));
-            sel.exit().remove();
-            sel = sel.merge(sel.enter().append("tr"));
-            sel = sel.selectAll("td").data(([k, v]) => [v, k]);
-            sel.exit().remove();
-            sel = sel.merge(sel.enter().append("td")).text((d) => d);
 
             this.size();
             this.nav();
@@ -735,6 +724,21 @@ class Page {
 
     size() {
         this.chart.size();
+        this.draw();
+    }
+
+    draw() {
+        let stats = {
+            Sessions: this.model.sessions.length,
+            Operations: this.model.root.value,
+        };
+
+        let sel = this.stats.selectAll("tr").data(Object.entries(stats));
+        sel.exit().remove();
+        sel = sel.merge(sel.enter().append("tr"));
+        sel = sel.selectAll("td").data(([k, v]) => [v, k]);
+        sel.exit().remove();
+        sel = sel.merge(sel.enter().append("td")).text((d) => d);
     }
 }
 
