@@ -147,7 +147,7 @@ class SunburstModel extends EventEmitter {
                 this.rootID = d.id;
             }
             let idm = midPat.exec(d.id);
-            d.idi = parseInt(idm && idm[3]);
+            d.machID = parseInt(idm && idm[3]);
             this.byID.set(d.id, d);
             if (d.parent_id !== null) {
                 if (this.kids.has(d.parent_id)) {
@@ -165,10 +165,10 @@ class SunburstModel extends EventEmitter {
             for (let node = goal; node; node = this.byID.get(node.parent_id)) {
                 let res = {
                     nodeID: node.id,
-                    nodeIDI: node.idi,
+                    nodeIDI: node.machID,
                     nodeCount: node.records[node.records.length-1].count,
                     resultID: goal.id,
-                    resultIDI: goal.idi,
+                    resultIDI: goal.machID,
                 };
                 if (node !== goal) {
                     let lastCopy = node.records
@@ -178,7 +178,7 @@ class SunburstModel extends EventEmitter {
                         .shift();
                     if (lastCopy) res.nodeCount = lastCopy.count;
                 }
-                this.results.set(node.idi, res);
+                this.results.set(node.machID, res);
                 last = node;
             }
         });
@@ -188,7 +188,7 @@ class SunburstModel extends EventEmitter {
                 ? this.kids.get(id).map((cid) => this.byID.get(cid))
                 : []))
             .sum(({records}) => records.filter(({kind}) => kind === "postOp").length)
-            .sort(({data: {idi: a}}, {data: {idi: b}}) => a - b);
+            .sort(({data: {machID: a}}, {data: {machID: b}}) => a - b);
     }
 
     addOutcome(d) {
@@ -207,20 +207,20 @@ class SunburstModel extends EventEmitter {
 
     decorateRecordClass(record, name) {
         let parts = name.split(/\s+/);
-        if (this.results.has(record.idi)) {
-            let res = this.results.get(record.idi);
+        if (this.results.has(record.machID)) {
+            let res = this.results.get(record.machID);
             if (record.count <= res.nodeCount) {
-                parts.push(res.resultIDI === record.idi ? "goal" : "goalPath");
+                parts.push(res.resultIDI === record.machID ? "goal" : "goalPath");
             }
         }
         return parts.join(" ");
     }
 
-    decorateClass(idi, name) {
+    decorateClass(machID, name) {
         let parts = name.split(/\s+/);
-        if (this.results.has(idi)) {
-            let res = this.results.get(idi);
-            parts.push(res.resultIDI === idi ? "goal" : "goalPath");
+        if (this.results.has(machID)) {
+            let res = this.results.get(machID);
+            parts.push(res.resultIDI === machID ? "goal" : "goalPath");
         }
         return parts.join(" ");
     }
@@ -231,13 +231,13 @@ class SunburstModel extends EventEmitter {
             let node = this.byID.get(id);
             node;
             node = this.byID.get(node.parent_id)
-        ) idis.unshift(node.idi);
+        ) idis.unshift(node.machID);
         let g = this.root, path = [g];
-        if (idis[0] !== g.data.idi) return [];
+        if (idis[0] !== g.data.machID) return [];
         idis.shift();
         descend: for (let i = 0; i < idis.length; i++) {
             for (const kid of g.children) {
-                if (kid.data.idi === idis[i]) {
+                if (kid.data.machID === idis[i]) {
                     g = kid;
                     path.push(g);
                     continue descend;
@@ -352,8 +352,8 @@ class SunburstChart extends EventEmitter {
         this.path
             .attr("display", ({depth}) => depth ? null : "none")
             .attr("d", this.arc)
-            .attr("class", ({depth, data: {idi}}) => this._model.decorateClass(
-                idi, `fillColor${depth % numColors + 1}`));
+            .attr("class", ({depth, data: {machID}}) => this._model.decorateClass(
+                machID, `fillColor${depth % numColors + 1}`));
     }
 }
 
@@ -382,9 +382,9 @@ class SunburstTrail {
             .append("li")
             .on("click", this.activationCallback));
         this.items
-            .attr("class", ({depth, data: {idi}}) => this._model.decorateClass(
-                idi, `bgColor${depth % numColors + 1}`))
-            .text(({data: {idi}}) => idi);
+            .attr("class", ({depth, data: {machID}}) => this._model.decorateClass(
+                machID, `bgColor${depth % numColors + 1}`))
+            .text(({data: {machID}}) => machID);
     }
 
     activate(callback) {
@@ -503,8 +503,8 @@ class LogTable {
         let idWidth = 0;
         let cntWidth = 0;
         let ipWidth = 0;
-        this._model.sessions.forEach(({idi, records}) => {
-            idWidth = Math.max(idWidth, this.fmt[0](idi).length);
+        this._model.sessions.forEach(({machID, records}) => {
+            idWidth = Math.max(idWidth, this.fmt[0](machID).length);
             records.forEach(({count, ip}) => {
                 cntWidth = Math.max(cntWidth, this.fmt[1](count).length);
                 ipWidth = Math.max(ipWidth, this.fmt[2](ip).length);
@@ -554,9 +554,9 @@ class LogTable {
         bodies = bodies.merge(bodies.enter().append("tbody"));
 
         let rows = bodies.selectAll("tr")
-            .data(({idi}, depth) => {
+            .data(({machID}, depth) => {
                 let records = this.ra.records(depth);
-                return records.map(r => Object.assign({depth, idi}, r));
+                return records.map(r => Object.assign({depth, machID}, r));
             });
         rows.exit().remove();
         rows = rows.merge(rows.enter().append("tr"));
@@ -564,8 +564,8 @@ class LogTable {
             record, `bgColor${record.depth % numColors + 1}`));
 
         let cells = rows.selectAll("td").data(this.raw
-            ? ({idi, count, ip, action, extra}) => [idi, count, ip, action, extra]
-            : ({idi, count, ip, action, extra}) => [idi, count, ip, action]
+            ? ({machID, count, ip, action, extra}) => [machID, count, ip, action, extra]
+            : ({machID, count, ip, action, extra}) => [machID, count, ip, action]
                 .concat(this.extraPluck.map((k) => extra[k] || ""))
                 .concat([extra])
         );
@@ -623,8 +623,8 @@ class Links {
         enter = this.links.enter().append("li").append("a");
         this.links = this.links.select("a").merge(enter);
         this.links
-            .attr("href", (idi) => `#${idi}`)
-            .text((idi) => idi);
+            .attr("href", (machID) => `#${machID}`)
+            .text((machID) => machID);
     }
 }
 
