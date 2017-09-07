@@ -219,6 +219,13 @@ class SunburstModel extends EventEmitter {
         return this.sessions.filter((s) => s.rootMID == rootMID);
     }
 
+    MID2ID(mid) {
+        for (let s of this.sessions) {
+            if (s.machID === mid) return s.id;
+        }
+        return null;
+    }
+
     addOutcome(d) {
         let name = "unknown";
         if (d.error !== "") {
