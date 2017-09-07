@@ -147,6 +147,8 @@ class SunburstModel extends EventEmitter {
                 this.rootID = d.id;
             }
             let idm = midPat.exec(d.id);
+            d.rootMID = parseInt(idm && idm[1]);
+            d.parentMID = parseInt(idm && idm[2]);
             d.machID = parseInt(idm && idm[3]);
             this.byID.set(d.id, d);
             if (d.parent_id !== null) {
