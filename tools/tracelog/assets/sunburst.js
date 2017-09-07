@@ -155,7 +155,6 @@ class SunburstModel extends EventEmitter {
                     this.kids.set(d.parent_id, [d.id]);
                 }
             }
-            this.addOutcome(d);
         });
 
         let rootID = null;
@@ -168,8 +167,18 @@ class SunburstModel extends EventEmitter {
             }
         }
         this.rootID = rootID;
+    }
 
-        (this.byOutcome.get("values") || []).forEach((resultID) => {
+    get rootID() {
+        return this.root && this.root.data && this.root.data.id;
+    }
+
+    set rootID(rootID) {
+        this.byOutcome = new Map();
+        this.results = new Map();
+        for (let s of this.sessions) this.addOutcome(s);
+
+        for (let resultID of this.byOutcome.get("values") || []) {
             let goal = this.byID.get(resultID);
             var last = goal;
             for (let node = goal; node; node = this.byID.get(node.parent_id)) {
@@ -191,14 +200,8 @@ class SunburstModel extends EventEmitter {
                 this.results.set(node.machID, res);
                 last = node;
             }
-        });
-    }
+        }
 
-    get rootID() {
-        return this.root && this.root.data && this.root.data.id;
-    }
-
-    set rootID(rootID) {
         this.root = d3Hierarchy(this.byID.get(rootID), ({id}) => (
             this.kids.has(id)
                 ? this.kids.get(id).map((cid) => this.byID.get(cid))
