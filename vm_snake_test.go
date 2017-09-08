@@ -94,6 +94,78 @@ func Test_snake_forAll(t *testing.T) {
 	}.Run(t)
 }
 
+func Test_snake_i2xyz(t *testing.T) {
+	prog := MustAssemble(
+		".data",
+		".in", "i:", 0,
+		".out", "xyz:", 0, 0, 0,
+		".include", snakeSupportLib,
+		".entry", "main:",
+		":i", "fetch", // i :
+		":i2xyz", "call", // x y z :
+		8, ":xyz", "storeTo",
+		4, ":xyz", "storeTo",
+		0, ":xyz", "storeTo",
+		"halt", // :
+	)
+	var (
+		tcs     TestCases
+		N       uint32 = 3
+		i       uint32
+		x, y, z uint32
+	)
+	for z = 0; z < N; z++ {
+		for y = 0; y < N; y++ {
+			for x = 0; x < N; x++ {
+				tcs = append(tcs, TestCase{
+					Name:   fmt.Sprintf("i=%v xyz=[%v %v %v]", i, x, y, z),
+					Prog:   prog,
+					Input:  map[string][]uint32{"i": {i}},
+					Result: Result{Values: map[string][]uint32{"xyz": {x, y, z}}},
+				})
+				i++
+			}
+		}
+	}
+	tcs.Run(t)
+}
+
+func Test_snake_xyz2i(t *testing.T) {
+	prog := MustAssemble(
+		".data",
+		".out", "i:", 0,
+		".in", "xyz:", 0, 0, 0,
+		".include", snakeSupportLib,
+		".entry", "main:",
+		0, ":xyz", "fetch", // x :
+		4, ":xyz", "fetch", // x y :
+		8, ":xyz", "fetch", // x y z :
+		":xyz2i", "call", // i :
+		":i", "storeTo", // :
+		"halt", // :
+	)
+	var (
+		tcs     TestCases
+		N       uint32 = 3
+		i       uint32
+		x, y, z uint32
+	)
+	for z = 0; z < N; z++ {
+		for y = 0; y < N; y++ {
+			for x = 0; x < N; x++ {
+				tcs = append(tcs, TestCase{
+					Name:   fmt.Sprintf("i=%v xyz=[%v %v %v]", i, x, y, z),
+					Prog:   prog,
+					Input:  map[string][]uint32{"xyz": {x, y, z}},
+					Result: Result{Values: map[string][]uint32{"i": {i}}},
+				})
+				i++
+			}
+		}
+	}
+	tcs.Run(t)
+}
+
 func Test_snakeCube(t *testing.T) {
 	N := 3
 	rng := makeFastRNG(15517)
