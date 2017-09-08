@@ -182,6 +182,60 @@ func Test_snake_xyz2i(t *testing.T) {
 	tcs.Run(t)
 }
 
+func Test_snake_vec3addptr(t *testing.T) {
+	var tcs TestCases
+
+	vectors := [][3]int{
+		{1, 0, 0},
+		{0, 1, 0},
+		{0, 0, 1},
+		{-1, 0, 0},
+		{0, -1, 0},
+		{0, 0, -1},
+	}
+
+	for _, tc := range []struct {
+		name string
+		ix   []int
+	}{
+		{"forward", []int{0, 1, 2, 3, 4, 5}},
+		{"reverse", []int{5, 4, 3, 2, 1, 0}},
+		{"downleft", []int{4, 4, 4, 3, 3, 3}},
+	} {
+		var path []uint32
+		prog := []interface{}{
+			".data",
+			".out", "path:", ".alloc", 6 * 3,
+			".include", snakeSupportLib,
+			".entry", "main:",
+			"push", "push", "push", // x=0 y=0 z=0 :
+		}
+		var x, y, z int
+		for i, j := range tc.ix {
+			pi, vi := 3*i, 3*j
+			prog = append(prog,
+				vi*4, ":vectors", "push", // x y z &vectors[$vi]
+				":vec3addptr", "call", // x y z
+				3, "dup", (pi+0)*4, ":path", "storeTo", // x y z   -- path[$pi] = x
+				2, "dup", (pi+1)*4, ":path", "storeTo", // x y z   -- path[$pi+1] = y
+				1, "dup", (pi+2)*4, ":path", "storeTo", // x y z   -- path[$pi+2] = z
+			)
+			x += vectors[j][0]
+			y += vectors[j][1]
+			z += vectors[j][2]
+			path = append(path, uint32(x), uint32(y), uint32(z))
+		}
+		prog = append(prog, "halt")
+		tcs = append(tcs, TestCase{
+			Name:   tc.name,
+			Prog:   prog,
+			Result: Result{Values: map[string][]uint32{"path": path}},
+		})
+	}
+
+	tcs.Run(t)
+}
+
 func Test_snakeCube(t *testing.T) {
 	N := 3
 	rng := makeFastRNG(15517)
