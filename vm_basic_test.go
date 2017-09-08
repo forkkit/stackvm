@@ -44,6 +44,24 @@ func TestAssembler(t *testing.T) {
 	}
 }
 
+func TestMach_stack_ops(t *testing.T) {
+	// TODO: more basic coverage
+	TestCases{
+		{
+			Name: "push",
+			Prog: []interface{}{"push", 1, "hnz", "halt"},
+		},
+		{
+			Name: "0 push",
+			Prog: []interface{}{0, "push", 1, "hnz", "halt"},
+		},
+		{
+			Name: "1 push",
+			Prog: []interface{}{1, "push", 1, "hz", "halt"},
+		},
+	}.Run(t)
+}
+
 func TestMach_misc_ops(t *testing.T) {
 	TestCases{
 		{

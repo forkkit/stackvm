@@ -181,6 +181,8 @@ func (m *Mach) step() {
 		m.err = errCrashed
 
 	// stack
+	case opCodePush:
+		m.err = m.push(0)
 	case opCodePush | opCodeWithImm:
 		m.err = m.push(oc.arg)
 
