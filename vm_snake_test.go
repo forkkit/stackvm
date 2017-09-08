@@ -53,6 +53,47 @@ var snakeSupportLib = []interface{}{
 	"ret",   // x+dx y+dy z+dz :
 }
 
+func Test_snake_forAll(t *testing.T) {
+	prog := MustAssemble(
+		".data",
+		".in", "range:", 0, 0,
+		".out", "value:", 0,
+		".include", snakeSupportLib,
+		".entry", "main:",
+		0, ":range", "fetch", // lo :
+		4, ":range", "fetch", // lo hi :
+		":forall", "call", // i :
+		"dup", "mul", // i * i :
+		":value", "storeTo", // :
+		"halt", // :
+	)
+	TestCases{
+		{
+			Name:   "square answer",
+			Prog:   prog,
+			Input:  map[string][]uint32{"range": {42, 42}},
+			Result: Result{Values: map[string][]uint32{"value": {1764}}},
+		},
+		{
+			Name:  "first 10 squares",
+			Prog:  prog,
+			Input: map[string][]uint32{"range": {0, 9}},
+			Result: Results{
+				{Values: map[string][]uint32{"value": {0}}},
+				{Values: map[string][]uint32{"value": {1}}},
+				{Values: map[string][]uint32{"value": {4}}},
+				{Values: map[string][]uint32{"value": {9}}},
+				{Values: map[string][]uint32{"value": {16}}},
+				{Values: map[string][]uint32{"value": {25}}},
+				{Values: map[string][]uint32{"value": {36}}},
+				{Values: map[string][]uint32{"value": {49}}},
+				{Values: map[string][]uint32{"value": {64}}},
+				{Values: map[string][]uint32{"value": {81}}},
+			},
+		},
+	}.Run(t)
+}
+
 func Test_snakeCube(t *testing.T) {
 	N := 3
 	rng := makeFastRNG(15517)
@@ -105,9 +146,9 @@ func Test_snakeCube(t *testing.T) {
 			// only one boundary-inclusive oct of the cube)
 
 			".entry", "chooseStart:",
-			0, "push", N, "push", ":forall", "call", // xi :
-			0, "push", N, "push", ":forall", "call", // xi yi :
-			0, "push", N, "push", ":forall", "call", // xi yi zi :
+			0, "push", N - 1, "push", ":forall", "call", // xi :
+			0, "push", N - 1, "push", ":forall", "call", // xi yi :
+			0, "push", N - 1, "push", ":forall", "call", // xi yi zi :
 
 			//// compute starting index
 
