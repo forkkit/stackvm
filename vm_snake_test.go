@@ -34,7 +34,7 @@ var snakeSupportLib = []interface{}{
 	3, "mul", // x y 3*z : retIp
 	"add",    // x y+3*z : retIp
 	3, "mul", // x 3*(y+3*z) : retIp
-	"add", // i=x+3*(3*z+y) : retIp
+	"add", // i=x+3*(y+3*z) : retIp
 	"ret", // i : retIp
 
 	"vec3addptr:", // x y z p=*[3]uint32 : retIp
