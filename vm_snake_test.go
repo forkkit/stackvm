@@ -39,6 +39,7 @@ var snakeSupportLib = []interface{}{
 	"swap", "pop", // v : retIp
 	"ret", // v :
 
+	// TODO: parameterize N=3
 	"i2xyz:",        // i : retIp
 	"dup", 3, "mod", // i x=i%3 : retIp
 	"swap", 3, "div", // x i/3 : retIp
@@ -46,6 +47,7 @@ var snakeSupportLib = []interface{}{
 	"swap", 3, "div", // x y z=i/3/3 : retIp
 	"ret", // x y z :
 
+	// TODO: parameterize N=3
 	"xyz2i:", // x y z : retIp
 	3, "mul", // x y 3*z : retIp
 	"add",    // x y+3*z : retIp
