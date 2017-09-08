@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	. "github.com/jcorbin/stackvm/x"
+	"github.com/stretchr/testify/assert"
 )
 
 // These tests are essentially "unit" tests operations and/or features of the
@@ -14,6 +15,34 @@ import (
 // tests since it's been a decent trade-off of time to outcome, and it forced
 // building tracing to debug failures. Going forward tho, I'd like to start
 // writing more targeted/smaller "unit" tests that exercise one op or vm feature.
+
+func TestAssembler(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		prog []interface{}
+		code []byte
+		err  string
+	}{
+		{
+			name: "undefined jump label",
+			prog: []interface{}{
+				":nope", "jump",
+			},
+			err: `undefined labels: ["nope"]`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			code, err := Assemble(tc.prog...)
+			if tc.err != "" {
+				assert.EqualError(t, err, tc.err, "expected error")
+				return
+			}
+			if assert.NoError(t, err, "unexpected error") {
+				assert.Equal(t, tc.code, code, "expected machine code")
+			}
+		})
+	}
+}
 
 func TestMach_misc_ops(t *testing.T) {
 	TestCases{

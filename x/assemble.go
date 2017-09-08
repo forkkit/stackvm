@@ -261,7 +261,9 @@ func collectSections(secs ...section) (enc encoder, err error) {
 	for _, sec := range secs {
 		// collect labels
 		for name, off := range sec.labels {
-			enc.labels[name] = base + off
+			if off >= 0 {
+				enc.labels[name] = base + off
+			}
 		}
 
 		// collect tokens
