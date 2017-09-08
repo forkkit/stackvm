@@ -19,7 +19,7 @@ var snakeSupportLib = []interface{}{
 	"forallLoop:",   // hi v : retIp
 	"dup", 3, "dup", // hi v v hi : retIp
 	"lt",                 // hi v v<hi : retIp
-	":forallNext", "fnz", // hi v : retIp   -- fork next if i < hi
+	":forallNext", "fnz", // hi v : retIp   -- fork next if v < hi
 	"swap", "pop", // v : retIp
 	"ret", // v :
 
