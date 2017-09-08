@@ -10,6 +10,22 @@ import (
 )
 
 var snakeSupportLib = []interface{}{
+	".data",
+
+	// unit vectors in x,y,z space. Strategically laid out such that a
+	// direction and its opposite are congruent index-mod-9. The index-mod-9
+	// property lets us quickly check for 'not same or opposite direction'
+	// later on.
+	"vectors:",
+	1, 0, 0,
+	0, 1, 0,
+	0, 0, 1,
+	-1, 0, 0,
+	0, -1, 0,
+	0, 0, -1,
+
+	".text",
+
 	// forall returns N times for ever lo <= n <= hi
 	"forall:",             // lo hi : retIp
 	"swap",                // hi v=lo : retIp
@@ -188,18 +204,6 @@ func Test_snakeCube(t *testing.T) {
 			//// definitions and setup
 			".data",
 
-			// unit vectors in x,y,z space. Strategically laid out such that a
-			// direction and its opposite are congruent index-mod-9. The
-			// index-mod-9 property lets us quickly check for 'not same or
-			// opposite direction' later on.
-			"vectors:",
-			1, 0, 0,
-			0, 1, 0,
-			0, 0, 1,
-			-1, 0, 0,
-			0, -1, 0,
-			0, 0, -1,
-
 			// occupied cube cell bitvector
 			".out", "occupied:", ".alloc", int(math.Ceil(math.Log2(float64(N*N*N)) / 8 / 4)),
 
@@ -208,8 +212,6 @@ func Test_snakeCube(t *testing.T) {
 
 			// chosen orientation for each fixed-chain head
 			".out", "choices:", ".alloc", M,
-
-			".text",
 
 			".include", snakeSupportLib,
 
