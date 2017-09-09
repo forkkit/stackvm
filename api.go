@@ -11,6 +11,7 @@ import (
 var (
 	errNoArg           = errors.New("operation does not accept an argument")
 	errVarOpts         = errors.New("truncated options")
+	errTruncatedString = errors.New("truncated string")
 	errTruncatedVarint = errors.New("truncated varint")
 	errBigVarint       = errors.New("varint too big")
 )
@@ -551,6 +552,21 @@ func (mb *machBuilder) mayReadOptCode(ifCode uint8) (uint32, bool, error) {
 		return 0, false, nil
 	}
 	return arg, true, nil
+}
+
+func (mb *machBuilder) readString() (string, error) {
+	v, err := mb.readUvarint()
+	if err != nil {
+		return "", fmt.Errorf("bad string length: %v", err)
+	}
+	n := int(v)
+	n += mb.n
+	if n >= len(mb.buf) {
+		return "", errTruncatedString
+	}
+	s := string(mb.buf[mb.n:n])
+	mb.n = n
+	return s, nil
 }
 
 func (mb *machBuilder) readUvarint() (uint32, error) {
