@@ -369,8 +369,7 @@ func (asm *assembler) addOpt(name string, arg uint32, have bool) {
 }
 
 func (asm *assembler) addRefOpt(name string, targetName string, off int) {
-	tok := optToken(name, 0, true)
-	asm.opts.addRef(tok, targetName, off)
+	asm.opts.addRef(optToken(name, 0, true), targetName, off)
 }
 
 func (asm *assembler) scan(in []interface{}) error {
