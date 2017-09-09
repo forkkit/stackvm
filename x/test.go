@@ -257,7 +257,6 @@ func (t testCaseRun) build() (m *stackvm.Mach, fin finisher, err error) {
 		t.Logf("Program to Load:")
 		t.logLines(hex.Dump(prog))
 	}
-	fin = t.Result.start(t.TB)
 	var opts []stackvm.MachBuildOpt
 
 	switch vals := t.Input.(type) {
@@ -273,6 +272,8 @@ func (t testCaseRun) build() (m *stackvm.Mach, fin finisher, err error) {
 	default:
 		return nil, nil, fmt.Errorf("invalid test input value %#v", t.Input)
 	}
+
+	fin = t.Result.start(t.TB)
 	if h, ok := fin.(stackvm.MachHandler); ok {
 		opts = append(opts, stackvm.Handler(h))
 	}
