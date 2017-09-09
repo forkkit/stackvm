@@ -2,14 +2,17 @@ package stackvm
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 )
 
 var (
-	errNoArg   = errors.New("operation does not accept an argument")
-	errVarOpts = errors.New("truncated options")
+	errNoArg           = errors.New("operation does not accept an argument")
+	errVarOpts         = errors.New("truncated options")
+	errTruncatedVarint = errors.New("truncated varint")
+	errBigVarint       = errors.New("varint too big")
 )
 
 // NoSuchOpError is returned by ResolveOp if the named operation is not //
@@ -548,6 +551,18 @@ func (mb *machBuilder) mayReadOptCode(ifCode uint8) (uint32, bool, error) {
 		return 0, false, nil
 	}
 	return arg, true, nil
+}
+
+func (mb *machBuilder) readUvarint() (uint32, error) {
+	v, n := binary.Uvarint(mb.buf[mb.n:])
+	v32 := uint32(v)
+	if n == 0 {
+		return 0, errTruncatedVarint
+	} else if n < 0 || uint64(v32) != v {
+		return 0, errBigVarint
+	}
+	mb.n += n
+	return v32, nil
 }
 
 func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
