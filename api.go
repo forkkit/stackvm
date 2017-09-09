@@ -178,6 +178,17 @@ func NamedInput(name string, vals []uint32) MachBuildOpt {
 	}
 }
 
+// WithAddrLabels calls the given function with any defined debug addr/labels
+// mapping; if no mapping was defined, the function isn't called.
+func WithAddrLabels(cb func(map[uint32][]string)) MachBuildOpt {
+	return func(mb *machBuilder) error {
+		if mb.labels != nil {
+			cb(mb.labels)
+		}
+		return nil
+	}
+}
+
 func (m *Mach) String() string {
 	var buf bytes.Buffer
 	buf.WriteString("Mach")
