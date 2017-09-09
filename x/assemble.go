@@ -208,7 +208,7 @@ type assembler struct {
 
 	pendIn, pendOut string
 
-	opts, prog section
+	adls, opts, prog section
 
 	stackSize *token
 	queueSize *token
@@ -403,6 +403,15 @@ func (asm *assembler) addRefOpt(name string, targetName string, off int) {
 	asm.opts.addRef(optToken(name, 0, true), targetName, off)
 }
 
+func (asm *assembler) addAddrLabel(name string) {
+	if len(asm.adls.toks) == 0 {
+		asm.adls.add(optToken("addrLabels", 1, true))
+	} else {
+		asm.adls.toks[0].Arg++
+	}
+	asm.adls.addRef(addrLabelToken(name), name, 0)
+}
+
 func (asm *assembler) scan(in []interface{}) error {
 	sc := scanner{assembler: asm}
 	return sc.scan(in)
@@ -414,6 +423,7 @@ func (asm *assembler) finish() (encoder, error) {
 			makeSection(
 				optToken("version", 0, false),
 			),
+			asm.adls,
 			asm.opts,
 			makeSection(
 				optToken("end", 0, false),
@@ -679,6 +689,8 @@ func (sc *scanner) handleLabel(name string) error {
 	if i, defined := sc.prog.labels[name]; defined && i >= 0 {
 		return fmt.Errorf("label %q already defined", name)
 	}
+
+	sc.addAddrLabel(name)
 	sc.prog.addLabel(name)
 	return nil
 }
