@@ -380,7 +380,6 @@ func (asm *assembler) finish() (encoder, error) {
 	enc, err := collectSections(asm.opts, asm.prog)
 	enc.logf = asm.logf
 	enc.base = asm.stackSize.Arg
-	enc.nopts = len(asm.opts.toks)
 	return enc, err
 }
 
@@ -835,7 +834,6 @@ func (asm *assembler) refLabel(name string) {
 
 type encoder struct {
 	logf     func(string, ...interface{})
-	nopts    int
 	base     uint32
 	labels   map[string]int
 	refs     []ref
@@ -849,6 +847,7 @@ func (enc encoder) encode() ([]byte, error) {
 		offsets = make([]uint32, len(enc.toks)+1)
 		boff    uint32           // offset of encoded program
 		c       uint32           // current token offset
+		nopts   int              // count of option tokens
 		i       int              // current token index
 		rfi     int              // index of next ref
 		rf      = ref{-1, -1, 0} // next ref
@@ -860,6 +859,7 @@ func (enc encoder) encode() ([]byte, error) {
 
 	// encode options
 encodeOptions:
+	nopts = 0
 	for i < len(enc.toks) {
 		tok := enc.toks[i]
 		c += uint32(tok.EncodeInto(buf[c:]))
@@ -869,7 +869,7 @@ encodeOptions:
 			break
 		}
 	}
-	boff = c
+	nopts, boff = i, c
 
 	// encode program
 	for i < len(enc.toks) {
@@ -891,7 +891,7 @@ encodeOptions:
 						break
 					}
 				}
-				if i < enc.nopts {
+				if i < nopts {
 					goto encodeOptions
 				}
 			} else {
