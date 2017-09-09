@@ -80,6 +80,7 @@ type testCaseRun struct {
 	testing.TB
 	Logf func(string, ...interface{})
 	TestCase
+	addrLabels map[uint32][]string
 }
 
 // Run runs each test case in a sub-test.
@@ -237,7 +238,11 @@ func (t testCaseRun) logLines(s string) {
 	}
 }
 
-func (t testCaseRun) build() (m *stackvm.Mach, fin finisher, err error) {
+func (t *testCaseRun) setLabels(al map[uint32][]string) {
+	t.addrLabels = al
+}
+
+func (t *testCaseRun) build() (m *stackvm.Mach, fin finisher, err error) {
 	var prog []byte
 	switch v := t.Prog.(type) {
 	case []byte:
@@ -257,7 +262,7 @@ func (t testCaseRun) build() (m *stackvm.Mach, fin finisher, err error) {
 		t.Logf("Program to Load:")
 		t.logLines(hex.Dump(prog))
 	}
-	var opts []stackvm.MachBuildOpt
+	opts := []stackvm.MachBuildOpt{stackvm.WithAddrLabels(t.setLabels)}
 
 	switch vals := t.Input.(type) {
 	case [][]uint32:
