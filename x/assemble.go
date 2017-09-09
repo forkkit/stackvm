@@ -291,21 +291,25 @@ func collectSections(secs ...section) (enc encoder, err error) {
 		base += len(sec.toks)
 	}
 
-	// check for undefined label refs
+	err = enc.checkLabels()
+	if err == nil {
+		enc.refs = enc.resolveRefs()
+	}
+
+	return
+}
+
+func (sec section) checkLabels() error {
 	var undefined []string
-	for name := range enc.refsBy {
-		if i, defined := enc.labels[name]; !defined || i < 0 {
+	for name := range sec.refsBy {
+		if i, defined := sec.labels[name]; !defined || i < 0 {
 			undefined = append(undefined, name)
 		}
 	}
 	if len(undefined) > 0 {
-		err = fmt.Errorf("undefined labels: %q", undefined)
-		return
+		return fmt.Errorf("undefined labels: %q", undefined)
 	}
-
-	enc.refs = enc.resolveRefs()
-
-	return
+	return nil
 }
 
 func (sec section) resolveRefs() (refs []ref) {
