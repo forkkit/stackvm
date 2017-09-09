@@ -264,12 +264,9 @@ type section struct {
 }
 
 func makeSection() section {
-	return section{
-		toks:     nil,
-		refsBy:   make(map[string][]ref),
-		labels:   make(map[string]int),
-		maxBytes: 0,
-	}
+	sec := section{toks: nil}
+	sec.maxBytes = 0
+	return sec
 }
 
 func collectSections(secs ...section) (sec section) {
@@ -357,6 +354,9 @@ func (sec *section) add(tok token) {
 }
 
 func (sec *section) addRef(tok token, name string, off int) {
+	if sec.refsBy == nil {
+		sec.refsBy = make(map[string][]ref)
+	}
 	rf := ref{site: len(sec.toks), off: off}
 	sec.refsBy[name] = append(sec.refsBy[name], rf)
 	sec.toks = append(sec.toks, tok)
@@ -364,12 +364,18 @@ func (sec *section) addRef(tok token, name string, off int) {
 }
 
 func (sec *section) stubLabel(name string) {
+	if sec.labels == nil {
+		sec.labels = make(map[string]int)
+	}
 	if _, defined := sec.labels[name]; !defined {
 		sec.labels[name] = -1
 	}
 }
 
 func (sec *section) addLabel(name string) {
+	if sec.labels == nil {
+		sec.labels = make(map[string]int)
+	}
 	sec.labels[name] = len(sec.toks)
 }
 
