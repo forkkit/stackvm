@@ -303,28 +303,31 @@ func collectSections(secs ...section) (enc encoder, err error) {
 		return
 	}
 
-	// resolve refs
+	enc.refs = enc.resolveRefs()
+
+	return
+}
+
+func (sec section) resolveRefs() (refs []ref) {
 	numRefs := 0
-	for _, rfs := range enc.refsBy {
+	for _, rfs := range sec.refsBy {
 		numRefs += len(rfs)
 	}
 	if numRefs > 0 {
-		enc.refs = make([]ref, 0, numRefs)
+		refs = make([]ref, 0, numRefs)
 	}
-	for name, rfs := range enc.refsBy {
-		targ := enc.labels[name]
+	for name, rfs := range sec.refsBy {
+		targ := sec.labels[name]
 		for _, rf := range rfs {
 			rf.targ = targ
-			enc.refs = append(enc.refs, rf)
+			refs = append(refs, rf)
 		}
 	}
-
-	if len(enc.refs) > 0 {
-		sort.Slice(enc.refs, func(i, j int) bool {
-			return enc.refs[i].site < enc.refs[j].site
+	if len(refs) > 0 {
+		sort.Slice(refs, func(i, j int) bool {
+			return refs[i].site < refs[j].site
 		})
 	}
-
 	return
 }
 
