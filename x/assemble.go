@@ -220,7 +220,6 @@ func (asm assembler) Assemble(in ...interface{}) ([]byte, error) {
 	asm.opts = makeSection()
 	asm.prog = makeSection()
 
-	asm.addOpt("version", 0, false)
 	asm.stackSize = asm.refOpt("stackSize", defaultStackSize, true)
 
 	if err := asm.scan(in); err != nil {
@@ -412,6 +411,9 @@ func (asm *assembler) scan(in []interface{}) error {
 func (asm *assembler) finish() (encoder, error) {
 	enc := encoder{
 		section: collectSections(
+			makeSection(
+				optToken("version", 0, false),
+			),
 			asm.opts,
 			makeSection(
 				optToken("end", 0, false),
