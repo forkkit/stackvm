@@ -232,21 +232,37 @@ func (asm *assembler) setOption(ptok **token, name string, v uint32) {
 	}
 }
 
+type section struct {
+	toks     []token
+	refsBy   map[string][]ref
+	labels   map[string]int
+	maxBytes int
+}
+
+func makeSection() section {
+	return section{
+		toks:     nil,
+		refsBy:   make(map[string][]ref),
+		labels:   make(map[string]int),
+		maxBytes: 0,
+	}
+}
+
 func collectSections(secs ...section) (enc encoder, err error) {
 	numLabels, numRefs, numToks := 0, 0, 0
 	for _, sec := range secs {
-		numLabels += len(sec.labels)
 		numToks += len(sec.toks)
+		numLabels += len(sec.labels)
+		enc.maxBytes += sec.maxBytes
 		for _, rfs := range sec.refsBy {
 			numRefs += len(rfs)
 		}
-		enc.maxBytes += sec.maxBytes
-	}
-	if numLabels > 0 {
-		enc.labels = make(map[string]int)
 	}
 	if numToks > 0 {
 		enc.toks = make([]token, 0, numToks)
+	}
+	if numLabels > 0 {
+		enc.labels = make(map[string]int)
 	}
 	if numRefs > 0 {
 		enc.refs = make([]ref, 0, numRefs)
@@ -254,15 +270,15 @@ func collectSections(secs ...section) (enc encoder, err error) {
 
 	base := 0
 	for _, sec := range secs {
+		// collect tokens
+		enc.toks = append(enc.toks, sec.toks...)
+
 		// collect labels
 		for name, off := range sec.labels {
 			if off >= 0 {
 				enc.labels[name] = base + off
 			}
 		}
-
-		// collect tokens
-		enc.toks = append(enc.toks, sec.toks...)
 
 		base += len(sec.toks)
 	}
@@ -303,22 +319,6 @@ func collectSections(secs ...section) (enc encoder, err error) {
 	}
 
 	return
-}
-
-type section struct {
-	toks     []token
-	refsBy   map[string][]ref
-	labels   map[string]int
-	maxBytes int
-}
-
-func makeSection() section {
-	return section{
-		toks:     nil,
-		refsBy:   make(map[string][]ref),
-		labels:   make(map[string]int),
-		maxBytes: 0,
-	}
 }
 
 func (sec *section) add(tok token) {
