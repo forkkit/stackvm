@@ -214,6 +214,7 @@ func (t testCaseRun) trace() {
 	}
 
 	t.init()
+	m, fin, err := t.build()
 	trc := tracer.Multi(
 		idTracer,
 		countTracer,
@@ -225,7 +226,6 @@ func (t testCaseRun) trace() {
 			dumpMemFlag.Build(),
 		),
 	)
-	m, fin, err := t.build()
 	require.NoError(t, err, "unexpected build error")
 	t.checkError(m.Trace(trc))
 	fin.finish(m)
