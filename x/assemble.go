@@ -410,14 +410,16 @@ func (asm *assembler) scan(in []interface{}) error {
 }
 
 func (asm *assembler) finish() (encoder, error) {
-	// finish options
-	asm.addOpt("end", 0, false)
-
-	// build encoder with all assembled state
 	enc := encoder{
-		section: collectSections(asm.opts, asm.prog),
-		logf:    asm.logf,
-		base:    asm.stackSize.Arg,
+		section: collectSections(
+			asm.opts,
+			makeSection(
+				optToken("end", 0, false),
+			),
+			asm.prog,
+		),
+		logf: asm.logf,
+		base: asm.stackSize.Arg,
 	}
 	err := enc.checkLabels()
 	if err == nil {
