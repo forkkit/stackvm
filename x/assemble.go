@@ -248,52 +248,47 @@ func makeSection() section {
 	}
 }
 
-func collectSections(secs ...section) (enc encoder, err error) {
+func collectSections(secs ...section) (sec section) {
 	numLabels, numRefsBy, numToks := 0, 0, 0
-	for _, sec := range secs {
-		numToks += len(sec.toks)
-		numRefsBy += len(sec.refsBy)
-		numLabels += len(sec.labels)
-		enc.maxBytes += sec.maxBytes
+	for _, s := range secs {
+		numToks += len(s.toks)
+		numRefsBy += len(s.refsBy)
+		numLabels += len(s.labels)
+		sec.maxBytes += s.maxBytes
 	}
 	if numToks > 0 {
-		enc.toks = make([]token, 0, numToks)
+		sec.toks = make([]token, 0, numToks)
 	}
 	if numRefsBy > 0 {
-		enc.refsBy = make(map[string][]ref, numRefsBy)
+		sec.refsBy = make(map[string][]ref, numRefsBy)
 	}
 	if numLabels > 0 {
-		enc.labels = make(map[string]int)
+		sec.labels = make(map[string]int)
 	}
 
 	base := 0
-	for _, sec := range secs {
+	for _, s := range secs {
 		// collect tokens
-		enc.toks = append(enc.toks, sec.toks...)
+		sec.toks = append(sec.toks, s.toks...)
 
 		// collect refsBy
-		for name, rfs := range sec.refsBy {
-			crfs := enc.refsBy[name]
+		for name, rfs := range s.refsBy {
+			crfs := sec.refsBy[name]
 			for _, rf := range rfs {
 				rf.site += base
 				crfs = append(crfs, rf)
 			}
-			enc.refsBy[name] = crfs
+			sec.refsBy[name] = crfs
 		}
 
 		// collect labels
-		for name, off := range sec.labels {
+		for name, off := range s.labels {
 			if off >= 0 {
-				enc.labels[name] = base + off
+				sec.labels[name] = base + off
 			}
 		}
 
-		base += len(sec.toks)
-	}
-
-	err = enc.checkLabels()
-	if err == nil {
-		enc.refs = enc.resolveRefs()
+		base += len(s.toks)
 	}
 
 	return
@@ -391,9 +386,15 @@ func (asm *assembler) finish() (encoder, error) {
 	asm.addOpt("end", 0, false)
 
 	// build encoder with all assembled state
-	enc, err := collectSections(asm.opts, asm.prog)
-	enc.logf = asm.logf
-	enc.base = asm.stackSize.Arg
+	enc := encoder{
+		section: collectSections(asm.opts, asm.prog),
+		logf:    asm.logf,
+		base:    asm.stackSize.Arg,
+	}
+	err := enc.checkLabels()
+	if err == nil {
+		enc.refs = enc.resolveRefs()
+	}
 	return enc, err
 }
 
