@@ -1,6 +1,7 @@
 package xstackvm
 
 import (
+	"encoding/binary"
 	"fmt"
 	"sort"
 
@@ -65,6 +66,7 @@ const (
 	dataTK
 	allocTK
 	stringTK
+	addrLabelTK
 )
 
 type token struct {
@@ -79,6 +81,8 @@ func (tok token) ResolveRefArg(site, targ uint32) token {
 		tok.Arg = targ
 	case opTK:
 		tok.Op = tok.Op.ResolveRefArg(site, targ)
+	case addrLabelTK:
+		tok.Arg = targ
 	}
 	return tok
 }
@@ -95,6 +99,8 @@ func (tok token) Name() string {
 		return ".alloc"
 	case stringTK:
 		return ".string"
+	case addrLabelTK:
+		return fmt.Sprintf("@label:")
 	default:
 		return fmt.Sprintf("UNKNOWN<%v>", tok.kind)
 	}
@@ -115,6 +121,8 @@ func (tok token) String() string {
 		return fmt.Sprintf(".alloc %d", tok.Arg)
 	case stringTK:
 		return fmt.Sprintf(".string %q", tok.str)
+	case addrLabelTK:
+		return fmt.Sprintf("@%s:", tok.str)
 	default:
 		return fmt.Sprintf("UNKNOWN<%v>", tok.kind)
 	}
@@ -147,6 +155,15 @@ func (tok token) EncodeInto(p []byte) int {
 			n++
 		}
 		return n
+	case addrLabelTK:
+		n := 0
+		n += binary.PutUvarint(p[n:], uint64(tok.Arg))
+		n += binary.PutUvarint(p[n:], uint64(len(tok.str)))
+		for i := 0; i < len(tok.str); i++ {
+			p[n] = tok.str[i]
+			n++
+		}
+		return n
 	default:
 		return tok.Op.EncodeInto(p)
 	}
@@ -160,6 +177,12 @@ func (tok token) NeededSize() int {
 		return 4 * int(tok.Arg)
 	case stringTK:
 		return 4 + len(tok.str)
+	case addrLabelTK:
+		var buf [binary.MaxVarintLen64]byte
+		n := binary.PutUvarint(buf[:], uint64(tok.Arg))
+		n += binary.PutUvarint(buf[:], uint64(len(tok.str)))
+		n += len(tok.str)
+		return n
 	default:
 		return tok.Op.NeededSize()
 	}
@@ -172,10 +195,11 @@ func optToken(name string, arg uint32, have bool) token {
 	}
 }
 
-func opToken(op stackvm.Op) token { return token{kind: opTK, Op: op} }
-func dataToken(d uint32) token    { return token{kind: dataTK, Op: stackvm.Op{Arg: d}} }
-func allocToken(n uint32) token   { return token{kind: allocTK, Op: stackvm.Op{Arg: n}} }
-func stringToken(s string) token  { return token{kind: stringTK, str: s} }
+func opToken(op stackvm.Op) token   { return token{kind: opTK, Op: op} }
+func dataToken(d uint32) token      { return token{kind: dataTK, Op: stackvm.Op{Arg: d}} }
+func allocToken(n uint32) token     { return token{kind: allocTK, Op: stackvm.Op{Arg: n}} }
+func stringToken(s string) token    { return token{kind: stringTK, str: s} }
+func addrLabelToken(s string) token { return token{kind: addrLabelTK, str: s} }
 
 type ref struct{ site, targ, off int }
 
