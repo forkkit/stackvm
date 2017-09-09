@@ -203,16 +203,11 @@ func (asm assembler) Assemble(in ...interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	asm.finish()
-
-	enc, err := collectSections(asm.opts, asm.prog)
+	enc, err := asm.finish()
 	if err != nil {
 		return nil, err
 	}
 
-	enc.logf = asm.logf
-	enc.base = asm.stackSize.Arg
-	enc.nopts = len(asm.opts.toks)
 	return enc.encode()
 }
 
@@ -377,9 +372,16 @@ func (asm *assembler) scan(in []interface{}) error {
 	return sc.scan(in)
 }
 
-func (asm *assembler) finish() {
+func (asm *assembler) finish() (encoder, error) {
 	// finish options
 	asm.addOpt("end", 0, false)
+
+	// build encoder with all assembled state
+	enc, err := collectSections(asm.opts, asm.prog)
+	enc.logf = asm.logf
+	enc.base = asm.stackSize.Arg
+	enc.nopts = len(asm.opts.toks)
+	return enc, err
 }
 
 type scanner struct {
