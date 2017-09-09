@@ -13,14 +13,19 @@ const noteWidth = 15
 
 // NewLogTracer creates a tracer that logs machine state using a printf-style
 // string "logging" function
-func NewLogTracer(f func(string, ...interface{})) stackvm.Tracer {
+func NewLogTracer(
+	f func(string, ...interface{}),
+	addrLabels map[uint32][]string,
+) stackvm.Tracer {
 	return &logfTracer{
-		f: f,
+		f:          f,
+		addrLabels: addrLabels,
 	}
 }
 
 type logfTracer struct {
 	f          func(string, ...interface{})
+	addrLabels map[uint32][]string
 	afterName  string
 	afterFetch uint32
 }
@@ -167,6 +172,12 @@ func (lf logfTracer) note(m *stackvm.Mach, mark string, note interface{}, args .
 		}
 		parts = append(parts, args...)
 	}
+
+	if labels := lf.addrLabels[m.IP()]; len(labels) != 0 {
+		format += " labels=%q"
+		parts = append(parts, labels)
+	}
+
 	lf.f(format, parts...)
 }
 

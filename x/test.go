@@ -219,7 +219,7 @@ func (t testCaseRun) trace() {
 	trc := tracer.Multi(
 		idTracer,
 		countTracer,
-		tracer.NewLogTracer(t.Logf),
+		tracer.NewLogTracer(t.Logf, t.addrLabels),
 		tracer.Filtered(
 			tracer.FuncTracer(func(m *stackvm.Mach) {
 				_ = dumper.Dump(m, t.contextLog(m))
