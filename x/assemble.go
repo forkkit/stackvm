@@ -268,10 +268,8 @@ func collectSections(secs ...section) (sec section) {
 
 	base := 0
 	for _, s := range secs {
-		// collect tokens
 		sec.toks = append(sec.toks, s.toks...)
 
-		// collect refsBy
 		for name, rfs := range s.refsBy {
 			crfs := sec.refsBy[name]
 			for _, rf := range rfs {
@@ -281,7 +279,6 @@ func collectSections(secs ...section) (sec section) {
 			sec.refsBy[name] = crfs
 		}
 
-		// collect labels
 		for name, off := range s.labels {
 			if off >= 0 {
 				sec.labels[name] = base + off
