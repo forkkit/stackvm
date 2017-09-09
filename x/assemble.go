@@ -833,12 +833,10 @@ func (asm *assembler) refLabel(name string) {
 }
 
 type encoder struct {
-	logf     func(string, ...interface{})
-	base     uint32
-	labels   map[string]int
-	refs     []ref
-	toks     []token
-	maxBytes int
+	section
+	logf func(string, ...interface{})
+	base uint32
+	refs []ref
 }
 
 func (enc encoder) encode() ([]byte, error) {
