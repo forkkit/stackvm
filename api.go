@@ -65,6 +65,10 @@ func (name NoSuchOpError) Error() string {
 //   must appear in start/end pairs.
 // - 0x08 name: its required parameter is the address of a string name for
 //   the last output or input region.
+// - 0x09 addr labels: its required parameter is the count of how many
+//   addr/label pairs follow this option. Each addr is encoded as a varint,
+//   and each label is encoded with a varint length prefix, and then that
+//   many bytes as a utf-8 string label.
 // - 0x7f version: reserved for future use, where its parameter will be the
 //   required machine/program version; passing a version value is currently
 //   unsupported.
@@ -470,6 +474,12 @@ const (
 	// output or input region.
 	optCodeName = 0x08
 
+	// its required parameter is the count of how many addr/label pairs follow
+	// this option. Each addr is encoded as a varint, and each label is encoded
+	// with a varint length prefix, and then that many bytes as a utf-8 string
+	// label.
+	optCodeAddrLabels = 0x09
+
 	// reserved for future use, where its parameter will be the required
 	// machine/program version; passing a version value is currently
 	// unsupported.
@@ -483,6 +493,7 @@ type machBuilder struct {
 	maxCopies int
 	inputs    []region
 	nextIn    int
+	labels    map[uint32][]string
 
 	buf []byte
 	h   MachHandler
@@ -552,6 +563,24 @@ func (mb *machBuilder) mayReadOptCode(ifCode uint8) (uint32, bool, error) {
 		return 0, false, nil
 	}
 	return arg, true, nil
+}
+
+func (mb *machBuilder) readAddrLabels(n int) error {
+	if n > 0 && mb.labels == nil {
+		mb.labels = make(map[uint32][]string, n)
+	}
+	for i := 0; i < n; i++ {
+		addr, err := mb.readUvarint()
+		if err != nil {
+			return fmt.Errorf("bad address: %v", err)
+		}
+		label, err := mb.readString()
+		if err != nil {
+			return fmt.Errorf("bad label: %v", err)
+		}
+		mb.labels[addr] = append(mb.labels[addr], label)
+	}
+	return nil
 }
 
 func (mb *machBuilder) readString() (string, error) {
@@ -660,6 +689,11 @@ func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
 		}
 		mb.Mach.ctx.outputs = append(mb.Mach.ctx.outputs, rg)
 
+	case 0x80 | optCodeAddrLabels:
+		if err := mb.readAddrLabels(int(arg)); err != nil {
+			return false, err
+		}
+
 	case optCodeEnd:
 		return true, nil
 
@@ -691,6 +725,8 @@ func NameOption(code uint8) string {
 		return "output"
 	case optCodeName:
 		return "name"
+	case optCodeAddrLabels:
+		return "addrLabels"
 	case optCodeVersion:
 		return "version"
 	default:
@@ -719,6 +755,8 @@ func ResolveOption(name string, arg uint32, have bool) (op Op) {
 		op.Code = optCodeOutput
 	case "name":
 		op.Code = optCodeName
+	case "addrLabels":
+		op.Code = optCodeAddrLabels
 	case "version":
 		op.Code = optCodeVersion
 	default:
