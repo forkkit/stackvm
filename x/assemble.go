@@ -249,15 +249,12 @@ func makeSection() section {
 }
 
 func collectSections(secs ...section) (enc encoder, err error) {
-	numLabels, numRefsBy, numRefs, numToks := 0, 0, 0, 0
+	numLabels, numRefsBy, numToks := 0, 0, 0
 	for _, sec := range secs {
 		numToks += len(sec.toks)
 		numRefsBy += len(sec.refsBy)
 		numLabels += len(sec.labels)
 		enc.maxBytes += sec.maxBytes
-		for _, rfs := range sec.refsBy {
-			numRefs += len(rfs)
-		}
 	}
 	if numToks > 0 {
 		enc.toks = make([]token, 0, numToks)
@@ -267,9 +264,6 @@ func collectSections(secs ...section) (enc encoder, err error) {
 	}
 	if numLabels > 0 {
 		enc.labels = make(map[string]int)
-	}
-	if numRefs > 0 {
-		enc.refs = make([]ref, 0, numRefs)
 	}
 
 	base := 0
@@ -310,6 +304,13 @@ func collectSections(secs ...section) (enc encoder, err error) {
 	}
 
 	// resolve refs
+	numRefs := 0
+	for _, rfs := range enc.refsBy {
+		numRefs += len(rfs)
+	}
+	if numRefs > 0 {
+		enc.refs = make([]ref, 0, numRefs)
+	}
 	for name, rfs := range enc.refsBy {
 		targ := enc.labels[name]
 		for _, rf := range rfs {
