@@ -263,9 +263,11 @@ type section struct {
 	maxBytes int
 }
 
-func makeSection() section {
-	sec := section{toks: nil}
-	sec.maxBytes = 0
+func makeSection(toks ...token) section {
+	sec := section{toks: toks}
+	for i := range toks {
+		sec.maxBytes += toks[i].NeededSize()
+	}
 	return sec
 }
 
