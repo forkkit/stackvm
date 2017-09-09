@@ -249,9 +249,10 @@ func makeSection() section {
 }
 
 func collectSections(secs ...section) (enc encoder, err error) {
-	numLabels, numRefs, numToks := 0, 0, 0
+	numLabels, numRefsBy, numRefs, numToks := 0, 0, 0, 0
 	for _, sec := range secs {
 		numToks += len(sec.toks)
+		numRefsBy += len(sec.refsBy)
 		numLabels += len(sec.labels)
 		enc.maxBytes += sec.maxBytes
 		for _, rfs := range sec.refsBy {
@@ -260,6 +261,9 @@ func collectSections(secs ...section) (enc encoder, err error) {
 	}
 	if numToks > 0 {
 		enc.toks = make([]token, 0, numToks)
+	}
+	if numRefsBy > 0 {
+		enc.refsBy = make(map[string][]ref, numRefsBy)
 	}
 	if numLabels > 0 {
 		enc.labels = make(map[string]int)
@@ -273,6 +277,16 @@ func collectSections(secs ...section) (enc encoder, err error) {
 		// collect tokens
 		enc.toks = append(enc.toks, sec.toks...)
 
+		// collect refsBy
+		for name, rfs := range sec.refsBy {
+			crfs := enc.refsBy[name]
+			for _, rf := range rfs {
+				rf.site += base
+				crfs = append(crfs, rf)
+			}
+			enc.refsBy[name] = crfs
+		}
+
 		// collect labels
 		for name, off := range sec.labels {
 			if off >= 0 {
@@ -285,11 +299,9 @@ func collectSections(secs ...section) (enc encoder, err error) {
 
 	// check for undefined label refs
 	var undefined []string
-	for _, sec := range secs {
-		for name := range sec.refsBy {
-			if i, defined := enc.labels[name]; !defined || i < 0 {
-				undefined = append(undefined, name)
-			}
+	for name := range enc.refsBy {
+		if i, defined := enc.labels[name]; !defined || i < 0 {
+			undefined = append(undefined, name)
 		}
 	}
 	if len(undefined) > 0 {
@@ -297,19 +309,13 @@ func collectSections(secs ...section) (enc encoder, err error) {
 		return
 	}
 
-	// resolve and collect refs
-	base = 0
-	for _, sec := range secs {
-		for name, rfs := range sec.refsBy {
-			targ := enc.labels[name]
-			for _, rf := range rfs {
-				rf.site += base
-				rf.targ = targ
-				enc.refs = append(enc.refs, rf)
-			}
+	// resolve refs
+	for name, rfs := range enc.refsBy {
+		targ := enc.labels[name]
+		for _, rf := range rfs {
+			rf.targ = targ
+			enc.refs = append(enc.refs, rf)
 		}
-
-		base += len(sec.toks)
 	}
 
 	if len(enc.refs) > 0 {
