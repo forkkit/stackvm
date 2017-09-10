@@ -34,6 +34,7 @@ type record struct {
 	ip       uint64
 	act      string
 	rest     string
+	notes    []string
 }
 
 type recordKind int
@@ -272,6 +273,18 @@ func (sess *session) handleEndKV(k, v string) {
 }
 
 func (sess *session) add(rec record) record {
+	if rec.kind == noteLine {
+		if m := markPat.FindStringSubmatchIndex(rec.rest); m != nil {
+			rec.rest = rec.rest[m[1]:]
+		}
+		if i := len(sess.recs) - 1; i >= 0 {
+			sess.recs[i].notes = append(sess.recs[i].notes, rec.rest)
+		} else {
+			sess.recs = append(sess.recs, rec)
+		}
+		return rec
+	}
+
 	if m := markPat.FindStringSubmatchIndex(rec.act); m != nil {
 		mark := rec.act[m[2]:m[3]]
 		rec.act = rec.act[m[1]:]
@@ -396,11 +409,17 @@ func (ss sessions) sessionLog(sess *session, logf func(string, ...interface{}) e
 			if err := logf("%v", rec); err != nil {
 				return err
 			}
+			for _, note := range rec.notes {
+				logf("    %s", note)
+			}
 		}
 	}
 	for _, rec := range sess.recs {
 		if err := logf("%v", rec); err != nil {
 			return err
+		}
+		for _, note := range rec.notes {
+			logf("    %s", note)
 		}
 	}
 	for _, line := range sess.extra {
@@ -467,6 +486,7 @@ type recDat struct {
 	Count  int                    `json:"count"`
 	IP     int                    `json:"ip"`
 	Extra  map[string]interface{} `json:"extra"`
+	Notes  []string               `json:"notes"`
 }
 
 type sessDat struct {
@@ -499,6 +519,7 @@ func (sess *session) toJSON() sessDat {
 			Count:  rec.count,
 			IP:     int(rec.ip),
 			Extra:  make(map[string]interface{}),
+			Notes:  rec.notes,
 		}
 		if rec.cid != zeroMachID {
 			rd.Extra["child"] = rec.cid.String()
