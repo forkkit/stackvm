@@ -349,7 +349,7 @@ func TestMach_queueSize(t *testing.T) {
 }
 
 func TestMach_inNout(t *testing.T) {
-	prog := MustAssemble(
+	prog := []interface{}{
 		".data",
 		".in", "N:", 0,
 		".out", "M:", 0,
@@ -359,7 +359,7 @@ func TestMach_inNout(t *testing.T) {
 		"dup", "mul", // N*N :
 		":M", "storeTo", // :   -- M=N*N
 		"halt",
-	)
+	}
 
 	var tcs TestCases
 	for n := uint32(0); n < 10; n++ {
