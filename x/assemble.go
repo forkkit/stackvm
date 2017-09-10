@@ -875,7 +875,7 @@ encodeOptions:
 		c += uint32(tok.EncodeInto(buf[c:]))
 		i++
 		offsets[i] = c
-		if tok.Code == optCodeEnd {
+		if tok.kind == optTK && tok.Code == optCodeEnd {
 			break
 		}
 	}
