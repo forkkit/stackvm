@@ -1221,7 +1221,7 @@ func (enc *encoder) encodeTok() (token, error) {
 	if n <= 0 {
 		return tok, fmt.Errorf("failed to encode toks[%d]=%v", enc.i, tok)
 	}
-	enc.logf("encode toks[%d] @%#04x %v", enc.i, enc.c, tok)
+	enc.logf("encode toks[%d] @%#04x %v => %02x", enc.i, enc.c, tok, p[:n])
 	enc.c += uint32(n)
 	enc.i++
 	enc.offsets[enc.i] = enc.c
