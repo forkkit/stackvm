@@ -24,6 +24,13 @@ $fgSat: 25%;
         &:hover { color: hsluv($hue, 90%, 95%); }
         &:active { text-decoration: underline; }
     }
+
+    .span {
+        color: hsluv($hue, 90%, 85%);
+        cursor: pointer;
+        &:hover { color: hsluv($hue, 90%, 95%); }
+        &:active { text-decoration: underline; }
+    }
 }
 
 html, body, main {
@@ -137,6 +144,13 @@ nav {
         summary::-webkit-details-marker { display: none; }
         summary::after { content: "..."; }
         &[open] summary::after { content: ""; }
+    }
+
+    td .span {
+        display: inline;
+        &::after { content: "▻"; }
+        &.open::after { content: "▿"; }
+        .label { display: inline; }
     }
 }
 

@@ -678,8 +678,10 @@ class LogTable {
         let rows = this.body.selectAll("tr").data(records);
         rows.exit().remove();
         rows = rows.merge(rows.enter().append("tr"));
-        rows.attr("class", (record) => this._model.decorateRecordClass(
-            record, `bgColor${record.depth % numColors + 1}`));
+        rows
+            .style("display", "")
+            .attr("class", (record) => this._model.decorateRecordClass(
+                record, `bgColor${record.depth % numColors + 1}`));
 
         let cells = rows.selectAll("td").data(({cells}) => cells);
         cells.exit().remove();
@@ -689,12 +691,36 @@ class LogTable {
         cells
             .attr("class", (_, i) => cols[i].className)
             .html((d, i) => fmt[i](d));
+
+        let rowEls = rows.nodes();
+        rows.select(".span").each(({loc: {span: {start, end}}}) => {
+            for (let i = start+1; i < end; i++) rowEls[i].style.display = "none";
+        });
+        rows.select(".span").on("click", ({loc: {span: {start, end, children}}}, i, x) => {
+            const sel = d3Select(x[i]);
+            const open = !sel.classed("open");
+            sel.classed("open", open);
+            if (!open) {
+                for (let i = start+1; i < end; i++) rowEls[i].style.display = "none";
+                return;
+            }
+            let j = 0;
+            for (let i = start+1; i < end; i++) {
+                if (j < children.length) {
+                    let childSpan = children[j].span;
+                    if (i >= childSpan.end) j++;
+                    else if (i > childSpan.start) continue;
+                }
+                rowEls[i].style.display = "";
+            }
+        });
     }
 }
 
-LogTable.locFmt = ({ip, label}) => {
+LogTable.locFmt = ({ip, label, caller}) => {
     let addr = fmt.hex(ip);
-    if (label) return `<div title="@${addr}" class="label">${label}:</div>`;
+    if (label) addr = `<div title="@${addr}" class="label">${label}:</div>`;
+    if (caller) addr = `<div class="span">${addr}</div>`;
     return addr;
 };
 
