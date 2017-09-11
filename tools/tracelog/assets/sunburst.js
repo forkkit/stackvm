@@ -165,10 +165,12 @@ class SunburstModel extends EventEmitter {
             }
             d.records = d.records.map((record) => {
                 let {ip, extra} = record;
+                let labels = null;
                 if ("labels" in extra) {
-                    record.labels = matchAll(extra.labels, /"([^"]+)"/g);
+                    labels = record.labels = matchAll(extra.labels, /"([^"]+)"/g);
                     delete extra.labels;
                 }
+                record.loc = {ip, label: labels ? labels[0] : null};
                 return record;
             });
         });
@@ -624,8 +626,8 @@ class LogTable {
             let {machID} = this.ra.nodes[depth];
             let start = records.length;
             for (let r of this.ra.records(depth)) {
-                let {count, ip, action, extra} = r;
-                let cells = [machID, count, ip, action];
+                let {count, loc, action, extra} = r;
+                let cells = [machID, count, loc, action];
                 if (!this.raw) for (let k of this.extraPluck) cells.push(extra[k] || "");
                 extra = Object.assign({notes: r.notes}, extra);
                 cells.push(extra);
@@ -658,7 +660,11 @@ class LogTable {
     }
 }
 
-LogTable.locFmt = fmt.hex;
+LogTable.locFmt = ({ip, label}) => {
+    let addr = fmt.hex(ip);
+    if (label) return `<div title="@${addr}" class="label">${label}:</div>`;
+    return addr;
+};
 
 LogTable.mungeActionFmt = fmt.escaped((action) => action.replace(
     /([@+-])0x([0-9a-fA-F]+)/,
