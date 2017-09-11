@@ -15,6 +15,13 @@ $fgSat: 25%;
     a { color: hsluv($hue, 90%, 85%); }
     a:hover { color: hsluv($hue, 90%, 95%); }
     a:active { text-decoration: underline; }
+
+    summary {
+        color: hsluv($hue, 90%, 85%);
+        cursor: pointer;
+    }
+    summary:hover { color: hsluv($hue, 90%, 95%); }
+    summary:active { text-decoration: underline; }
 }
 
 html, body, main {
