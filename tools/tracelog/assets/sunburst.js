@@ -546,15 +546,21 @@ class LogTable {
             {title: "Extra", className: "extra"},
         ];
         this.cols = this.rawCols;
-        this.baseFmt = LogTable.baseFmt.concat([
+        this.baseFmt = [
+            fmt.num(10),
+            fmt.num(10),
+            fmt.hex,
             LogTable.mungeActionFmt,
             LogTable.extraFmt((k) => !this.extraIgnore.has(k)),
-        ]);
-        this.normFmt = this.baseFmt;
-        this.rawFmt = LogTable.baseFmt.concat([
+        ];
+        this.rawFmt = [
+            fmt.num(10),
+            fmt.num(10),
+            fmt.hex,
             fmt.feid,
             LogTable.extraFmt(),
-        ]);
+        ];
+        this.normFmt = this.baseFmt;
         this.ra = null;
     }
 
@@ -654,8 +660,6 @@ class LogTable {
             .html((d, i) => fmt[i](d));
     }
 }
-
-LogTable.baseFmt = [fmt.num(10), fmt.num(10), fmt.hex];
 
 LogTable.mungeActionFmt = fmt.escaped((action) => action.replace(
     /([@+-])0x([0-9a-fA-F]+)/,
