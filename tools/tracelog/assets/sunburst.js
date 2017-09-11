@@ -522,7 +522,10 @@ class LogTable {
         this.header = d3Select(this.head.appendChild(document.createElement("tr")));
         this.raw = false;
         this.fmt = null;
-        this.rawFmt = LogTable.baseFmt.concat([fmt.feid, fmt.entries(LogTable.extraFmts)]);
+        this.rawFmt = LogTable.baseFmt.concat([
+            fmt.feid,
+            fmt.entries(LogTable.extraFmts),
+        ]);
         this.ra = null;
         this.cols = null;
         this.rawCols = ["ID", "#", "IP", "Action", "Extra"];
