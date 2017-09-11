@@ -597,11 +597,10 @@ class LogTable {
         bodies.exit().remove();
         bodies = bodies.merge(bodies.enter().append("tbody"));
 
-        let rows = bodies.selectAll("tr")
-            .data(({machID}, depth) => {
-                let records = this.ra.records(depth);
-                return records.map(r => Object.assign({depth, machID}, r));
-            });
+        let rows = bodies.selectAll("tr").data(({machID}, depth) => {
+            let records = this.ra.records(depth);
+            return records.map(r => Object.assign({depth, machID}, r));
+        });
         rows.exit().remove();
         rows = rows.merge(rows.enter().append("tr"));
         rows.attr("class", (record) => this._model.decorateRecordClass(
