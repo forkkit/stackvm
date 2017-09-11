@@ -523,12 +523,12 @@ class LogTable {
         this.raw = false;
         this.baseFmt = LogTable.baseFmt.concat([
             LogTable.mungeActionFmt,
-            fmt.entries(LogTable.extraFmts, (k) => !this.extraIgnore.has(k)),
+            LogTable.extraFmt((k) => !this.extraIgnore.has(k)),
         ]);
         this.normFmt = this.baseFmt;
         this.rawFmt = LogTable.baseFmt.concat([
             fmt.feid,
-            fmt.entries(LogTable.extraFmts),
+            LogTable.extraFmt(),
         ]);
         this.ra = null;
         this.cols = ["ID", "#", "IP", "Action", "Extra"];
@@ -631,6 +631,8 @@ LogTable.extraFmts = {
     child: (id) => `<a href="#${id}">${id}</a>`,
     parent: (id) => `<a href="#${id}">${id}</a>`,
 };
+
+LogTable.extraFmt = (filter) => fmt.entries(LogTable.extraFmts, filter);
 
 class Links {
     constructor(el) {
