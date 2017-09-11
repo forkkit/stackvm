@@ -604,6 +604,7 @@ class LogTable {
                 let {count, ip, action, extra} = r;
                 let cells = [machID, count, ip, action];
                 if (!this.raw) for (let k of this.extraPluck) cells.push(extra[k] || "");
+                extra = Object.assign({notes: r.notes}, extra);
                 cells.push(extra);
                 records.push({depth, machID, count, cells});
             }
@@ -641,7 +642,15 @@ LogTable.extraFmts = {
     parent: (id) => `<a href="#${id}">${id}</a>`,
 };
 
-LogTable.extraFmt = (filter) => fmt.entries(LogTable.extraFmts, filter);
+LogTable.notesFmt = (notes) => notes &&
+    `<details><summary>notes=</summary>${notes.join("\n")}</details>`;
+
+LogTable.extraFmt = (filter) => fmt.then(fmt.all(
+    fmt.entries(LogTable.extraFmts, filter
+        ? (k) => k !== "notes" && filter(k)
+        : (k) => k !== "notes"),
+    ({notes}) => LogTable.notesFmt(notes)
+), (parts) => parts.filter((part) => part).join(" "));
 
 class Links {
     constructor(el) {
