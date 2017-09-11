@@ -510,6 +510,7 @@ class RecordAssembler extends RawRecordAssembler {
 
 class LogTable {
     constructor(el) {
+        this.ranges = new Map();
         this.el = thel(el);
         this.sel = d3Select(this.el);
         this._model = null;
@@ -588,6 +589,7 @@ class LogTable {
     }
 
     update() {
+        this.ranges.clear();
         let colsel = this.header.selectAll("th").data(this.raw ? this.rawCols : this.cols);
         colsel.exit().remove();
         colsel = colsel.merge(colsel.enter().append("th"));
@@ -597,6 +599,7 @@ class LogTable {
         bodies.exit().remove();
         bodies = bodies.merge(bodies.enter().append("tbody"));
 
+        let start = 0;
         let rows = bodies.selectAll("tr").data(({machID}, depth) => {
             let records = [];
             for (let r of this.ra.records(depth)) {
@@ -606,6 +609,8 @@ class LogTable {
                 cells.push(extra);
                 records.push({depth, machID, count, cells});
             }
+            this.ranges.set(depth, {start, end: start+records.length});
+            start += records.length;
             return records;
         });
         rows.exit().remove();
