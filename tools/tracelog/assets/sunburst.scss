@@ -119,6 +119,14 @@ nav {
         @include bgColor($normalH, 0.4);
         border-bottom: 0.1em solid hsluv($highH, $bgSat, 50%);
     }
+    td details {
+        display: inline;
+        &[open] { display: block; }
+        summary { display: inline; }
+        summary::-webkit-details-marker { display: none; }
+        summary::after { content: "..."; }
+        &[open] summary::after { content: ""; }
+    }
 }
 
 .fillColor1 { fill: hsluv($normalH, $fillSat, 30%); }
