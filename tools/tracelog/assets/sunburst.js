@@ -521,7 +521,11 @@ class LogTable {
         this.head = this.el.tHead || this.el.appendChild(document.createElement("thead"));
         this.header = d3Select(this.head.appendChild(document.createElement("tr")));
         this.raw = false;
-        this.normFmt = null;
+        this.baseFmt = LogTable.baseFmt.concat([
+            LogTable.mungeActionFmt,
+            fmt.entries(LogTable.extraFmts, (k) => !this.extraIgnore.has(k)),
+        ]);
+        this.normFmt = this.baseFmt;
         this.rawFmt = LogTable.baseFmt.concat([
             fmt.feid,
             fmt.entries(LogTable.extraFmts),
@@ -537,7 +541,7 @@ class LogTable {
         //// setup basic columns
         let extraCol = this.cols.pop();
         this.cols = this.cols.slice(0, 4);
-        this.normFmt = LogTable.baseFmt.concat([LogTable.mungeActionFmt]);
+        this.normFmt = this.baseFmt.slice(0, 4);
 
         // discover max widths from data
         let idWidth = 0;
@@ -567,7 +571,7 @@ class LogTable {
 
         //// setup final catch-all extra column
         this.cols.push(extraCol);
-        this.normFmt.push(fmt.entries(LogTable.extraFmts, (k) => !this.extraIgnore.has(k)));
+        this.normFmt.push(this.baseFmt[4]);
     }
 
     focus(i) {
