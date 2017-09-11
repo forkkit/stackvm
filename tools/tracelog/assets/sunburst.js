@@ -539,11 +539,11 @@ class LogTable {
         this.body = d3Select(this.el.tBodies[0] || this.el.appendChild(document.createElement("tbody")));
         this.raw = false;
         this.rawCols = [
-            "ID",
-            "#",
-            "IP",
-            "Action",
-            "Extra",
+            {title: "ID", className: "id"},
+            {title: "#", className: "count"},
+            {title: "IP", className: "ip"},
+            {title: "Action", className: "action"},
+            {title: "Extra", className: "extra"},
         ];
         this.cols = this.rawCols;
         this.baseFmt = LogTable.baseFmt.concat([
@@ -581,7 +581,8 @@ class LogTable {
         this.normFmt[2] = fmt.padded("0", ipWidth, this.normFmt[2]);
 
         //// setup columns for plucked extra values
-        this.cols = this.cols.concat(this.extraPluck);
+        this.cols = this.cols.concat(this.extraPluck
+            .map((name) => ({title: name, className: name})));
         this.normFmt = this.normFmt.concat(this.extraPluck.map((k) => {
             switch (k) {
             case "cs":
@@ -633,7 +634,9 @@ class LogTable {
         let colsel = this.header.selectAll("th").data(this.raw ? this.rawCols : this.cols);
         colsel.exit().remove();
         colsel = colsel.merge(colsel.enter().append("th"));
-        colsel.text((col) => col);
+        colsel
+            .attr("class", ({className}) => className)
+            .text(({title}) => title);
 
         let rows = this.body.selectAll("tr").data(records);
         rows.exit().remove();
@@ -644,9 +647,11 @@ class LogTable {
         let cells = rows.selectAll("td").data(({cells}) => cells);
         cells.exit().remove();
         cells = cells.merge(cells.enter().append("td"));
-        cells.html(this.raw
-            ? (d, i) => this.rawFmt[i](d)
-            : (d, i) => this.normFmt[i](d));
+        let cols = this.raw ? this.rawCols : this.cols;
+        let fmt = this.raw ? this.rawFmt : this.normFmt;
+        cells
+            .attr("class", (_, i) => cols[i].className)
+            .html((d, i) => fmt[i](d));
     }
 }
 
