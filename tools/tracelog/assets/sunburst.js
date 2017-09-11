@@ -574,17 +574,14 @@ class LogTable {
         // discover max widths from data
         let idWidth = 0;
         let cntWidth = 0;
-        let ipWidth = 0;
         this._model.rootSessions.forEach(({machID, records}) => {
             idWidth = Math.max(idWidth, this.normFmt[0](machID).length);
-            records.forEach(({count, ip}) => {
+            records.forEach(({count}) => {
                 cntWidth = Math.max(cntWidth, this.normFmt[1](count).length);
-                ipWidth = Math.max(ipWidth, this.normFmt[2](ip).length);
             });
         });
         this.normFmt[0] = fmt.padded(" ", idWidth, this.normFmt[0]);
         this.normFmt[1] = fmt.padded(" ", cntWidth, this.normFmt[1]);
-        this.normFmt[2] = fmt.padded("0", ipWidth, this.normFmt[2]);
 
         //// setup columns for plucked extra values
         this.cols = this.cols.concat(this.extraPluck
