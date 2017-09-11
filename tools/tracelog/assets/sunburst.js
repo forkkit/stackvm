@@ -538,6 +538,14 @@ class LogTable {
         this.header = d3Select(this.head.appendChild(document.createElement("tr")));
         this.body = d3Select(this.el.tBodies[0] || this.el.appendChild(document.createElement("tbody")));
         this.raw = false;
+        this.rawCols = [
+            "ID",
+            "#",
+            "IP",
+            "Action",
+            "Extra",
+        ];
+        this.cols = this.rawCols;
         this.baseFmt = LogTable.baseFmt.concat([
             LogTable.mungeActionFmt,
             LogTable.extraFmt((k) => !this.extraIgnore.has(k)),
@@ -548,16 +556,13 @@ class LogTable {
             LogTable.extraFmt(),
         ]);
         this.ra = null;
-        this.cols = ["ID", "#", "IP", "Action", "Extra"];
-        this.rawCols = ["ID", "#", "IP", "Action", "Extra"];
     }
 
     set model(model) {
         this._model = model;
 
         //// setup basic columns
-        let extraCol = this.cols.pop();
-        this.cols = this.cols.slice(0, 4);
+        this.cols = this.rawCols.slice(0, 4);
         this.normFmt = this.baseFmt.slice(0, 4);
 
         // discover max widths from data
@@ -587,7 +592,7 @@ class LogTable {
         }));
 
         //// setup final catch-all extra column
-        this.cols.push(extraCol);
+        this.cols.push(this.rawCols[4]);
         this.normFmt.push(this.baseFmt[4]);
     }
 
