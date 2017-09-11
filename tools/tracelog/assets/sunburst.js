@@ -527,7 +527,7 @@ class LogTable {
             fmt.entries(LogTable.extraFmts),
         ]);
         this.ra = null;
-        this.cols = null;
+        this.cols = ["ID", "#", "IP", "Action", "Extra"];
         this.rawCols = ["ID", "#", "IP", "Action", "Extra"];
     }
 
@@ -535,7 +535,8 @@ class LogTable {
         this._model = model;
 
         //// setup basic columns
-        this.cols = ["ID", "#", "IP", "Action"];
+        let extraCol = this.cols.pop();
+        this.cols = this.cols.slice(0, 4);
         this.fmt = LogTable.baseFmt.concat([LogTable.mungeActionFmt]);
 
         // discover max widths from data
@@ -565,7 +566,7 @@ class LogTable {
         }));
 
         //// setup final catch-all extra column
-        this.cols.push("Extra");
+        this.cols.push(extraCol);
         this.fmt.push(fmt.entries(LogTable.extraFmts, (k) => !this.extraIgnore.has(k)));
     }
 
