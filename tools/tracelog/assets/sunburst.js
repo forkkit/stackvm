@@ -629,11 +629,36 @@ class LogTable {
         this.ranges.clear();
 
         let records = [];
+        let stack = [];
+        let finish1 = () => {
+            let callLoc = stack.pop();
+            callLoc.span.end = records.length;
+            if (stack.length) {
+                callLoc.span.parent = stack[stack.length-1];
+                callLoc.span.parent.span.children.push(callLoc);
+            }
+        };
+
         for (var depth = 0; depth < this.ra.nodes.length; ++depth) {
             let {machID} = this.ra.nodes[depth];
             let start = records.length;
             for (let r of this.ra.records(depth)) {
                 let {count, loc, action, extra} = r;
+                if (/\bcall$/.test(action)) {
+                    let cs = matchAll(r.extra.cs, /\d+/g, (match) => parseInt(match[0], 10));
+                    loc.caller = {ip: cs[cs.length-1]};
+                    loc.span = {
+                        start: records.length,
+                        end: -1,
+                        parent: null,
+                        children: [],
+                    };
+                    stack.push(loc);
+                } else if (/\bret$/.test(action)) {
+                    if (loc.ip === stack[stack.length-1].caller.ip) finish1();
+                } else if (action === "End") {
+                    while (stack.length) finish1();
+                }
                 let cells = [machID, count, loc, action];
                 if (!this.raw) for (let k of this.extraPluck) cells.push(extra[k] || "");
                 extra = Object.assign({notes: r.notes}, extra);
