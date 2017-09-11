@@ -514,6 +514,13 @@ class RecordAssembler extends RawRecordAssembler {
             case "copy":
                 copy = rec;
                 if (next && copy.extra["child"] === next.id) {
+                    rec = records[++i];
+                    if (rec.kind === "postOp") {
+                        rec = Object.assign({}, rec, {
+                            extra: Object.assign({}, copy.extra, rec.extra),
+                        });
+                        out.push(rec);
+                    }
                     return out;
                 }
                 break;
