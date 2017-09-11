@@ -30,9 +30,9 @@ class EventEmitter {
     }
 }
 
-function matchAll(str, pat) {
+function matchAll(str, pat, ex) {
     var r = [];
-    for (let match = pat.exec(str); match; match = pat.exec(str)) r.push(match[1]);
+    for (let match = pat.exec(str); match; match = pat.exec(str)) r.push(ex(match));
     return r;
 }
 
@@ -167,7 +167,7 @@ class SunburstModel extends EventEmitter {
                 let {ip, extra} = record;
                 let labels = null;
                 if ("labels" in extra) {
-                    labels = record.labels = matchAll(extra.labels, /"([^"]+)"/g);
+                    labels = record.labels = matchAll(extra.labels, /"([^"]+)"/g, (match) => match[1]);
                     delete extra.labels;
                 }
                 record.loc = {ip, label: labels ? labels[0] : null};
