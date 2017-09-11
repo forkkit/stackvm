@@ -512,7 +512,6 @@ class LogTable {
     constructor(el) {
         this.ranges = new Map();
         this.el = thel(el);
-        this.sel = d3Select(this.el);
         this._model = null;
         this.extraPluck = ["ps", "cs"];
         this.extraIgnore = new Set([
@@ -521,6 +520,7 @@ class LogTable {
         ].concat(this.extraPluck));
         this.head = this.el.tHead || this.el.appendChild(document.createElement("thead"));
         this.header = d3Select(this.head.appendChild(document.createElement("tr")));
+        this.body = d3Select(this.el.tBodies[0] || this.el.appendChild(document.createElement("tbody")));
         this.raw = false;
         this.baseFmt = LogTable.baseFmt.concat([
             LogTable.mungeActionFmt,
@@ -575,8 +575,11 @@ class LogTable {
         this.normFmt.push(this.baseFmt[4]);
     }
 
-    focus(i) {
-        this.el.tBodies[i].scrollIntoView();
+    focus(depth) {
+        if (this.ranges.has(depth)) {
+            let {start} = this.ranges.get(depth);
+            this.el.tBodies[0].rows[start].scrollIntoView();
+        }
     }
 
     show(node, raw) {
@@ -590,18 +593,11 @@ class LogTable {
 
     update() {
         this.ranges.clear();
-        let colsel = this.header.selectAll("th").data(this.raw ? this.rawCols : this.cols);
-        colsel.exit().remove();
-        colsel = colsel.merge(colsel.enter().append("th"));
-        colsel.text((col) => col);
 
-        let bodies = this.sel.selectAll("tbody").data(this.ra.nodes);
-        bodies.exit().remove();
-        bodies = bodies.merge(bodies.enter().append("tbody"));
-
-        let start = 0;
-        let rows = bodies.selectAll("tr").data(({machID}, depth) => {
-            let records = [];
+        let records = [];
+        for (var depth = 0; depth < this.ra.nodes.length; ++depth) {
+            let {machID} = this.ra.nodes[depth];
+            let start = records.length;
             for (let r of this.ra.records(depth)) {
                 let {count, ip, action, extra} = r;
                 let cells = [machID, count, ip, action];
@@ -609,10 +605,15 @@ class LogTable {
                 cells.push(extra);
                 records.push({depth, machID, count, cells});
             }
-            this.ranges.set(depth, {start, end: start+records.length});
-            start += records.length;
-            return records;
-        });
+            this.ranges.set(depth, {start, end: records.length});
+        }
+
+        let colsel = this.header.selectAll("th").data(this.raw ? this.rawCols : this.cols);
+        colsel.exit().remove();
+        colsel = colsel.merge(colsel.enter().append("th"));
+        colsel.text((col) => col);
+
+        let rows = this.body.selectAll("tr").data(records);
         rows.exit().remove();
         rows = rows.merge(rows.enter().append("tr"));
         rows.attr("class", (record) => this._model.decorateRecordClass(
