@@ -125,7 +125,9 @@ nav {
     th {
         @include bgColor($normalH, 0.4);
         border-bottom: 0.1em solid hsluv($highH, $bgSat, 50%);
+        text-align: left;
     }
+    th.ip, td.ip { text-align: right; }
     td details {
         display: inline;
         &[open] { display: block; }
