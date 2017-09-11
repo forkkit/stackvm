@@ -600,7 +600,11 @@ class LogTable {
         let rows = bodies.selectAll("tr").data(({machID}, depth) => {
             let records = [];
             for (let r of this.ra.records(depth)) {
-                records.push(Object.assign({depth, machID}, r));
+                let {count, ip, action, extra} = r;
+                let cells = [machID, count, ip, action];
+                if (!this.raw) for (let k of this.extraPluck) cells.push(extra[k] || "");
+                cells.push(extra);
+                records.push({depth, machID, count, cells});
             }
             return records;
         });
@@ -609,12 +613,7 @@ class LogTable {
         rows.attr("class", (record) => this._model.decorateRecordClass(
             record, `bgColor${record.depth % numColors + 1}`));
 
-        let cells = rows.selectAll("td").data(this.raw
-            ? ({machID, count, ip, action, extra}) => [machID, count, ip, action, extra]
-            : ({machID, count, ip, action, extra}) => [machID, count, ip, action]
-                .concat(this.extraPluck.map((k) => extra[k] || ""))
-                .concat([extra])
-        );
+        let cells = rows.selectAll("td").data(({cells}) => cells);
         cells.exit().remove();
         cells = cells.merge(cells.enter().append("td"));
         cells.html(this.raw
