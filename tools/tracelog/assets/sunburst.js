@@ -598,8 +598,11 @@ class LogTable {
         bodies = bodies.merge(bodies.enter().append("tbody"));
 
         let rows = bodies.selectAll("tr").data(({machID}, depth) => {
-            let records = this.ra.records(depth);
-            return records.map(r => Object.assign({depth, machID}, r));
+            let records = [];
+            for (let r of this.ra.records(depth)) {
+                records.push(Object.assign({depth, machID}, r));
+            }
+            return records;
         });
         rows.exit().remove();
         rows = rows.merge(rows.enter().append("tr"));
