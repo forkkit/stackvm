@@ -638,7 +638,7 @@ class LogTable {
                 if (!this.raw) for (let k of this.extraPluck) cells.push(extra[k] || "");
                 extra = Object.assign({notes: r.notes}, extra);
                 cells.push(extra);
-                records.push({depth, machID, count, cells});
+                records.push({depth, machID, count, loc, cells});
             }
             this.ranges.set(depth, {start, end: records.length});
         }
