@@ -73,6 +73,8 @@ fmt.num = (base) => {
     return (n) => n.toString(base);
 };
 
+fmt.all = (...fs) => (d) => fs.map((f) => f(d));
+
 fmt.then = (...fs) => (s) => {
     for (var i = 0; i < fs.length; ++i) s = fs[i](s);
     return s;
