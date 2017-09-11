@@ -12,16 +12,18 @@ $fgSat: 25%;
     background-color: hsluv($hue, $bgSat, percentage($light));
     color: hsluv($hue, $fgSat, 75%);
 
-    a { color: hsluv($hue, 90%, 85%); }
-    a:hover { color: hsluv($hue, 90%, 95%); }
-    a:active { text-decoration: underline; }
+    a {
+        color: hsluv($hue, 90%, 85%);
+        &:hover { color: hsluv($hue, 90%, 95%); }
+        &:active { text-decoration: underline; }
+    }
 
     summary {
         color: hsluv($hue, 90%, 85%);
         cursor: pointer;
+        &:hover { color: hsluv($hue, 90%, 95%); }
+        &:active { text-decoration: underline; }
     }
-    summary:hover { color: hsluv($hue, 90%, 95%); }
-    summary:active { text-decoration: underline; }
 }
 
 html, body, main {
