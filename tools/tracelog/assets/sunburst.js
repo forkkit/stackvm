@@ -549,14 +549,14 @@ class LogTable {
         this.baseFmt = [
             fmt.num(10),
             fmt.num(10),
-            fmt.hex,
+            LogTable.locFmt,
             LogTable.mungeActionFmt,
             LogTable.extraFmt((k) => !this.extraIgnore.has(k)),
         ];
         this.rawFmt = [
             fmt.num(10),
             fmt.num(10),
-            fmt.hex,
+            LogTable.locFmt,
             fmt.feid,
             LogTable.extraFmt(),
         ];
@@ -660,6 +660,8 @@ class LogTable {
             .html((d, i) => fmt[i](d));
     }
 }
+
+LogTable.locFmt = fmt.hex;
 
 LogTable.mungeActionFmt = fmt.escaped((action) => action.replace(
     /([@+-])0x([0-9a-fA-F]+)/,
