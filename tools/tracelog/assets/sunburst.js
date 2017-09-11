@@ -512,10 +512,10 @@ class RecordAssembler extends RawRecordAssembler {
                 break;
 
             case "copy":
-                if (next && rec.extra["child"] === next.id) {
+                copy = rec;
+                if (next && copy.extra["child"] === next.id) {
                     return out;
                 }
-                copy = rec;
                 break;
 
             default:
