@@ -34,7 +34,7 @@ let fmt = {};
 
 fmt.id = (x) => x;
 
-fmt.escapeHTML = (unsafe) => unsafe
+fmt.escapeHTML = (unsafe) => ("" + unsafe)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
