@@ -521,7 +521,7 @@ class LogTable {
         this.head = this.el.tHead || this.el.appendChild(document.createElement("thead"));
         this.header = d3Select(this.head.appendChild(document.createElement("tr")));
         this.raw = false;
-        this.fmt = null;
+        this.normFmt = null;
         this.rawFmt = LogTable.baseFmt.concat([
             fmt.feid,
             fmt.entries(LogTable.extraFmts),
@@ -537,26 +537,26 @@ class LogTable {
         //// setup basic columns
         let extraCol = this.cols.pop();
         this.cols = this.cols.slice(0, 4);
-        this.fmt = LogTable.baseFmt.concat([LogTable.mungeActionFmt]);
+        this.normFmt = LogTable.baseFmt.concat([LogTable.mungeActionFmt]);
 
         // discover max widths from data
         let idWidth = 0;
         let cntWidth = 0;
         let ipWidth = 0;
         this._model.rootSessions.forEach(({machID, records}) => {
-            idWidth = Math.max(idWidth, this.fmt[0](machID).length);
+            idWidth = Math.max(idWidth, this.normFmt[0](machID).length);
             records.forEach(({count, ip}) => {
-                cntWidth = Math.max(cntWidth, this.fmt[1](count).length);
-                ipWidth = Math.max(ipWidth, this.fmt[2](ip).length);
+                cntWidth = Math.max(cntWidth, this.normFmt[1](count).length);
+                ipWidth = Math.max(ipWidth, this.normFmt[2](ip).length);
             });
         });
-        this.fmt[0] = fmt.padded(" ", idWidth, this.fmt[0]);
-        this.fmt[1] = fmt.padded(" ", cntWidth, this.fmt[1]);
-        this.fmt[2] = fmt.padded("0", ipWidth, this.fmt[2]);
+        this.normFmt[0] = fmt.padded(" ", idWidth, this.normFmt[0]);
+        this.normFmt[1] = fmt.padded(" ", cntWidth, this.normFmt[1]);
+        this.normFmt[2] = fmt.padded("0", ipWidth, this.normFmt[2]);
 
         //// setup columns for plucked extra values
         this.cols = this.cols.concat(this.extraPluck);
-        this.fmt = this.fmt.concat(this.extraPluck.map((k) => {
+        this.normFmt = this.normFmt.concat(this.extraPluck.map((k) => {
             switch (k) {
             case "cs":
                 return fmt.replaceAll(/\d+/g, fmt.dec2hex);
@@ -567,7 +567,7 @@ class LogTable {
 
         //// setup final catch-all extra column
         this.cols.push(extraCol);
-        this.fmt.push(fmt.entries(LogTable.extraFmts, (k) => !this.extraIgnore.has(k)));
+        this.normFmt.push(fmt.entries(LogTable.extraFmts, (k) => !this.extraIgnore.has(k)));
     }
 
     focus(i) {
@@ -613,7 +613,7 @@ class LogTable {
         cells = cells.merge(cells.enter().append("td"));
         cells.html(this.raw
             ? (d, i) => this.rawFmt[i](d)
-            : (d, i) => this.fmt[i](d));
+            : (d, i) => this.normFmt[i](d));
     }
 }
 
