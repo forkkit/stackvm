@@ -611,8 +611,14 @@ class LogTable {
 
     focus(depth) {
         if (this.ranges.has(depth)) {
-            let {start} = this.ranges.get(depth);
-            this.el.tBodies[0].rows[start].scrollIntoView();
+            let {start, end} = this.ranges.get(depth);
+            let rows = this.el.tBodies[0].rows;
+            for (var i = start; i < rows.length && i < end; ++i) {
+                if (rows[i].style.display !== "none") {
+                    rows[i].scrollIntoView();
+                    return;
+                }
+            }
         }
     }
 
