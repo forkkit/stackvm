@@ -25,6 +25,11 @@ $fgSat: 25%;
         &:active { text-decoration: underline; }
     }
 
+    .brokenSpan {
+        color: hsluv(20, 90%, 85%);
+        cursor: not-allowed;
+    }
+
     .span {
         color: hsluv($hue, 90%, 85%);
         cursor: pointer;
@@ -146,11 +151,15 @@ nav {
         &[open] summary::after { content: ""; }
     }
 
-    td .span {
+    td .span,
+    td .brokenSpan {
         display: inline;
+        .label { display: inline; }
+    }
+
+    td .span {
         &::after { content: "▻"; }
         &.open::after { content: "▿"; }
-        .label { display: inline; }
     }
 }
 

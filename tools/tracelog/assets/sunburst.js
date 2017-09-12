@@ -694,12 +694,14 @@ class LogTable {
 
         let rowEls = rows.nodes();
         rows.select(".span").each(({loc: {span: {start, end}}}) => {
+            if (end < start) return;
             for (let i = start+1; i < end; i++) rowEls[i].style.display = "none";
         });
         rows.select(".span").on("click", ({loc: {span: {start, end, children}}}, i, x) => {
             const sel = d3Select(x[i]);
             const open = !sel.classed("open");
             sel.classed("open", open);
+            if (end < start) return;
             if (!open) {
                 for (let i = start+1; i < end; i++) rowEls[i].style.display = "none";
                 return;
@@ -717,10 +719,10 @@ class LogTable {
     }
 }
 
-LogTable.locFmt = ({ip, label, caller}) => {
+LogTable.locFmt = ({ip, label, caller, span}) => {
     let addr = fmt.hex(ip);
     if (label) addr = `<div title="@${addr}" class="label">${label}:</div>`;
-    if (caller) addr = `<div class="span">${addr}</div>`;
+    if (caller) addr = `<div class="${span.end < span.start ? "brokenSpan" : "span"}">${addr}</div>`;
     return addr;
 };
 
