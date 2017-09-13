@@ -570,7 +570,7 @@ func (sc *scanner) handleText(val interface{}) error {
 	case string:
 		switch {
 		case len(v) > 1 && v[0] == '.':
-			return sc.handleDirective(v[1:])
+			return sc.handleTextDirective(v[1:])
 
 		case len(v) > 1 && v[len(v)-1] == ':':
 			return sc.handleLabel(v[:len(v)-1])
@@ -587,6 +587,13 @@ func (sc *scanner) handleText(val interface{}) error {
 
 	default:
 		return fmt.Errorf(`invalid token %T(%v); expected ".directive", "label:", ":ref", "opName", or an int`, val, val)
+	}
+}
+
+func (sc *scanner) handleTextDirective(s string) error {
+	switch s {
+	default:
+		return sc.handleDirective(s)
 	}
 }
 
