@@ -535,16 +535,7 @@ func (sc *scanner) handleData(val interface{}) error {
 	case string:
 		switch {
 		case len(v) > 1 && v[0] == '.':
-			switch s := v[1:]; s {
-			case "alloc":
-				return sc.handleAlloc()
-			case "in":
-				return sc.handleInput()
-			case "out":
-				return sc.handleOutput()
-			default:
-				return sc.handleDirective(s)
-			}
+			return sc.handleDataDirective(v[1:])
 
 		case len(v) > 1 && v[len(v)-1] == ':':
 			return sc.handleLabel(v[:len(v)-1])
@@ -558,6 +549,19 @@ func (sc *scanner) handleData(val interface{}) error {
 
 	default:
 		return fmt.Errorf(`invalid token %T(%v); expected ".directive", "label:", or an int`, val, val)
+	}
+}
+
+func (sc *scanner) handleDataDirective(s string) error {
+	switch s {
+	case "alloc":
+		return sc.handleAlloc()
+	case "in":
+		return sc.handleInput()
+	case "out":
+		return sc.handleOutput()
+	default:
+		return sc.handleDirective(s)
 	}
 }
 
