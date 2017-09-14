@@ -60,15 +60,15 @@ func (name NoSuchOpError) Error() string {
 //   starting execution at the top of the loaded program (right after the
 //   stack).
 // - 0x06 input: its required parameter is an endpoint of an input region;
-//   must appear in star/end pairs.
+//   must appear in start/end pairs.
 // - 0x07 output: its required parameter is an endpoint of an output region;
 //   must appear in start/end pairs.
 // - 0x08 name: its required parameter is the address of a string name for
 //   the last output or input region.
 // - 0x09 addr labels: its required parameter is the count of how many
 //   addr/label pairs follow this option. Each addr is encoded as a varint,
-//   and each label is encoded with a varint length prefix, and then that
-//   many bytes as a utf-8 string label.
+//   and each label is encoded with a varint length prefix followed by that
+//   many bytes of utf-8 text.
 // - 0x7f version: reserved for future use, where its parameter will be the
 //   required machine/program version; passing a version value is currently
 //   unsupported.
@@ -474,7 +474,7 @@ const (
 	optCodeEntry = 0x05
 
 	// its required parameter is an endpoint of an input region; must appear in
-	// star/end pairs.
+	// start/end pairs.
 	optCodeInput = 0x06
 
 	// its required parameter is an endpoint of an output region; must appear
@@ -487,8 +487,7 @@ const (
 
 	// its required parameter is the count of how many addr/label pairs follow
 	// this option. Each addr is encoded as a varint, and each label is encoded
-	// with a varint length prefix, and then that many bytes as a utf-8 string
-	// label.
+	// with a varint length prefix followed by that many bytes of utf-8 text.
 	optCodeAddrLabels = 0x09
 
 	// reserved for future use, where its parameter will be the required
