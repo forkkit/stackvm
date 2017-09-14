@@ -79,6 +79,10 @@ func (lf logfTracer) Handle(m *stackvm.Mach, err error) {
 func (lf *logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 	extra := fmt.Sprintf("opName=%s ", op.Name())
 
+	if _, spanClose := lf.dbg.Span(ip); spanClose {
+		extra = "spanClose=true "
+	}
+
 	ps, cs, err := m.Stacks()
 	if err != nil {
 		lf.note(m, ">>>", op,
@@ -123,6 +127,10 @@ func (lf *logfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 		}
 		lf.afterName = ""
 		lf.afterFetch = 0
+	}
+
+	if spanOpen, _ := lf.dbg.Span(ip); spanOpen {
+		extra += "spanOpen=true "
 	}
 
 	ps, cs, err := m.Stacks()
