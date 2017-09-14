@@ -407,6 +407,16 @@ func (sec *section) addLabel(name string) {
 	sec.labels[name] = len(sec.toks)
 }
 
+func (sec *section) genLabel(name string) string {
+	if _, defined := sec.labels[name]; name[0] == '.' || defined {
+		n, tmp := 1, fmt.Sprintf("%s.1", name)
+		for _, defined := sec.labels[tmp]; defined; _, defined = sec.labels[tmp] {
+			n, tmp = n+1, fmt.Sprintf("%s.%d", name, n)
+		}
+	}
+	return name
+}
+
 type assemblerState uint8
 
 const (
