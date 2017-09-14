@@ -840,6 +840,11 @@ func (sc *scanner) addSpanOpen(name string) {
 		sc.addRefOpt("spanOpen", name, 0)
 	}
 }
+
+func (sc *scanner) addSpanClose(name string) {
+	sc.addRefOpt("spanClose", name, 0)
+}
+
 func (sc *scanner) handleImm(n int) error {
 	s, err := sc.expectString(`":ref" or "opName"`)
 	if err != nil {
