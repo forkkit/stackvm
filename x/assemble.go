@@ -691,9 +691,29 @@ func (sc *scanner) handleText(val interface{}) error {
 
 func (sc *scanner) handleTextDirective(s string) error {
 	switch s {
+	case "spanOpen":
+		return sc.handleSpanOpen()
+	case "spanClose":
+		return sc.handleSpanClose()
 	default:
 		return sc.handleDirective(s)
 	}
+}
+
+func (sc *scanner) handleSpanOpen() error {
+	name, err := sc.expectLabel(".spanOpen")
+	if err != nil {
+		return err
+	}
+	sc.addSpanOpen(name)
+	sc.open = append(sc.open, name)
+	sc.labels = sc.labels[:0]
+	return nil
+}
+
+func (sc *scanner) handleSpanClose() error {
+	sc.addSpanClose("spanClose")
+	return nil
 }
 
 func (sc *scanner) handleDirective(name string) error {
