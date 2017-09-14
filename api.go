@@ -182,6 +182,11 @@ func NamedInput(name string, vals []uint32) MachBuildOpt {
 type DebugInfo interface {
 	// Labels returns any labels defined for the given address.
 	Labels(addr uint32) []string
+
+	// Span returns whether the given address indicates a semantic span open or
+	// close (both are possible!). A semantic span represents some structure
+	// like a function call.
+	Span(addr uint32) (open, close bool)
 }
 
 // WithDebugInfo calls the given function with any defined debug info; if no
@@ -502,16 +507,31 @@ const (
 	optCodeVersion = 0x7f
 )
 
+type anno uint8
+
+const (
+	annoSpanOpen anno = 1 << iota
+	annoSpanClose
+)
+
 type debugInfo struct {
 	labels map[uint32][]string
+	annos  map[uint32]anno
 }
 
 func (dbg debugInfo) Labels(addr uint32) []string {
 	return dbg.labels[addr]
 }
 
+func (dbg debugInfo) Span(addr uint32) (open, close bool) {
+	an := dbg.annos[addr]
+	open = an&annoSpanOpen != 0
+	close = an&annoSpanClose != 0
+	return
+}
+
 func (dbg debugInfo) empty() bool {
-	return len(dbg.labels) == 0
+	return len(dbg.labels) == 0 && len(dbg.annos) == 0
 }
 
 func (dbg *debugInfo) addLabel(addr uint32, label string) {
