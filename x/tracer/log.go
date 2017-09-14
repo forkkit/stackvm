@@ -157,12 +157,14 @@ func (lf logfTracer) note(m *stackvm.Mach, mark string, note interface{}, args .
 
 	mid, _ := m.Tracer().Context(m, "id")
 
+	ip := m.IP()
+
 	if count, _ := m.Tracer().Context(m, "count"); count != nil {
 		format = "%v #% 4d %s % *v @0x%04x"
-		parts = []interface{}{mid, count, mark, noteWidth, note, m.IP()}
+		parts = []interface{}{mid, count, mark, noteWidth, note, ip}
 	} else {
 		format = "%v #% 4d %s % *v @0x%04x"
-		parts = []interface{}{mid, 0, mark, noteWidth, note, m.IP()}
+		parts = []interface{}{mid, 0, mark, noteWidth, note, ip}
 	}
 
 	if len(args) > 0 {
@@ -173,7 +175,7 @@ func (lf logfTracer) note(m *stackvm.Mach, mark string, note interface{}, args .
 		parts = append(parts, args...)
 	}
 
-	if labels := lf.addrLabels[m.IP()]; len(labels) != 0 {
+	if labels := lf.addrLabels[ip]; len(labels) != 0 {
 		format += " labels=%q"
 		parts = append(parts, labels)
 	}
