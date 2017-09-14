@@ -69,6 +69,10 @@ func (name NoSuchOpError) Error() string {
 //   addr/label pairs follow this option. Each addr is encoded as a varint,
 //   and each label is encoded with a varint length prefix followed by that
 //   many bytes of utf-8 text.
+// - 0x0a span open: its required parameter marks an address as a semantic
+//   span open. A semantic span marks something like a function call.
+// - 0x0b span close: its required parameter marks an address as a semantic
+//   span close.
 // - 0x7f version: reserved for future use, where its parameter will be the
 //   required machine/program version; passing a version value is currently
 //   unsupported.
@@ -507,6 +511,13 @@ const (
 	// with a varint length prefix followed by that many bytes of utf-8 text.
 	optCodeAddrLabels = 0x09
 
+	// its required parameter marks an address as a semantic span open. A
+	// semantic span marks something like a function call.
+	optCodeSpanOpen = 0x0a
+
+	// its required parameter marks an address as a semantic span close.
+	optCodeSpanClose = 0x0b
+
 	// reserved for future use, where its parameter will be the required
 	// machine/program version; passing a version value is currently
 	// unsupported.
@@ -561,6 +572,13 @@ func (dbg *debugInfo) addLabel(addr uint32, label string) {
 		dbg.labels = make(map[uint32][]string)
 	}
 	dbg.labels[addr] = append(dbg.labels[addr], label)
+}
+
+func (dbg *debugInfo) annotate(addr uint32, an anno) {
+	if dbg.annos == nil {
+		dbg.annos = make(map[uint32]anno)
+	}
+	dbg.annos[addr] |= an
 }
 
 type machBuilder struct {
@@ -768,6 +786,12 @@ func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
 			return false, err
 		}
 
+	case 0x80 | optCodeSpanOpen:
+		mb.dbg.annotate(arg, annoSpanOpen)
+
+	case 0x80 | optCodeSpanClose:
+		mb.dbg.annotate(arg, annoSpanClose)
+
 	case optCodeEnd:
 		return true, nil
 
@@ -795,7 +819,7 @@ func ResolveOptionRefArg(op Op, site, targ uint32) Op {
 // dialect.
 func optionAcceptsRef(op Op) bool {
 	switch op.Code {
-	case optCodeEntry, optCodeInput, optCodeOutput, optCodeName:
+	case optCodeEntry, optCodeInput, optCodeOutput, optCodeName, optCodeSpanOpen, optCodeSpanClose:
 		return true
 	}
 	return false
@@ -836,6 +860,10 @@ func NameOption(code uint8) string {
 		return "name"
 	case optCodeAddrLabels:
 		return "addrLabels"
+	case optCodeSpanOpen:
+		return "spanOpen"
+	case optCodeSpanClose:
+		return "spanClose"
 	case optCodeVersion:
 		return "version"
 	default:
@@ -866,6 +894,10 @@ func ResolveOption(name string, arg uint32, have bool) (op Op) {
 		op.Code = optCodeName
 	case "addrLabels":
 		op.Code = optCodeAddrLabels
+	case "spanOpen":
+		op.Code = optCodeSpanOpen
+	case "spanClose":
+		op.Code = optCodeSpanClose
 	case "version":
 		op.Code = optCodeVersion
 	default:
