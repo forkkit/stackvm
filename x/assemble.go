@@ -246,6 +246,7 @@ type assembler struct {
 	pendIn, pendOut string
 
 	adls, opts, prog section
+	opens            map[string]struct{}
 
 	stackSize *token
 	queueSize *token
@@ -830,6 +831,15 @@ func (sc *scanner) addProgRef(tok token, name string, off int) {
 	sc.prog.addRef(tok, name, off)
 }
 
+func (sc *scanner) addSpanOpen(name string) {
+	if _, isOpen := sc.opens[name]; !isOpen {
+		if sc.opens == nil {
+			sc.opens = make(map[string]struct{}, 1)
+		}
+		sc.opens[name] = struct{}{}
+		sc.addRefOpt("spanOpen", name, 0)
+	}
+}
 func (sc *scanner) handleImm(n int) error {
 	s, err := sc.expectString(`":ref" or "opName"`)
 	if err != nil {
