@@ -178,12 +178,18 @@ func NamedInput(name string, vals []uint32) MachBuildOpt {
 	}
 }
 
-// WithAddrLabels calls the given function with any defined debug addr/labels
-// mapping; if no mapping was defined, the function isn't called.
-func WithAddrLabels(cb func(map[uint32][]string)) MachBuildOpt {
+// DebugInfo provides debug annotations about addresses in a machine's memory.
+type DebugInfo interface {
+	// Labels returns any labels defined for the given address.
+	Labels(addr uint32) []string
+}
+
+// WithDebugInfo calls the given function with any defined debug info; if no
+// debug info was defined, the function isn't called.
+func WithDebugInfo(cb func(DebugInfo)) MachBuildOpt {
 	return func(mb *machBuilder) error {
-		if mb.labels != nil {
-			cb(mb.labels)
+		if !mb.dbg.empty() {
+			cb(mb.dbg)
 		}
 		return nil
 	}
@@ -496,6 +502,25 @@ const (
 	optCodeVersion = 0x7f
 )
 
+type debugInfo struct {
+	labels map[uint32][]string
+}
+
+func (dbg debugInfo) Labels(addr uint32) []string {
+	return dbg.labels[addr]
+}
+
+func (dbg debugInfo) empty() bool {
+	return len(dbg.labels) == 0
+}
+
+func (dbg *debugInfo) addLabel(addr uint32, label string) {
+	if dbg.labels == nil {
+		dbg.labels = make(map[uint32][]string)
+	}
+	dbg.labels[addr] = append(dbg.labels[addr], label)
+}
+
 type machBuilder struct {
 	Mach
 	base      uint32
@@ -503,7 +528,7 @@ type machBuilder struct {
 	maxCopies int
 	inputs    []region
 	nextIn    int
-	labels    map[uint32][]string
+	dbg       debugInfo
 
 	buf []byte
 	h   MachHandler
@@ -576,9 +601,6 @@ func (mb *machBuilder) mayReadOptCode(ifCode uint8) (uint32, bool, error) {
 }
 
 func (mb *machBuilder) readAddrLabels(n int) error {
-	if n > 0 && mb.labels == nil {
-		mb.labels = make(map[uint32][]string, n)
-	}
 	for i := 0; i < n; i++ {
 		addr, err := mb.readUvarint()
 		if err != nil {
@@ -588,7 +610,7 @@ func (mb *machBuilder) readAddrLabels(n int) error {
 		if err != nil {
 			return fmt.Errorf("bad label: %v", err)
 		}
-		mb.labels[addr] = append(mb.labels[addr], label)
+		mb.dbg.addLabel(addr, label)
 	}
 	return nil
 }

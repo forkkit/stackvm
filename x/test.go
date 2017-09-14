@@ -80,7 +80,7 @@ type testCaseRun struct {
 	testing.TB
 	Logf func(string, ...interface{})
 	TestCase
-	addrLabels map[uint32][]string
+	dbg stackvm.DebugInfo
 }
 
 // Run runs each test case in a sub-test.
@@ -219,7 +219,7 @@ func (t testCaseRun) trace() {
 	trc := tracer.Multi(
 		idTracer,
 		countTracer,
-		tracer.NewLogTracer(t.Logf, t.addrLabels),
+		tracer.NewLogTracer(t.Logf, t.dbg),
 		tracer.Filtered(
 			tracer.FuncTracer(func(m *stackvm.Mach) {
 				_ = dumper.Dump(m, t.contextLog(m))
@@ -238,8 +238,8 @@ func (t testCaseRun) logLines(s string) {
 	}
 }
 
-func (t *testCaseRun) setLabels(al map[uint32][]string) {
-	t.addrLabels = al
+func (t *testCaseRun) setDebugInfo(dbg stackvm.DebugInfo) {
+	t.dbg = dbg
 }
 
 func (t *testCaseRun) build() (m *stackvm.Mach, fin finisher, err error) {
@@ -262,7 +262,7 @@ func (t *testCaseRun) build() (m *stackvm.Mach, fin finisher, err error) {
 		t.Logf("Program to Load:")
 		t.logLines(hex.Dump(prog))
 	}
-	opts := []stackvm.MachBuildOpt{stackvm.WithAddrLabels(t.setLabels)}
+	opts := []stackvm.MachBuildOpt{stackvm.WithDebugInfo(t.setDebugInfo)}
 
 	switch vals := t.Input.(type) {
 	case [][]uint32:

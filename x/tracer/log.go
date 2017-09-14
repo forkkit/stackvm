@@ -15,17 +15,17 @@ const noteWidth = 15
 // string "logging" function
 func NewLogTracer(
 	f func(string, ...interface{}),
-	addrLabels map[uint32][]string,
+	dbg stackvm.DebugInfo,
 ) stackvm.Tracer {
 	return &logfTracer{
-		f:          f,
-		addrLabels: addrLabels,
+		f:   f,
+		dbg: dbg,
 	}
 }
 
 type logfTracer struct {
 	f          func(string, ...interface{})
-	addrLabels map[uint32][]string
+	dbg        stackvm.DebugInfo
 	afterName  string
 	afterFetch uint32
 }
@@ -175,7 +175,7 @@ func (lf logfTracer) note(m *stackvm.Mach, mark string, note interface{}, args .
 		parts = append(parts, args...)
 	}
 
-	if labels := lf.addrLabels[ip]; len(labels) != 0 {
+	if labels := lf.dbg.Labels(ip); len(labels) != 0 {
 		format += " labels=%q"
 		parts = append(parts, labels)
 	}
