@@ -278,20 +278,18 @@ func collectSections(secs ...section) (sec section) {
 		numLabels += len(s.labels)
 		sec.maxBytes += s.maxBytes
 	}
-	if numToks > 0 {
-		sec.toks = make([]token, 0, numToks)
+	if numLabels > 0 {
+		sec.labels = make(map[string]int)
 	}
 	if numRefsBy > 0 {
 		sec.refsBy = make(map[string][]ref, numRefsBy)
 	}
-	if numLabels > 0 {
-		sec.labels = make(map[string]int)
+	if numToks > 0 {
+		sec.toks = make([]token, 0, numToks)
 	}
 
 	base := 0
 	for _, s := range secs {
-		sec.toks = append(sec.toks, s.toks...)
-
 		for name, rfs := range s.refsBy {
 			crfs := sec.refsBy[name]
 			for _, rf := range rfs {
@@ -306,6 +304,8 @@ func collectSections(secs ...section) (sec section) {
 				sec.labels[name] = base + off
 			}
 		}
+
+		sec.toks = append(sec.toks, s.toks...)
 
 		base += len(s.toks)
 	}
