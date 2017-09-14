@@ -655,17 +655,8 @@ func (sc *scanner) setState(state assemblerState) error {
 }
 
 func (sc *scanner) handleEntry() error {
-	s, err := sc.expectString(`"label:"`)
+	name, err := sc.expectLabel(".entry")
 	if err != nil {
-		return err
-	}
-
-	// expect and define label
-	if len(s) < 2 || s[len(s)-1] != ':' {
-		return fmt.Errorf("unexpected string %q, expected .entry label", s)
-	}
-	name := s[:len(s)-1]
-	if err := sc.handleLabel(name); err != nil {
 		return err
 	}
 
@@ -797,42 +788,20 @@ func (sc *scanner) handleAlloc() error {
 }
 
 func (sc *scanner) handleInput() error {
-	s, err := sc.expectString(`"label:"`)
+	name, err := sc.expectLabel(".in")
 	if err != nil {
 		return err
 	}
-
-	// expect and define label
-	if len(s) < 2 || s[len(s)-1] != ':' {
-		return fmt.Errorf("unexpected string %q, expected .in label", s)
-	}
-	name := s[:len(s)-1]
-	if err := sc.handleLabel(name); err != nil {
-		return err
-	}
-
-	// stash name to be flushed by handleLabel
-	sc.pendIn = name
+	sc.pendIn = name // to be flushed by handleLabel
 	return nil
 }
 
 func (sc *scanner) handleOutput() error {
-	s, err := sc.expectString(`"label:"`)
+	name, err := sc.expectLabel(".out")
 	if err != nil {
 		return err
 	}
-
-	// expect and define label
-	if len(s) < 2 || s[len(s)-1] != ':' {
-		return fmt.Errorf("unexpected string %q, expected .out label", s)
-	}
-	name := s[:len(s)-1]
-	if err := sc.handleLabel(name); err != nil {
-		return err
-	}
-
-	// stash name to be flushed by handleLabel
-	sc.pendOut = name
+	sc.pendOut = name // to be flushed by handleLabel
 	return nil
 }
 
@@ -866,6 +835,19 @@ func (sc *scanner) expectOp(arg uint32, have bool) (token, error) {
 		return token{}, err
 	}
 	return opToken(op), nil
+}
+
+func (sc *scanner) expectLabel(role string) (string, error) {
+	desc := fmt.Sprintf(`%s "label:"`, role)
+	s, err := sc.expectString(desc)
+	if err != nil {
+		return "", err
+	}
+	if len(s) < 2 || s[len(s)-1] != ':' {
+		return "", fmt.Errorf("unexpected string %q, expected %s", s, desc)
+	}
+	name := s[:len(s)-1]
+	return name, sc.handleLabel(name)
 }
 
 func (sc *scanner) expectString(desc string) (string, error) {
