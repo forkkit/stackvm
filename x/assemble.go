@@ -734,7 +734,7 @@ func (sc *scanner) handleRef(name string) error {
 	if err != nil {
 		return err
 	}
-	sc.prog.addRef(tok, name, 0)
+	sc.addProgRef(tok, name, 0)
 	sc.refLabel(name)
 	return nil
 }
@@ -744,7 +744,7 @@ func (sc *scanner) handleOffRef(name string, n int) error {
 	if err != nil {
 		return err
 	}
-	sc.prog.addRef(tok, name, n)
+	sc.addProgRef(tok, name, n)
 	sc.refLabel(name)
 	return nil
 }
@@ -760,6 +760,10 @@ func (sc *scanner) handleOp(name string) error {
 
 func (sc *scanner) addProgTok(tok token) {
 	sc.prog.add(tok)
+}
+
+func (sc *scanner) addProgRef(tok token, name string, off int) {
+	sc.prog.addRef(tok, name, off)
 }
 
 func (sc *scanner) handleImm(n int) error {
