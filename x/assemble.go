@@ -708,7 +708,7 @@ func (sc *scanner) finishIn() error {
 	sc.addRefOpt("input", endLabel, 0)
 	sc.addRefOpt("name", nameLabel, 0)
 	sc.prog.addLabel(nameLabel)
-	sc.prog.add(stringToken(sc.pendIn))
+	sc.addProgTok(stringToken(sc.pendIn))
 	sc.pendIn = ""
 	return nil
 }
@@ -724,7 +724,7 @@ func (sc *scanner) finishOut() error {
 	sc.addRefOpt("output", endLabel, 0)
 	sc.addRefOpt("name", nameLabel, 0)
 	sc.prog.addLabel(nameLabel)
-	sc.prog.add(stringToken(sc.pendOut))
+	sc.addProgTok(stringToken(sc.pendOut))
 	sc.pendOut = ""
 	return nil
 }
@@ -754,8 +754,12 @@ func (sc *scanner) handleOp(name string) error {
 	if err != nil {
 		return err
 	}
-	sc.prog.add(opToken(op))
+	sc.addProgTok(opToken(op))
 	return nil
+}
+
+func (sc *scanner) addProgTok(tok token) {
+	sc.prog.add(tok)
 }
 
 func (sc *scanner) handleImm(n int) error {
@@ -770,7 +774,7 @@ func (sc *scanner) handleImm(n int) error {
 	if err != nil {
 		return err
 	}
-	sc.prog.add(opToken(op))
+	sc.addProgTok(opToken(op))
 	return nil
 }
 
@@ -783,7 +787,7 @@ func (sc *scanner) handleAlloc() error {
 		return fmt.Errorf("invalid .alloc %v, must be positive", n)
 	}
 	// TODO: should be in bytes, not words
-	sc.prog.add(allocToken(uint32(n)))
+	sc.addProgTok(allocToken(uint32(n)))
 	return nil
 }
 
@@ -806,7 +810,7 @@ func (sc *scanner) handleOutput() error {
 }
 
 func (sc *scanner) handleDataWord(d uint32) error {
-	sc.prog.add(dataToken(d))
+	sc.addProgTok(dataToken(d))
 	return nil
 }
 
