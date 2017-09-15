@@ -77,7 +77,7 @@ func (lf logfTracer) Handle(m *stackvm.Mach, err error) {
 }
 
 func (lf *logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
-	var extra string
+	extra := fmt.Sprintf("opName=%s ", op.Name())
 
 	ps, cs, err := m.Stacks()
 	if err != nil {
@@ -115,11 +115,11 @@ func (lf *logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 }
 
 func (lf *logfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
-	var extra string
+	extra := fmt.Sprintf("opName=%s ", op.Name())
 
 	if lf.afterName != "" {
 		if val, err := m.Fetch(lf.afterFetch); err == nil {
-			extra = fmt.Sprintf("%s=%v ", lf.afterName, val)
+			extra += fmt.Sprintf("%s=%v ", lf.afterName, val)
 		}
 		lf.afterName = ""
 		lf.afterFetch = 0
