@@ -77,15 +77,17 @@ func (lf logfTracer) Handle(m *stackvm.Mach, err error) {
 }
 
 func (lf *logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
+	var extra string
+
 	ps, cs, err := m.Stacks()
 	if err != nil {
 		lf.note(m, ">>>", op,
-			"pbp=0x%04x psp=0x%04x csp=0x%04x cbp=0x%04x stacks_err=%q",
-			m.PBP(), m.PSP(), m.CSP(), m.CBP(), err)
+			"%spbp=0x%04x psp=0x%04x csp=0x%04x cbp=0x%04x stacks_err=%q",
+			extra, m.PBP(), m.PSP(), m.CSP(), m.CBP(), err)
 	} else {
 		lf.note(m, ">>>", op,
-			"ps=%v cs=%v psp=0x%04x csp=0x%04x",
-			ps, cs, m.PSP(), m.CSP())
+			"%sps=%v cs=%v psp=0x%04x csp=0x%04x",
+			extra, ps, cs, m.PSP(), m.CSP())
 	}
 
 	switch op.Name() {
