@@ -489,7 +489,7 @@ class RecordAssembler extends RawRecordAssembler {
         let {records} = this.nodes[depth];
         const next = this.nodes[depth+1];
         let out = [];
-        let copy = null;
+        let copy = null, preOp = null;
         for (let i = 0; i < records.length; i++) {
             let rec = records[i];
             switch (rec.kind) {
@@ -498,10 +498,12 @@ class RecordAssembler extends RawRecordAssembler {
                 break;
 
             case "preOp":
+                preOp = rec;
                 break;
 
             case "postOp":
-                rec = Object.assign({}, rec);
+                rec = Object.assign({preOp}, rec);
+                preOp = null;
                 if (copy) {
                     rec.extra = Object.assign({}, copy.extra, rec.extra);
                     copy = null;
