@@ -664,9 +664,11 @@ class LogTable {
                             children: [],
                         };
                         stack.push(loc);
-                    } else if (/\bret$/.test(action)) {
+                    }
+                    if (/\bret$/.test(action)) {
                         if (loc.ip === stack[stack.length-1].caller.ip) finish1();
-                    } else if (action === "End") {
+                    }
+                    if (action === "End") {
                         while (stack.length) finish1();
                     }
                 }
