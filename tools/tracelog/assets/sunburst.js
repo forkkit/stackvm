@@ -655,7 +655,7 @@ class LogTable {
             for (let r of this.ra.records(depth)) {
                 let {count, loc, action, extra} = r;
                 if (!this.raw) {
-                    if (/\bcall$/.test(action)) {
+                    if (extra.opName === "call") {
                         loc.caller = {ip: extra.cs[extra.cs.length-1]};
                         loc.span = {
                             start: records.length,
@@ -665,7 +665,7 @@ class LogTable {
                         };
                         stack.push(loc);
                     }
-                    if (/\bret$/.test(action)) {
+                    if (extra.opName === "ret") {
                         if (loc.ip === stack[stack.length-1].caller.ip) finish1();
                     }
                     if (action === "End") {
