@@ -648,8 +648,9 @@ class LogTable {
             for (let r of this.ra.records(depth)) {
                 let {count, loc, action, extra} = r;
                 if (!this.raw) {
-                    if (extra.opName === "call") {
-                        loc.caller = {ip: extra.cs[extra.cs.length-1]};
+                    let {preOp} = r;
+                    if (preOp && preOp.extra.spanClose) finish1();
+                    if (extra.spanOpen && extra.cs.length > preOp.extra.cs.length) {
                         loc.span = {
                             start: records.length,
                             end: -1,
@@ -657,9 +658,6 @@ class LogTable {
                             children: [],
                         };
                         stack.push(loc);
-                    }
-                    if (extra.opName === "ret") {
-                        if (loc.ip === stack[stack.length-1].caller.ip) finish1();
                     }
                     if (action === "End") {
                         while (stack.length) finish1();
@@ -742,8 +740,7 @@ LogTable.locLabelFmt = (rec) => {
 
 LogTable.locSpanFmt = (rec) => {
     let addr = LogTable.locLabelFmt(rec);
-    let {caller, span} = rec;
-    if (caller) addr = `<div class="${span.end < span.start ? "brokenSpan" : "span"}">${addr}</div>`;
+    if (rec.span) addr = `<div class="${rec.span.end < rec.span.start ? "brokenSpan" : "span"}">${addr}</div>`;
     return addr;
 };
 
