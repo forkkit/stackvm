@@ -501,10 +501,9 @@ class RecordAssembler extends RawRecordAssembler {
                 break;
 
             case "postOp":
+                rec = Object.assign({}, rec);
                 if (copy) {
-                    rec = Object.assign({}, rec, {
-                        extra: Object.assign({}, copy.extra, rec.extra),
-                    });
+                    rec.extra = Object.assign({}, copy.extra, rec.extra);
                     copy = null;
                 }
                 out.push(rec);
