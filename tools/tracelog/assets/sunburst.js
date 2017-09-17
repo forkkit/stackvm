@@ -168,7 +168,6 @@ class SunburstModel extends EventEmitter {
                 let labels = null;
                 if ("labels" in extra) {
                     labels = record.labels = matchAll(extra.labels, /"([^"]+)"/g, (match) => match[1]);
-                    delete extra.labels;
                 }
                 record.loc = {ip, label: labels ? labels[0] : null};
                 return record;
@@ -542,6 +541,7 @@ class LogTable {
         this.extraIgnore = new Set([
             "cbp", "csp",
             "pbp", "psp",
+            "labels",
         ].concat(this.extraPluck));
         this.head = this.el.tHead || this.el.appendChild(document.createElement("thead"));
         this.header = d3Select(this.head.appendChild(document.createElement("tr")));
