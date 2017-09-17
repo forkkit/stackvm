@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"html/template"
@@ -531,6 +532,8 @@ func (sess *session) toJSON() sessDat {
 				rd.Extra[k] = n
 			} else if f, err := strconv.ParseFloat(v, 64); err == nil {
 				rd.Extra[k] = f
+			} else if ns, err := parseInts(v); err == nil {
+				rd.Extra[k] = ns
 			} else {
 				rd.Extra[k] = v
 			}
@@ -861,4 +864,32 @@ func main() {
 	}(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func parseInts(s string) ([]int, error) {
+	i := 0
+	if len(s) < 1 || s[i] != '[' {
+		return nil, errors.New("expected [")
+	}
+	i++
+	ns := []int{}
+	var n int
+	for j := i; j < len(s); j++ {
+		switch c := s[j]; c {
+		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+			n = 10*n + int(c-'0')
+		case ' ':
+			ns = append(ns, n)
+			n = 0
+			i = j
+		case ']':
+			if j > i {
+				ns = append(ns, n)
+			}
+			return ns, nil
+		default:
+			return nil, fmt.Errorf("unexpected %q", c)
+		}
+	}
+	return nil, errors.New("unexpected end-of-string")
 }

@@ -41,3 +41,31 @@ func Test_scanKVs(t *testing.T) {
 		})
 	}
 }
+
+func Test_parseInts(t *testing.T) {
+	for _, tc := range []struct {
+		s   string
+		ns  []int
+		err string
+	}{
+		{s: "", err: "expected ["},
+		{s: "[", err: "unexpected end-of-string"},
+		{s: "[3", err: "unexpected end-of-string"},
+		{s: "[3,2]", err: "unexpected ','"},
+		{s: "[]", ns: []int{}},
+		{s: "[42]", ns: []int{42}},
+		{s: "[3 1 4]", ns: []int{3, 1, 4}},
+		{s: "[0]", ns: []int{0}},
+		{s: "[10]", ns: []int{10}},
+		{s: "[104]", ns: []int{104}},
+	} {
+		t.Run(tc.s, func(t *testing.T) {
+			ns, err := parseInts(tc.s)
+			if tc.err != "" {
+				assert.EqualError(t, err, tc.err, "expected error")
+			} else if assert.NoError(t, err, "unexpected error") {
+				assert.Equal(t, tc.ns, ns, "expected ints")
+			}
+		})
+	}
+}
