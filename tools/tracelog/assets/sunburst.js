@@ -558,14 +558,14 @@ class LogTable {
         this.baseFmt = [
             fmt.num(10),
             fmt.num(10),
-            LogTable.locFmt,
+            LogTable.locSpanFmt,
             LogTable.mungeActionFmt,
             LogTable.extraFmt((k) => !this.extraIgnore.has(k)),
         ];
         this.rawFmt = [
             fmt.num(10),
             fmt.num(10),
-            LogTable.locFmt,
+            LogTable.locIPFmt,
             fmt.feid,
             LogTable.extraFmt(),
         ];
@@ -726,9 +726,17 @@ class LogTable {
     }
 }
 
-LogTable.locFmt = ({ip, label, caller, span}) => {
-    let addr = fmt.hex(ip);
-    if (label) addr = `<div title="@${addr}" class="label">${label}:</div>`;
+LogTable.locIPFmt = ({ip}) => fmt.hex(ip);
+
+LogTable.locLabelFmt = (rec) => {
+    let addr = LogTable.locIPFmt(rec);
+    if (rec.label) addr = `<div title="@${addr}" class="label">${rec.label}:</div>`;
+    return addr;
+};
+
+LogTable.locSpanFmt = (rec) => {
+    let addr = LogTable.locLabelFmt(rec);
+    let {caller, span} = rec;
     if (caller) addr = `<div class="${span.end < span.start ? "brokenSpan" : "span"}">${addr}</div>`;
     return addr;
 };
