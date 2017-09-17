@@ -121,6 +121,7 @@ var smmTest = TestCase{
 
 		//// Done
 		0, "halt",
+		"crash",
 	},
 
 	Result: Result{Values: map[string][]uint32{
