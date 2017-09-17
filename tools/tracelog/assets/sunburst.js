@@ -536,6 +536,7 @@ class LogTable {
             "pbp", "psp",
             "labels",
             "opName",
+            "spanOpen", "spanClose",
         ].concat(this.extraPluck));
         this.head = this.el.tHead || this.el.appendChild(document.createElement("thead"));
         this.header = d3Select(this.head.appendChild(document.createElement("tr")));
