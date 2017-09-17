@@ -597,8 +597,10 @@ class LogTable {
             .map((name) => ({title: name, className: name})));
         this.normFmt = this.normFmt.concat(this.extraPluck.map((k) => {
             switch (k) {
+            case "ps":
+                return (ns) => Array.isArray(ns) ? ns.join(" ") : ns;
             case "cs":
-                return fmt.replaceAll(/\d+/g, fmt.dec2hex);
+                return (ns) => Array.isArray(ns) ? ns.map(fmt.hex).join(" ") : ns;
             default:
                 return fmt.feid;
             }
@@ -651,8 +653,7 @@ class LogTable {
             for (let r of this.ra.records(depth)) {
                 let {count, loc, action, extra} = r;
                 if (/\bcall$/.test(action)) {
-                    let cs = matchAll(r.extra.cs, /\d+/g, (match) => parseInt(match[0], 10));
-                    loc.caller = {ip: cs[cs.length-1]};
+                    loc.caller = {ip: extra.cs[extra.cs.length-1]};
                     loc.span = {
                         start: records.length,
                         end: -1,
