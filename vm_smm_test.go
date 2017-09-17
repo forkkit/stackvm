@@ -80,7 +80,8 @@ var smmTest = TestCase{
 		":markUsed", "call", // carry :
 		4 * 3, ":values", "fetch", // carry $n :
 		4 * 4, ":values", "fetch", // carry $n $r :
-		"add", "add", 10, "div", // carry :
+		"add", "add", // carry+$n+$r :
+		10, "div", // carry :
 
 		//// carry + e + o = n  (mod 10)
 
@@ -94,7 +95,8 @@ var smmTest = TestCase{
 		":markUsed", "call", // carry :
 		4 * 1, ":values", "fetch", // carry $e :
 		4 * 5, ":values", "fetch", // carry $e $o :
-		"add", "add", 10, "div", // carry :
+		"add", "add", // carry+$e+$o :
+		10, "div", // carry :
 
 		//// carry + s + m = o  (mod 10)
 
@@ -110,7 +112,8 @@ var smmTest = TestCase{
 		"dup", 1, "hz", // carry $s :   -- guard $s != 0
 		4 * 7, ":values", "fetch", // carry $s $m :
 		"dup", 1, "hz", // carry $s $m :   -- guard $m != 0
-		"add", "add", 10, "div", // carry :
+		"add", "add", // carry+$s+$m :
+		10, "div", // carry :
 
 		//// carry = m  (mod 10)
 		4 * 7, ":values", "fetch", // carry $m
