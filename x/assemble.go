@@ -240,6 +240,12 @@ func addrLabelToken(s string) token { return token{kind: addrLabelTK, str: s} }
 
 type ref struct{ site, targ, off int }
 
+type unkRet struct {
+	label  string
+	cur    int
+	labels []string
+}
+
 type assembler struct {
 	logff func(string, ...interface{})
 
@@ -247,6 +253,7 @@ type assembler struct {
 
 	adls, opts, prog section
 	opens            map[string]struct{}
+	unkRets          map[string]*unkRet
 
 	stackSize *token
 	queueSize *token
@@ -864,6 +871,20 @@ func (sc *scanner) addProgTok(tok token) {
 		if i := len(sc.open) - 1; i >= 0 {
 			sc.addSpanClose(sc.genProgLabel(".ret." + sc.open[i]))
 			sc.open = sc.open[:i]
+		} else if len(sc.labels) > 0 {
+			name := sc.genProgLabel(".ret.unknown")
+			sc.addSpanClose(name)
+			ur := unkRet{
+				label:  name,
+				cur:    -1,
+				labels: sc.labels,
+			}
+			for _, label := range sc.labels {
+				if sc.unkRets == nil {
+					sc.unkRets = make(map[string]*unkRet, 1)
+				}
+				sc.unkRets[label] = &ur
+			}
 		}
 	}
 	sc.prog.add(tok)
@@ -883,6 +904,19 @@ func (sc *scanner) addSpanOpen(name string) {
 		}
 		sc.opens[name] = struct{}{}
 		sc.addRefOpt("spanOpen", name, 0)
+		if ur := sc.unkRets[name]; ur != nil {
+			index := -1
+			for i, label := range ur.labels {
+				if label == name {
+					index = i
+				}
+			}
+			if index > ur.cur {
+				new := sc.renameLabel(ur.label, sc.genProgLabel(".ret."+name))
+				ur.label = new
+				ur.cur = index
+			}
+		}
 	}
 }
 
