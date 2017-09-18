@@ -870,6 +870,9 @@ func (sc *scanner) addProgTok(tok token) {
 }
 
 func (sc *scanner) addProgRef(tok token, name string, off int) {
+	if tok.kind == opTK && tok.Name() == "call" {
+		sc.addSpanOpen(name)
+	}
 	sc.prog.addRef(tok, name, off)
 }
 
