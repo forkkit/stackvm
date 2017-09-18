@@ -860,6 +860,12 @@ func (sc *scanner) handleOp(name string) error {
 }
 
 func (sc *scanner) addProgTok(tok token) {
+	if tok.kind == opTK && tok.Name() == "ret" {
+		if i := len(sc.open) - 1; i >= 0 {
+			sc.addSpanClose(sc.genProgLabel(".ret." + sc.open[i]))
+			sc.open = sc.open[:i]
+		}
+	}
 	sc.prog.add(tok)
 }
 
