@@ -712,7 +712,14 @@ class LogTable {
             sel.classed("open", open);
             if (end < start) return;
             if (!open) {
-                for (let i = start+1; i < end; i++) rowEls[i].style.display = "none";
+                for (let i = start+1; i < end; i++) {
+                    rowEls[i].style.display = "none";
+                    let openSpan = rowEls[i].querySelector(".span.open");
+                    if (openSpan) openSpan.className = openSpan.className
+                        .split(/\s+/)
+                        .filter((n) => n !== "open")
+                        .join(" ");
+                }
                 return;
             }
             let j = 0;
