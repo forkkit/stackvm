@@ -427,6 +427,18 @@ func (sec *section) genLabel(name string) string {
 	return name
 }
 
+func (sec *section) renameLabel(old, new string) {
+	if n, defined := sec.labels[old]; defined {
+		delete(sec.labels, old)
+		sec.labels[new] = n
+	}
+	for i := range sec.refs {
+		if sec.refs[i].targName == old {
+			sec.refs[i].targName = new
+		}
+	}
+}
+
 type assemblerState uint8
 
 const (
