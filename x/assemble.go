@@ -440,6 +440,13 @@ func (asm *assembler) addRefOpt(name string, targetName string, off int) {
 	asm.opts.addRef(optToken(name, 0, true), targetName, off)
 }
 
+func (asm *assembler) genProgLabel(name string) string {
+	name = asm.prog.genLabel(name)
+	asm.prog.addLabel(name)
+	asm.addAddrLabel(name)
+	return name
+}
+
 func (asm *assembler) addAddrLabel(name string) {
 	if len(asm.adls.toks) == 0 {
 		asm.adls.add(optToken("addrLabels", 1, true))
