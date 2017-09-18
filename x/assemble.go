@@ -884,24 +884,25 @@ func (sc *scanner) addProgRef(tok token, name string, off int) {
 }
 
 func (sc *scanner) addSpanOpen(name string) {
-	if _, isOpen := sc.opens[name]; !isOpen {
-		if sc.opens == nil {
-			sc.opens = make(map[string]struct{}, 1)
+	if _, isOpen := sc.opens[name]; isOpen {
+		return
+	}
+	if sc.opens == nil {
+		sc.opens = make(map[string]struct{}, 1)
+	}
+	sc.opens[name] = struct{}{}
+	sc.addRefOpt("spanOpen", name, 0)
+	if ur := sc.unkRets[name]; ur != nil {
+		index := -1
+		for i, label := range ur.labels {
+			if label == name {
+				index = i
+			}
 		}
-		sc.opens[name] = struct{}{}
-		sc.addRefOpt("spanOpen", name, 0)
-		if ur := sc.unkRets[name]; ur != nil {
-			index := -1
-			for i, label := range ur.labels {
-				if label == name {
-					index = i
-				}
-			}
-			if index > ur.cur {
-				new := sc.renameLabel(ur.label, sc.genProgLabel(".ret."+name))
-				ur.label = new
-				ur.cur = index
-			}
+		if index > ur.cur {
+			new := sc.renameLabel(ur.label, sc.genProgLabel(".ret."+name))
+			ur.label = new
+			ur.cur = index
 		}
 	}
 }
