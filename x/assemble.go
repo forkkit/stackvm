@@ -507,6 +507,7 @@ type scannerState struct {
 	in    []interface{}
 	state assemblerState
 	label string
+	open  []string
 }
 
 func (sc *scanner) scan(in []interface{}) error {
@@ -754,6 +755,10 @@ func (sc *scanner) handleLabel(name string) error {
 
 	if i, defined := sc.prog.labels[name]; defined && i >= 0 {
 		return fmt.Errorf("label %q already defined", name)
+	}
+
+	if _, isOpen := sc.opens[name]; isOpen {
+		sc.open = append(sc.open, name)
 	}
 
 	sc.addAddrLabel(name)
