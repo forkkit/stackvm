@@ -871,24 +871,7 @@ func (sc *scanner) handleOp(name string) error {
 
 func (sc *scanner) addProgTok(tok token) {
 	if tok.kind == opTK && tok.Name() == "ret" {
-		if i := len(sc.open) - 1; i >= 0 {
-			sc.addSpanClose(sc.genProgLabel(".ret." + sc.open[i]))
-			sc.open = sc.open[:i]
-		} else if len(sc.labels) > 0 {
-			name := sc.genProgLabel(".ret.unknown")
-			sc.addSpanClose(name)
-			ur := unkRet{
-				label:  name,
-				cur:    -1,
-				labels: sc.labels,
-			}
-			for _, label := range sc.labels {
-				if sc.unkRets == nil {
-					sc.unkRets = make(map[string]*unkRet, 1)
-				}
-				sc.unkRets[label] = &ur
-			}
-		}
+		sc.addSpanClose("ret")
 	}
 	sc.prog.add(tok)
 }
@@ -924,7 +907,25 @@ func (sc *scanner) addSpanOpen(name string) {
 }
 
 func (sc *scanner) addSpanClose(name string) {
-	sc.addRefOpt("spanClose", name, 0)
+	if i := len(sc.open) - 1; i >= 0 {
+		name = sc.genProgLabel(fmt.Sprintf(".%s.%s", name, sc.open[i]))
+		sc.addRefOpt("spanClose", name, 0)
+		sc.open = sc.open[:i]
+	} else if len(sc.labels) > 0 {
+		name = sc.genProgLabel(fmt.Sprintf(".%s.unknown", name))
+		sc.addRefOpt("spanClose", name, 0)
+		ur := unkRet{
+			label:  name,
+			cur:    -1,
+			labels: sc.labels,
+		}
+		for _, label := range sc.labels {
+			if sc.unkRets == nil {
+				sc.unkRets = make(map[string]*unkRet, 1)
+			}
+			sc.unkRets[label] = &ur
+		}
+	}
 }
 
 func (sc *scanner) handleImm(n int) error {
