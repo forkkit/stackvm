@@ -652,19 +652,21 @@ class LogTable {
             let start = records.length;
             for (let r of this.ra.records(depth)) {
                 let {count, loc, action, extra} = r;
-                if (/\bcall$/.test(action)) {
-                    loc.caller = {ip: extra.cs[extra.cs.length-1]};
-                    loc.span = {
-                        start: records.length,
-                        end: -1,
-                        parent: null,
-                        children: [],
-                    };
-                    stack.push(loc);
-                } else if (/\bret$/.test(action)) {
-                    if (loc.ip === stack[stack.length-1].caller.ip) finish1();
-                } else if (action === "End") {
-                    while (stack.length) finish1();
+                if (!this.raw) {
+                    if (/\bcall$/.test(action)) {
+                        loc.caller = {ip: extra.cs[extra.cs.length-1]};
+                        loc.span = {
+                            start: records.length,
+                            end: -1,
+                            parent: null,
+                            children: [],
+                        };
+                        stack.push(loc);
+                    } else if (/\bret$/.test(action)) {
+                        if (loc.ip === stack[stack.length-1].caller.ip) finish1();
+                    } else if (action === "End") {
+                        while (stack.length) finish1();
+                    }
                 }
                 let cells = [machID, count, loc, action];
                 if (!this.raw) for (let k of this.extraPluck) cells.push(extra[k] || "");
