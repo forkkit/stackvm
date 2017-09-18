@@ -515,11 +515,12 @@ type scanner struct {
 }
 
 type scannerState struct {
-	i     int
-	in    []interface{}
-	state assemblerState
-	label string
-	open  []string
+	i      int
+	in     []interface{}
+	state  assemblerState
+	label  string
+	open   []string
+	labels []string
 }
 
 func (sc *scanner) scan(in []interface{}) error {
@@ -771,6 +772,9 @@ func (sc *scanner) handleLabel(name string) error {
 
 	if _, isOpen := sc.opens[name]; isOpen {
 		sc.open = append(sc.open, name)
+		sc.labels = sc.labels[:0]
+	} else {
+		sc.labels = append(sc.labels, name)
 	}
 
 	sc.addAddrLabel(name)
