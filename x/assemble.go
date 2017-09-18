@@ -471,6 +471,21 @@ func (asm *assembler) genProgLabel(name string) string {
 	return name
 }
 
+func (asm *assembler) renameLabel(old, new string) string {
+	new = asm.prog.genLabel(new)
+	asm.adls.renameLabel(old, new)
+	asm.opts.renameLabel(old, new)
+	asm.prog.renameLabel(old, new)
+	for i, tok := range asm.adls.toks {
+		if tok.kind == addrLabelTK && tok.str == old {
+			tok.str = new
+			asm.adls.toks[i] = tok
+			break
+		}
+	}
+	return new
+}
+
 func (asm *assembler) addAddrLabel(name string) {
 	if len(asm.adls.toks) == 0 {
 		asm.adls.add(optToken("addrLabels", 1, true))
