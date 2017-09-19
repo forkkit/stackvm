@@ -1008,7 +1008,11 @@ encodeOptions:
 
 func (enc *encoder) encodeTok() (token, error) {
 	tok := enc.toks[enc.i]
-	enc.c += uint32(tok.EncodeInto(enc.buf[enc.c:]))
+	p := enc.buf[enc.c:]
+	if len(p) == 0 {
+		return tok, fmt.Errorf("no space to encode toks[%d]=%v", enc.i, tok)
+	}
+	enc.c += uint32(tok.EncodeInto(p))
 	enc.i++
 	enc.offsets[enc.i] = enc.c
 	return tok, nil
