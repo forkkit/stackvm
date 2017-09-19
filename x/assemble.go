@@ -69,6 +69,25 @@ const (
 	addrLabelTK
 )
 
+func (tk tokenKind) String() string {
+	switch tk {
+	case optTK:
+		return "opt"
+	case opTK:
+		return "op"
+	case dataTK:
+		return "data"
+	case allocTK:
+		return "alloc"
+	case stringTK:
+		return "string"
+	case addrLabelTK:
+		return "addrLabel"
+	default:
+		return fmt.Sprintf("invalid<%02x>", uint8(tk))
+	}
+}
+
 type token struct {
 	kind tokenKind
 	str  string
