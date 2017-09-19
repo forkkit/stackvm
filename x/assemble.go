@@ -1160,6 +1160,7 @@ encodeOptions:
 			p := enc.buf[lo:]
 			n := tok.EncodeInto(p)
 			if n <= 0 {
+				enc.logf("recode fail toks[%d] @%#04x %v (for %+v site@%#04x targ@%#04x)", rf.site, lo, tok, rf, site, targ)
 				return nil, fmt.Errorf("failed to recode toks[%d]=%v", rf.site, tok)
 			}
 			p = p[:n]
@@ -1215,10 +1216,12 @@ func (enc *encoder) encodeTok() (token, error) {
 	tok := enc.toks[enc.i]
 	p := enc.buf[enc.c:]
 	if len(p) == 0 {
+		enc.logf("can't even encode toks[%d] @%#04x %v", enc.i, enc.c, tok)
 		return tok, fmt.Errorf("no space to encode toks[%d]=%v", enc.i, tok)
 	}
 	n := tok.EncodeInto(p)
 	if n <= 0 {
+		enc.logf("encode fail toks[%d] @%#04x %v => %02x", enc.i, enc.c, tok, p)
 		return tok, fmt.Errorf("failed to encode toks[%d]=%v", enc.i, tok)
 	}
 	enc.logf("encode toks[%d] @%#04x %v => %02x", enc.i, enc.c, tok, p[:n])
