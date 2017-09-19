@@ -942,11 +942,9 @@ func (enc encoder) encode() ([]byte, error) {
 encodeOptions:
 	nopts = 0
 	for enc.i < len(enc.toks) {
-		tok := enc.toks[enc.i]
-		enc.c += uint32(tok.EncodeInto(enc.buf[enc.c:]))
-		enc.i++
-		enc.offsets[enc.i] = enc.c
-		if tok.kind == optTK && tok.Code == optCodeEnd {
+		if tok, err := enc.encodeTok(); err != nil {
+			return nil, err
+		} else if tok.kind == optTK && tok.Code == optCodeEnd {
 			break
 		}
 	}
@@ -986,11 +984,9 @@ encodeOptions:
 			}
 		}
 
-		// encode next token
-		tok := enc.toks[enc.i]
-		enc.c += uint32(tok.EncodeInto(enc.buf[enc.c:]))
-		enc.i++
-		enc.offsets[enc.i] = enc.c
+		if _, err := enc.encodeTok(); err != nil {
+			return nil, err
+		}
 	}
 
 	if rf.site >= 0 {
@@ -1008,4 +1004,12 @@ encodeOptions:
 	}
 
 	return enc.buf[:enc.c], nil
+}
+
+func (enc *encoder) encodeTok() (token, error) {
+	tok := enc.toks[enc.i]
+	enc.c += uint32(tok.EncodeInto(enc.buf[enc.c:]))
+	enc.i++
+	enc.offsets[enc.i] = enc.c
+	return tok, nil
 }
