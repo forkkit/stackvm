@@ -485,8 +485,11 @@ func (asm *assembler) renameLabel(old, new string) string {
 	asm.prog.renameLabel(old, new)
 	for i, tok := range asm.adls.toks {
 		if tok.kind == addrLabelTK && tok.str == old {
+			oldSize := tok.NeededSize()
 			tok.str = new
 			asm.adls.toks[i] = tok
+			newSize := tok.NeededSize()
+			asm.adls.maxBytes += newSize - oldSize
 			break
 		}
 	}
