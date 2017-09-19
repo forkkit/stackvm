@@ -916,18 +916,22 @@ type encoder struct {
 	logf func(string, ...interface{})
 	base uint32
 	refs []ref
+
+	buf     []byte
+	offsets []uint32
+	c       uint32 // current token offset
+	i       int    // current token index
 }
 
 func (enc encoder) encode() ([]byte, error) {
+	enc.buf = make([]byte, enc.maxBytes)
+	enc.offsets = make([]uint32, len(enc.toks)+1)
+
 	var (
-		buf     = make([]byte, enc.maxBytes)
-		offsets = make([]uint32, len(enc.toks)+1)
-		boff    uint32           // offset of encoded program
-		c       uint32           // current token offset
-		nopts   int              // count of option tokens
-		i       int              // current token index
-		rfi     int              // index of next ref
-		rf      = ref{-1, -1, 0} // next ref
+		boff  uint32           // offset of encoded program
+		nopts int              // count of option tokens
+		rfi   int              // index of next ref
+		rf    = ref{-1, -1, 0} // next ref
 	)
 
 	if len(enc.refs) > 0 {
@@ -937,38 +941,38 @@ func (enc encoder) encode() ([]byte, error) {
 	// encode options
 encodeOptions:
 	nopts = 0
-	for i < len(enc.toks) {
-		tok := enc.toks[i]
-		c += uint32(tok.EncodeInto(buf[c:]))
-		i++
-		offsets[i] = c
+	for enc.i < len(enc.toks) {
+		tok := enc.toks[enc.i]
+		enc.c += uint32(tok.EncodeInto(enc.buf[enc.c:]))
+		enc.i++
+		enc.offsets[enc.i] = enc.c
 		if tok.kind == optTK && tok.Code == optCodeEnd {
 			break
 		}
 	}
-	nopts, boff = i, c
+	nopts, boff = enc.i, enc.c
 
 	// encode program
-	for i < len(enc.toks) {
+	for enc.i < len(enc.toks) {
 		// fix a previously encoded ref's target
-		for 0 <= rf.site && rf.site < i && rf.targ <= i {
+		for 0 <= rf.site && rf.site < enc.i && rf.targ <= enc.i {
 			// re-encode the ref and rewind if arg size changed
-			lo, hi := offsets[rf.site], offsets[rf.site+1]
-			site := enc.base + offsets[rf.site] - boff
-			targ := enc.base + offsets[rf.targ] - boff + uint32(enc.refs[rfi].off)
+			lo, hi := enc.offsets[rf.site], enc.offsets[rf.site+1]
+			site := enc.base + enc.offsets[rf.site] - boff
+			targ := enc.base + enc.offsets[rf.targ] - boff + uint32(enc.refs[rfi].off)
 			tok := enc.toks[rf.site]
 			tok = tok.ResolveRefArg(site, targ)
 			enc.toks[rf.site] = tok
-			if end := lo + uint32(tok.EncodeInto(buf[lo:])); end != hi {
+			if end := lo + uint32(tok.EncodeInto(enc.buf[lo:])); end != hi {
 				// rewind to prior ref
-				i, c = rf.site+1, end
-				offsets[i] = c
+				enc.i, enc.c = rf.site+1, end
+				enc.offsets[enc.i] = enc.c
 				for rfi, rf = range enc.refs {
-					if rf.site >= i || rf.targ >= i {
+					if rf.site >= enc.i || rf.targ >= enc.i {
 						break
 					}
 				}
-				if i < nopts {
+				if enc.i < nopts {
 					goto encodeOptions
 				}
 			} else {
@@ -983,10 +987,10 @@ encodeOptions:
 		}
 
 		// encode next token
-		tok := enc.toks[i]
-		c += uint32(tok.EncodeInto(buf[c:]))
-		i++
-		offsets[i] = c
+		tok := enc.toks[enc.i]
+		enc.c += uint32(tok.EncodeInto(enc.buf[enc.c:]))
+		enc.i++
+		enc.offsets[enc.i] = enc.c
 	}
 
 	if rf.site >= 0 {
@@ -1003,5 +1007,5 @@ encodeOptions:
 		return nil, fmt.Errorf("unresolved reference for `\":%s\", %q`", name, tok.Name())
 	}
 
-	return buf[:c], nil
+	return enc.buf[:enc.c], nil
 }
