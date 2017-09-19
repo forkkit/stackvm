@@ -40,6 +40,9 @@ func putVarCode(buf []byte, arg uint32, code uint8) (n int) {
 		i--
 		n++
 	}
+	if i >= 0 {
+		return -n
+	}
 	return n
 }
 
