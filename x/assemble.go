@@ -961,7 +961,9 @@ encodeOptions:
 			tok := enc.toks[rf.site]
 			tok = tok.ResolveRefArg(site, targ)
 			enc.toks[rf.site] = tok
-			if end := lo + uint32(tok.EncodeInto(enc.buf[lo:])); end != hi {
+			p := enc.buf[lo:]
+			p = p[:tok.EncodeInto(p)]
+			if end := lo + uint32(len(p)); end != hi {
 				// rewind to prior ref
 				enc.i, enc.c = rf.site+1, end
 				enc.offsets[enc.i] = enc.c
