@@ -962,8 +962,12 @@ encodeOptions:
 			tok = tok.ResolveRefArg(site, targ)
 			enc.toks[rf.site] = tok
 			p := enc.buf[lo:]
-			p = p[:tok.EncodeInto(p)]
-			if end := lo + uint32(len(p)); end != hi {
+			n := tok.EncodeInto(p)
+			if n <= 0 {
+				return nil, fmt.Errorf("failed to recode toks[%d]=%v", rf.site, tok)
+			}
+			p = p[:n]
+			if end := lo + uint32(n); end != hi {
 				// rewind to prior ref
 				enc.i, enc.c = rf.site+1, end
 				enc.offsets[enc.i] = enc.c
@@ -1014,7 +1018,11 @@ func (enc *encoder) encodeTok() (token, error) {
 	if len(p) == 0 {
 		return tok, fmt.Errorf("no space to encode toks[%d]=%v", enc.i, tok)
 	}
-	enc.c += uint32(tok.EncodeInto(p))
+	n := tok.EncodeInto(p)
+	if n <= 0 {
+		return tok, fmt.Errorf("failed to encode toks[%d]=%v", enc.i, tok)
+	}
+	enc.c += uint32(n)
 	enc.i++
 	enc.offsets[enc.i] = enc.c
 	return tok, nil
