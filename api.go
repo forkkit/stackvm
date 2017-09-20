@@ -736,6 +736,41 @@ func (mb *machBuilder) handleOpt(code uint8, arg uint32) (bool, error) {
 	return false, nil
 }
 
+// TODO: refactor Op and co around a reifiied varcode dialect type.
+
+// ResolveOptionRefArg is like Op.ResolveRefArg, except for the option varcode
+// dialect.
+func ResolveOptionRefArg(op Op, site, targ uint32) Op {
+	if optionAcceptsRef(op) {
+		op.Arg = targ
+	} else {
+		panic(fmt.Sprintf("%v opt does not accept ref args", NameOption(op.Code)))
+	}
+	return op
+}
+
+// optionAcceptsRef is like Op.AcceptsRef, except for the option varcode
+// dialect.
+func optionAcceptsRef(op Op) bool {
+	switch op.Code {
+	case optCodeEntry, optCodeInput, optCodeOutput, optCodeName:
+		return true
+	}
+	return false
+}
+
+// OptionNeededSize is like Op.NeededSize, except for the option varcode
+// dialect.
+func OptionNeededSize(op Op) int {
+	if optionAcceptsRef(op) {
+		return MaxVarCodeLen
+	}
+	if op.Code == optCodeAddrLabels {
+		return MaxVarCodeLen
+	}
+	return op.NeededSize()
+}
+
 // NameOption retruns the name string for an option code.
 func NameOption(code uint8) string {
 	switch code & 0x7f {

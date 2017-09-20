@@ -97,7 +97,7 @@ type token struct {
 func (tok token) ResolveRefArg(site, targ uint32) token {
 	switch tok.kind {
 	case optTK:
-		tok.Arg = targ
+		tok.Op = stackvm.ResolveOptionRefArg(tok.Op, site, targ)
 	case opTK:
 		tok.Op = tok.Op.ResolveRefArg(site, targ)
 	case addrLabelTK:
@@ -194,7 +194,9 @@ func (tok token) EncodeInto(p []byte) int {
 
 func (tok token) NeededSize() int {
 	switch tok.kind {
-	case optTK, opTK:
+	case optTK:
+		return stackvm.OptionNeededSize(tok.Op)
+	case opTK:
 		return tok.Op.NeededSize()
 	case dataTK:
 		return 4
