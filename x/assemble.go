@@ -509,6 +509,11 @@ func (asm *assembler) scan(in []interface{}) error {
 }
 
 func (asm *assembler) finish() (encoder, error) {
+
+	asm.logf("asm finish: adls numToks=%d maxBytes=%d", len(asm.adls.toks), asm.adls.maxBytes)
+	asm.logf("asm finish: opts numToks=%d maxBytes=%d", len(asm.opts.toks), asm.opts.maxBytes)
+	asm.logf("asm finish: prog numToks=%d maxBytes=%d", len(asm.prog.toks), asm.prog.maxBytes)
+
 	enc := encoder{
 		section: collectSections(
 			makeSection(
@@ -524,6 +529,9 @@ func (asm *assembler) finish() (encoder, error) {
 		logf: asm.logf,
 		base: asm.stackSize.Arg,
 	}
+
+	asm.logf("asm finish: enc numToks=%d maxBytes=%d", len(enc.toks), enc.maxBytes)
+
 	err := enc.checkLabels()
 	if err == nil {
 		enc.refs = enc.resolveRefs()
