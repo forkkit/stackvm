@@ -811,6 +811,9 @@ func (o Op) EncodeInto(p []byte) int {
 
 // NeededSize returns the number of bytes needed to encode op.
 func (o Op) NeededSize() int {
+	if o.AcceptsRef() {
+		return MaxVarCodeLen
+	}
 	c := uint8(o.Code)
 	if o.Have {
 		c |= 0x80
