@@ -1,5 +1,10 @@
 package stackvm
 
+// MaxVarCodeLen is the maximum size that a varcode can
+// be: a 32-bit arg (encodes to at most 5 bytes) and then
+// a final byte with the 7-bit code.
+const MaxVarCodeLen = 1 + 5
+
 func readVarCode(buf []byte) (n int, arg uint32, code uint8, ok bool) {
 	for i, v := range buf {
 		n++
