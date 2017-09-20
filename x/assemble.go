@@ -149,6 +149,8 @@ func (tok token) String() string {
 
 func (tok token) EncodeInto(p []byte) int {
 	switch tok.kind {
+	case optTK, opTK:
+		return tok.Op.EncodeInto(p)
 	case dataTK:
 		stackvm.ByteOrder.PutUint32(p, tok.Arg)
 		return 4
@@ -184,12 +186,14 @@ func (tok token) EncodeInto(p []byte) int {
 		}
 		return n
 	default:
-		return tok.Op.EncodeInto(p)
+		panic(fmt.Sprintf("invalid token kind %v", tok.kind))
 	}
 }
 
 func (tok token) NeededSize() int {
 	switch tok.kind {
+	case optTK, opTK:
+		return tok.Op.NeededSize()
 	case dataTK:
 		return 4
 	case allocTK:
@@ -203,7 +207,7 @@ func (tok token) NeededSize() int {
 		n += len(tok.str)
 		return n
 	default:
-		return tok.Op.NeededSize()
+		panic(fmt.Sprintf("invalid token kind %v", tok.kind))
 	}
 }
 
