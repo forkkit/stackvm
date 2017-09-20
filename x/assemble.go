@@ -204,7 +204,7 @@ func (tok token) NeededSize() int {
 		return 4 + len(tok.str)
 	case addrLabelTK:
 		var buf [binary.MaxVarintLen64]byte
-		n := binary.PutUvarint(buf[:], uint64(tok.Arg))
+		n := binary.MaxVarintLen64
 		n += binary.PutUvarint(buf[:], uint64(len(tok.str)))
 		n += len(tok.str)
 		return n
