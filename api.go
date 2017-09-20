@@ -854,6 +854,9 @@ func (o Op) ResolveRefArg(myIP, targIP uint32) Op {
 
 	case opImmVal, opImmAddr:
 		o.Arg = targIP
+
+	default:
+		panic(fmt.Sprintf("%v op does not accept ref args", o.Name()))
 	}
 	return o
 }
