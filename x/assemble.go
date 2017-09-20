@@ -102,6 +102,8 @@ func (tok token) ResolveRefArg(site, targ uint32) token {
 		tok.Op = tok.Op.ResolveRefArg(site, targ)
 	case addrLabelTK:
 		tok.Arg = targ
+	default:
+		panic(fmt.Sprintf("%v token does not accept ref args", tok.kind))
 	}
 	return tok
 }
