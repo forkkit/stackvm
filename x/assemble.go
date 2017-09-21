@@ -318,12 +318,14 @@ func collectSections(secs ...section) (sec section) {
 	base := 0
 	for _, s := range secs {
 		for name, rfs := range s.refsBy {
-			crfs := sec.refsBy[name]
-			for _, rf := range rfs {
-				rf.site += base
-				crfs = append(crfs, rf)
+			for i := range rfs {
+				rfs[i].site += base
 			}
-			sec.refsBy[name] = crfs
+			if crfs := sec.refsBy[name]; crfs != nil {
+				sec.refsBy[name] = append(crfs, rfs...)
+			} else {
+				sec.refsBy[name] = rfs
+			}
 		}
 
 		for name, off := range s.labels {
