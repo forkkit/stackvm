@@ -282,9 +282,14 @@ func (asm *assembler) setOption(ptok **token, name string, v uint32) {
 	}
 }
 
+type namedRef struct {
+	targName string
+	ref
+}
+
 type section struct {
 	toks     []token
-	refsBy   map[string][]ref
+	refs     []namedRef
 	labels   map[string]int
 	maxBytes int
 }
@@ -298,18 +303,18 @@ func makeSection(toks ...token) section {
 }
 
 func collectSections(secs ...section) (sec section) {
-	numLabels, numRefsBy, numToks := 0, 0, 0
+	numLabels, numRefs, numToks := 0, 0, 0
 	for _, s := range secs {
 		numToks += len(s.toks)
-		numRefsBy += len(s.refsBy)
+		numRefs += len(s.refs)
 		numLabels += len(s.labels)
 		sec.maxBytes += s.maxBytes
 	}
 	if numLabels > 0 {
 		sec.labels = make(map[string]int)
 	}
-	if numRefsBy > 0 {
-		sec.refsBy = make(map[string][]ref, numRefsBy)
+	if numRefs > 0 {
+		sec.refs = make([]namedRef, 0, numRefs)
 	}
 	if numToks > 0 {
 		sec.toks = make([]token, 0, numToks)
@@ -317,16 +322,10 @@ func collectSections(secs ...section) (sec section) {
 
 	base := 0
 	for _, s := range secs {
-		for name, rfs := range s.refsBy {
-			for i := range rfs {
-				rfs[i].site += base
-			}
-			if crfs := sec.refsBy[name]; crfs != nil {
-				sec.refsBy[name] = append(crfs, rfs...)
-			} else {
-				sec.refsBy[name] = rfs
-			}
+		for i := range s.refs {
+			s.refs[i].site += base
 		}
+		sec.refs = append(sec.refs, s.refs...)
 
 		for name, off := range s.labels {
 			if off >= 0 {
@@ -344,9 +343,14 @@ func collectSections(secs ...section) (sec section) {
 
 func (sec section) checkLabels() error {
 	var undefined []string
-	for name := range sec.refsBy {
-		if i, defined := sec.labels[name]; !defined || i < 0 {
-			undefined = append(undefined, name)
+	noted := make(map[string]struct{}, len(sec.refs))
+	for _, nrf := range sec.refs {
+		if nrf.targName != "" {
+			if _, targNoted := noted[nrf.targName]; !targNoted {
+				if i, defined := sec.labels[nrf.targName]; !defined || i < 0 {
+					undefined = append(undefined, nrf.targName)
+				}
+			}
 		}
 	}
 	if len(undefined) > 0 {
@@ -356,19 +360,16 @@ func (sec section) checkLabels() error {
 }
 
 func (sec section) resolveRefs() (refs []ref) {
-	numRefs := 0
-	for _, rfs := range sec.refsBy {
-		numRefs += len(rfs)
-	}
+	numRefs := len(sec.refs)
 	if numRefs > 0 {
 		refs = make([]ref, 0, numRefs)
 	}
-	for name, rfs := range sec.refsBy {
-		targ := sec.labels[name]
-		for _, rf := range rfs {
-			rf.targ = targ
-			refs = append(refs, rf)
+	for _, nrf := range sec.refs {
+		if nrf.targName == "" {
+			panic(fmt.Sprintf("NOPE %v", nrf))
 		}
+		nrf.targ = sec.labels[nrf.targName]
+		refs = append(refs, nrf.ref)
 	}
 	if len(refs) > 0 {
 		sort.Slice(refs, func(i, j int) bool {
@@ -384,11 +385,7 @@ func (sec *section) add(tok token) {
 }
 
 func (sec *section) addRef(tok token, name string, off int) {
-	if sec.refsBy == nil {
-		sec.refsBy = make(map[string][]ref)
-	}
-	rf := ref{site: len(sec.toks), off: off}
-	sec.refsBy[name] = append(sec.refsBy[name], rf)
+	sec.refs = append(sec.refs, namedRef{name, ref{site: len(sec.toks), off: off}})
 	sec.toks = append(sec.toks, tok)
 	sec.maxBytes += 6
 }
