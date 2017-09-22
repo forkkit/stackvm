@@ -57,7 +57,7 @@ var smmTest = TestCase{
 		// 0 1 2 3 4 5 6 7
 		// d e y n r o s m
 
-		".entry", "main:",
+		".entry",
 
 		//// d + e = y  (mod 10)
 		".spanOpen", "col_dey:", // :
