@@ -60,7 +60,7 @@ var smmTest = TestCase{
 		".entry", "main:",
 
 		//// d + e = y  (mod 10)
-
+		".spanOpen", "col_dey:", // :
 		4 * 0, ":values", "push", ":choose", "call", // $d :
 		4 * 1, ":values", "push", ":choose", "call", // $d $e :
 		".spanOpen", "compute_y_de:", // $d $e :
@@ -68,10 +68,10 @@ var smmTest = TestCase{
 		10, "mod", // $d+e ($d+e)%10 :
 		"dup", 4 * 2, ":values", "storeTo", // $d+e $y :   -- $y=($d+e)%10
 		":markUsed", "call", // $d+e :
-		".spanClose", 10, "div", // carry :
+		".spanClose", ".spanClose", 10, "div", // carry :
 
 		//// carry + n + r = e  (mod 10)
-
+		".spanOpen", "col_nre:", // carry :
 		"dup",                     // carry carry :
 		4 * 1, ":values", "fetch", // carry carry $e :
 		"swap",                                      // carry $e carry :
@@ -83,10 +83,10 @@ var smmTest = TestCase{
 		4 * 3, ":values", "fetch", // carry $n :
 		4 * 4, ":values", "fetch", // carry $n $r :
 		"add", "add", // carry+$n+$r :
-		".spanClose", 10, "div", // carry :
+		".spanClose", ".spanClose", 10, "div", // carry :
 
 		//// carry + e + o = n  (mod 10)
-
+		".spanOpen", "col_eon:", // carry :
 		"dup",                     // carry carry :
 		4 * 1, ":values", "fetch", // carry carry $e :
 		"add",                     // carry carry+$e :
@@ -99,10 +99,10 @@ var smmTest = TestCase{
 		4 * 1, ":values", "fetch", // carry $e :
 		4 * 5, ":values", "fetch", // carry $e $o :
 		"add", "add", // carry+$e+$o :
-		".spanClose", 10, "div", // carry :
+		".spanClose", ".spanClose", 10, "div", // carry :
 
 		//// carry + s + m = o  (mod 10)
-
+		".spanOpen", "col_smo:", // carry :
 		"dup",                                       // carry carry :
 		4 * 6, ":values", "push", ":choose", "call", // carry carry $s :
 		"add",                     // carry carry+$s :
@@ -117,12 +117,13 @@ var smmTest = TestCase{
 		4 * 7, ":values", "fetch", // carry $s $m :
 		"dup", 1, "hz", // carry $s $m :   -- guard $m != 0
 		"add", "add", // carry+$s+$m :
-		".spanClose", 10, "div", // carry :
+		".spanClose", ".spanClose", 10, "div", // carry :
 
 		//// carry = m  (mod 10)
+		".spanOpen", "col___m:",
 		".spanOpen", "check_m:",
 		4 * 7, ":values", "fetch", // carry $m
-		".spanClose", "eq", 3, "hz",
+		".spanClose", ".spanClose", "eq", 3, "hz",
 
 		//// Done
 		0, "halt",
