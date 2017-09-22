@@ -503,17 +503,8 @@ func (sc *scanner) scan(in []interface{}) error {
 	}
 	for {
 		for ; sc.i < len(sc.in); sc.i++ {
-			switch sc.state {
-			case assemblerData:
-				if err := sc.handleData(sc.in[sc.i]); err != nil {
-					return err
-				}
-			case assemblerText:
-				if err := sc.handleText(sc.in[sc.i]); err != nil {
-					return err
-				}
-			default:
-				return fmt.Errorf("invalid assembler state %d", sc.state)
+			if err := sc.handle(sc.in[sc.i]); err != nil {
+				return err
 			}
 		}
 		if i := len(sc.prior) - 1; i >= 0 {
@@ -522,6 +513,17 @@ func (sc *scanner) scan(in []interface{}) error {
 			continue
 		}
 		return nil
+	}
+}
+
+func (sc *scanner) handle(val interface{}) error {
+	switch sc.state {
+	case assemblerData:
+		return sc.handleData(val)
+	case assemblerText:
+		return sc.handleText(val)
+	default:
+		return fmt.Errorf("invalid assembler state %d", sc.state)
 	}
 }
 
