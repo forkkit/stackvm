@@ -493,6 +493,7 @@ type scannerState struct {
 	i     int
 	in    []interface{}
 	state assemblerState
+	label string
 }
 
 func (sc *scanner) scan(in []interface{}) error {
@@ -503,6 +504,7 @@ func (sc *scanner) scan(in []interface{}) error {
 	}
 	for {
 		for ; sc.i < len(sc.in); sc.i++ {
+			sc.label = ""
 			if err := sc.handle(sc.in[sc.i]); err != nil {
 				return err
 			}
@@ -743,6 +745,7 @@ func (sc *scanner) handleLabel(name string) error {
 
 	sc.addAddrLabel(name)
 	sc.prog.addLabel(name)
+	sc.label = name
 	return nil
 }
 
@@ -896,15 +899,17 @@ func (sc *scanner) expectOp(arg uint32, have bool) (token, error) {
 
 func (sc *scanner) expectLabel(role string) (string, error) {
 	desc := fmt.Sprintf(`%s "label:"`, role)
-	s, err := sc.expectString(desc)
+	val, err := sc.expect(desc)
 	if err != nil {
 		return "", err
 	}
-	if len(s) < 2 || s[len(s)-1] != ':' {
-		return "", fmt.Errorf("unexpected string %q, expected %s", s, desc)
+	if err := sc.handle(val); err != nil {
+		return "", err
 	}
-	name := s[:len(s)-1]
-	return name, sc.handleLabel(name)
+	if sc.label == "" {
+		return "", fmt.Errorf("no label for %s", desc)
+	}
+	return sc.label, nil
 }
 
 func (sc *scanner) expectString(desc string) (string, error) {
