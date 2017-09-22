@@ -63,11 +63,12 @@ var smmTest = TestCase{
 
 		4 * 0, ":values", "push", ":choose", "call", // $d :
 		4 * 1, ":values", "push", ":choose", "call", // $d $e :
+		".spanOpen", "compute_y_de:", // $d $e :
 		"add", "dup", // $d+e $d+e :
 		10, "mod", // $d+e ($d+e)%10 :
 		"dup", 4 * 2, ":values", "storeTo", // $d+e $y :   -- $y=($d+e)%10
 		":markUsed", "call", // $d+e :
-		10, "div", // carry :
+		".spanClose", 10, "div", // carry :
 
 		//// carry + n + r = e  (mod 10)
 
@@ -75,13 +76,14 @@ var smmTest = TestCase{
 		4 * 1, ":values", "fetch", // carry carry $e :
 		"swap",                                      // carry $e carry :
 		4 * 3, ":values", "push", ":choose", "call", // carry $e carry $n :
+		".spanOpen", "compute_r_en:", // carry $e carry $n :
 		"add", "sub", 10, "mod", // carry ($e-(carry+$n))%10 :
 		"dup", 4 * 4, ":values", "storeTo", // carry $r :   -- $r=($e-(carry+$n))%10
 		":markUsed", "call", // carry :
 		4 * 3, ":values", "fetch", // carry $n :
 		4 * 4, ":values", "fetch", // carry $n $r :
 		"add", "add", // carry+$n+$r :
-		10, "div", // carry :
+		".spanClose", 10, "div", // carry :
 
 		//// carry + e + o = n  (mod 10)
 
@@ -89,6 +91,7 @@ var smmTest = TestCase{
 		4 * 1, ":values", "fetch", // carry carry $e :
 		"add",                     // carry carry+$e :
 		4 * 3, ":values", "fetch", // carry carry+$e $n :
+		".spanOpen", "compute_o_en:", // carry carry+$e $n :
 		"swap", "sub", // carry $n-(carry+$e) :
 		10, "mod", // carry ($n-(carry+$e))%10 :
 		"dup", 4 * 5, ":values", "storeTo", // carry $o :   -- $o=($n-(carry+$e))%10
@@ -96,7 +99,7 @@ var smmTest = TestCase{
 		4 * 1, ":values", "fetch", // carry $e :
 		4 * 5, ":values", "fetch", // carry $e $o :
 		"add", "add", // carry+$e+$o :
-		10, "div", // carry :
+		".spanClose", 10, "div", // carry :
 
 		//// carry + s + m = o  (mod 10)
 
@@ -104,6 +107,7 @@ var smmTest = TestCase{
 		4 * 6, ":values", "push", ":choose", "call", // carry carry $s :
 		"add",                     // carry carry+$s :
 		4 * 5, ":values", "fetch", // carry carry+$s $o :
+		".spanOpen", "compute_m_so:", // carry carry+$s $o :
 		"swap", "sub", // carry $o-(carry+$s) :
 		10, "mod", // carry ($o-(carry+$s))%10 :
 		"dup", 4 * 7, ":values", "storeTo", // carry $m :   -- $m=($o-(carry+$s))%10
@@ -113,11 +117,12 @@ var smmTest = TestCase{
 		4 * 7, ":values", "fetch", // carry $s $m :
 		"dup", 1, "hz", // carry $s $m :   -- guard $m != 0
 		"add", "add", // carry+$s+$m :
-		10, "div", // carry :
+		".spanClose", 10, "div", // carry :
 
 		//// carry = m  (mod 10)
+		".spanOpen", "check_m:",
 		4 * 7, ":values", "fetch", // carry $m
-		"eq", 3, "hz",
+		".spanClose", "eq", 3, "hz",
 
 		//// Done
 		0, "halt",
