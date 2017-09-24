@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 func scanKVs(s string, each func(k, v string)) {
@@ -132,4 +133,20 @@ func parseInts(s string) ([]int, error) {
 		}
 	}
 	return nil, errors.New("unexpected end-of-string")
+}
+
+func parseValue(s string) interface{} {
+	if b, err := strconv.ParseBool(s); err == nil {
+		return b
+	}
+	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return n
+	}
+	if f, err := strconv.ParseFloat(s, 64); err == nil {
+		return f
+	}
+	if ns, err := parseInts(s); err == nil {
+		return ns
+	}
+	return s
 }

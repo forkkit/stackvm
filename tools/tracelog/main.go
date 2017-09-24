@@ -424,17 +424,7 @@ func (sess *session) toJSON() sessDat {
 			rd.Extra["child"] = rec.cid.String()
 		}
 		scanKVs(rec.rest, func(k, v string) {
-			if b, err := strconv.ParseBool(v); err == nil {
-				rd.Extra[k] = b
-			} else if n, err := strconv.ParseInt(v, 10, 64); err == nil {
-				rd.Extra[k] = n
-			} else if f, err := strconv.ParseFloat(v, 64); err == nil {
-				rd.Extra[k] = f
-			} else if ns, err := parseInts(v); err == nil {
-				rd.Extra[k] = ns
-			} else {
-				rd.Extra[k] = v
-			}
+			rd.Extra[k] = parseValue(v)
 		})
 		dat.Records[i] = rd
 	}
