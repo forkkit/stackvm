@@ -136,11 +136,11 @@ func parseInts(s string) ([]int, error) {
 }
 
 func parseValue(s string) interface{} {
+	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return int(n)
+	}
 	if b, err := strconv.ParseBool(s); err == nil {
 		return b
-	}
-	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
-		return n
 	}
 	if f, err := strconv.ParseFloat(s, 64); err == nil {
 		return f

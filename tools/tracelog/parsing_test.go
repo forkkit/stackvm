@@ -42,6 +42,25 @@ func Test_scanKVs(t *testing.T) {
 	}
 }
 
+func Test_parseValue(t *testing.T) {
+	for _, tc := range []struct {
+		s string
+		v interface{}
+	}{
+		{"true", true},
+		{"false", false},
+		{"0", 0},
+		{"1", 1},
+		{"42", 42},
+		{"99.9", 99.9},
+		{"", ""},
+	} {
+		t.Run(tc.s, func(t *testing.T) {
+			assert.Equal(t, tc.v, parseValue(tc.s), "expected value")
+		})
+	}
+}
+
 func Test_parseInts(t *testing.T) {
 	for _, tc := range []struct {
 		s   string
