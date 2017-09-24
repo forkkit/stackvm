@@ -1,8 +1,7 @@
 package main
 
 import (
-	"errors"
-	"fmt"
+	"bytes"
 	"strconv"
 )
 
@@ -107,35 +106,126 @@ emit:
 	}
 }
 
-func parseInts(s string) ([]int, error) {
-	i := 0
-	if len(s) < 1 || s[i] != '[' {
-		return nil, errors.New("expected [")
-	}
-	i++
-	ns := []int{}
-	var n int
-	for j := i; j < len(s); j++ {
-		switch c := s[j]; c {
-		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-			n = 10*n + int(c-'0')
-		case ' ':
-			ns = append(ns, n)
-			n = 0
-			i = j
-		case ']':
-			if j > i {
-				ns = append(ns, n)
-			}
-			return ns, nil
+func scanVs(s string, each func(v string)) {
+	var buf bytes.Buffer
+	vs, ve := 0, 0
+	bc, cc, pc := 0, 0, 0
+
+seekVal:
+	for ; vs < len(s); vs++ {
+		switch s[vs] {
+		case ' ', '\t', '\n':
 		default:
-			return nil, fmt.Errorf("unexpected %q", c)
+			goto scanVal
 		}
 	}
-	return nil, errors.New("unexpected end-of-string")
+	return
+
+scanVal:
+	for ve = vs; ve < len(s); ve++ {
+		switch s[ve] {
+		case '"':
+			vs = ve + 1
+			goto scanDQ
+		case '\'':
+			vs = ve + 1
+			goto scanSQ
+
+		case '[':
+			bc++
+		case ']':
+			if bc > 0 {
+				bc--
+			}
+
+		case '{':
+			cc++
+		case '}':
+			if cc > 0 {
+				cc--
+			}
+
+		case '(':
+			pc++
+		case ')':
+			if pc > 0 {
+				pc--
+			}
+
+		case ' ', '\t', '\n':
+			if bc+cc+pc <= 0 {
+				goto emit
+			}
+		}
+	}
+	goto emit
+
+scanDQ:
+	buf.Reset()
+	for ve = vs; ve < len(s); ve++ {
+		switch c := s[ve]; c {
+		case '\\':
+			if ve++; ve < len(s) {
+				buf.WriteByte(s[ve])
+			} else {
+				buf.WriteByte(c)
+			}
+		case '"':
+			each(buf.String())
+			vs = ve + 2
+			if vs < len(s) {
+				goto seekVal
+			}
+			return
+		default:
+			buf.WriteByte(c)
+		}
+	}
+	vs--
+	goto emit
+
+scanSQ:
+	buf.Reset()
+	for ve = vs; ve < len(s); ve++ {
+		switch c := s[ve]; c {
+		case '\\':
+			if ve++; ve < len(s) {
+				buf.WriteByte(s[ve])
+			} else {
+				buf.WriteByte(c)
+			}
+		case '\'':
+			each(buf.String())
+			vs = ve + 2
+			if vs < len(s) {
+				goto seekVal
+			}
+			return
+		default:
+			buf.WriteByte(c)
+		}
+	}
+	vs--
+	goto emit
+
+emit:
+	each(s[vs:ve])
+	vs = ve + 1
+	if vs < len(s) {
+		goto seekVal
+	}
 }
 
 func parseValue(s string) interface{} {
+	if len(s) == 0 {
+		return s
+	}
+	switch s[0] {
+	case '[':
+		if i, j := 1, len(s)-1; i <= j && s[j] == ']' {
+			return parseSliceValues(s[i:j])
+		}
+	}
 	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
 		return int(n)
 	}
@@ -145,8 +235,13 @@ func parseValue(s string) interface{} {
 	if f, err := strconv.ParseFloat(s, 64); err == nil {
 		return f
 	}
-	if ns, err := parseInts(s); err == nil {
-		return ns
-	}
 	return s
+}
+
+func parseSliceValues(s string) []interface{} {
+	vs := []interface{}{}
+	scanVs(s, func(s string) {
+		vs = append(vs, parseValue(s))
+	})
+	return vs
 }

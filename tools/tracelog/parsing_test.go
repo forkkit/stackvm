@@ -54,37 +54,23 @@ func Test_parseValue(t *testing.T) {
 		{"42", 42},
 		{"99.9", 99.9},
 		{"", ""},
+		{"[", "["},
+		{"[3", "[3"},
+		{"[3,2]", []interface{}{"3,2"}},
+		{"[]", []interface{}{}},
+		{"[42]", []interface{}{42}},
+		{"[3 1 4]", []interface{}{3, 1, 4}},
+		{"[0]", []interface{}{0}},
+		{"[10]", []interface{}{10}},
+		{"[104]", []interface{}{104}},
+		{`["foo" 'bar']`, []interface{}{"foo", "bar"}},
+		{`["foo" 42 'bar' false]`, []interface{}{"foo", 42, "bar", false}},
+		{`["lol \"wut\"" 'how \'now\'']`, []interface{}{`lol "wut"`, `how 'now'`}},
+		{`"foo`, "\"foo"},
+		{`'foo`, "'foo"},
 	} {
 		t.Run(tc.s, func(t *testing.T) {
 			assert.Equal(t, tc.v, parseValue(tc.s), "expected value")
-		})
-	}
-}
-
-func Test_parseInts(t *testing.T) {
-	for _, tc := range []struct {
-		s   string
-		ns  []int
-		err string
-	}{
-		{s: "", err: "expected ["},
-		{s: "[", err: "unexpected end-of-string"},
-		{s: "[3", err: "unexpected end-of-string"},
-		{s: "[3,2]", err: "unexpected ','"},
-		{s: "[]", ns: []int{}},
-		{s: "[42]", ns: []int{42}},
-		{s: "[3 1 4]", ns: []int{3, 1, 4}},
-		{s: "[0]", ns: []int{0}},
-		{s: "[10]", ns: []int{10}},
-		{s: "[104]", ns: []int{104}},
-	} {
-		t.Run(tc.s, func(t *testing.T) {
-			ns, err := parseInts(tc.s)
-			if tc.err != "" {
-				assert.EqualError(t, err, tc.err, "expected error")
-			} else if assert.NoError(t, err, "unexpected error") {
-				assert.Equal(t, tc.ns, ns, "expected ints")
-			}
 		})
 	}
 }
