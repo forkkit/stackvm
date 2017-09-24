@@ -700,6 +700,10 @@ func (sc *scanner) setState(state assemblerState) error {
 }
 
 func (sc *scanner) handleEntry() error {
+	if err := sc.setState(assemblerText); err != nil {
+		return err
+	}
+
 	name, err := sc.expectLabel(".entry")
 	if err != nil {
 		return err
@@ -717,7 +721,7 @@ func (sc *scanner) handleEntry() error {
 	sc.prog.addLabel(".entry")
 	sc.addRefOpt("entry", name, 0)
 
-	return sc.setState(assemblerText)
+	return nil
 }
 
 func (sc *scanner) handleLabel(name string) error {
