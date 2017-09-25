@@ -690,9 +690,33 @@ class LogTable {
             }
         };
 
+        let finishAny = (labels, reci) => {
+            let labSet = new Set(labels);
+            while (stack.length) {
+                let callLoc = stack[stack.length-1];
+                let match = false;
+                for (let label of labSet) {
+                    if (label === callLoc.label) {
+                        labSet.delete(label);
+                        match = true;
+                        break;
+                    }
+                    let i = label.lastIndexOf(".");
+                    if (i > 0 && label.slice(i+1) === callLoc.label) {
+                        labSet.delete(label);
+                        match = true;
+                        break;
+                    }
+                }
+                if (!match) break;
+                stack.pop();
+                finish(callLoc, reci);
+            }
+        };
+
         let rows = this.updateCells((rec, reci) => {
             let {loc, action, extra, preOp} = rec;
-            if (preOp && preOp.extra.spanClose) finish(stack.pop(), reci);
+            if (preOp && preOp.extra.spanClose) finishAny(preOp.extra.labels, reci);
             if (extra.spanOpen && extra.cs.length > preOp.extra.cs.length) {
                 loc.span = {
                     start: reci,
