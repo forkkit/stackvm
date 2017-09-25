@@ -682,8 +682,7 @@ class LogTable {
 
         let stack = [];
 
-        let finish1 = (reci) => {
-            let callLoc = stack.pop();
+        let finish = (callLoc, reci) => {
             callLoc.span.end = reci;
             if (stack.length) {
                 callLoc.span.parent = stack[stack.length-1];
@@ -693,7 +692,7 @@ class LogTable {
 
         let rows = this.updateCells((rec, reci) => {
             let {loc, action, extra, preOp} = rec;
-            if (preOp && preOp.extra.spanClose) finish1(reci);
+            if (preOp && preOp.extra.spanClose) finish(stack.pop(), reci);
             if (extra.spanOpen && extra.cs.length > preOp.extra.cs.length) {
                 loc.span = {
                     start: reci,
@@ -704,7 +703,7 @@ class LogTable {
                 stack.push(loc);
             }
             if (action === "End") {
-                while (stack.length) finish1(reci);
+                while (stack.length) finish(stack.pop(), reci);
             }
         });
 
