@@ -628,41 +628,16 @@ class LogTable {
         this.head.scrollIntoView();
     }
 
-    update() {
+    updateCells(each) {
         this.ranges.clear();
 
         let records = [];
-        let stack = [];
-        let finish1 = () => {
-            let callLoc = stack.pop();
-            callLoc.span.end = records.length;
-            if (stack.length) {
-                callLoc.span.parent = stack[stack.length-1];
-                callLoc.span.parent.span.children.push(callLoc);
-            }
-        };
-
         for (var depth = 0; depth < this.ra.nodes.length; ++depth) {
             let {machID} = this.ra.nodes[depth];
             let start = records.length;
             for (let r of this.ra.records(depth)) {
                 let {count, loc, action, extra} = r;
-                if (!this.raw) {
-                    let {preOp} = r;
-                    if (preOp && preOp.extra.spanClose) finish1();
-                    if (extra.spanOpen && extra.cs.length > preOp.extra.cs.length) {
-                        loc.span = {
-                            start: records.length,
-                            end: -1,
-                            parent: null,
-                            children: [],
-                        };
-                        stack.push(loc);
-                    }
-                    if (action === "End") {
-                        while (stack.length) finish1();
-                    }
-                }
+                if (each) each(r, records.length);
                 let cells = [machID, count, loc, action];
                 if (!this.raw) for (let k of this.extraPluck) cells.push(extra[k] || "");
                 extra = Object.assign({notes: r.notes}, extra);
@@ -695,6 +670,43 @@ class LogTable {
         cells
             .attr("class", (_, i) => cols[i].className)
             .html((d, i) => fmt[i](d));
+
+        return rows;
+    }
+
+    update() {
+        if (this.raw) {
+            this.updateCells();
+            return;
+        }
+
+        let stack = [];
+
+        let finish1 = (reci) => {
+            let callLoc = stack.pop();
+            callLoc.span.end = reci;
+            if (stack.length) {
+                callLoc.span.parent = stack[stack.length-1];
+                callLoc.span.parent.span.children.push(callLoc);
+            }
+        };
+
+        let rows = this.updateCells((rec, reci) => {
+            let {loc, action, extra, preOp} = rec;
+            if (preOp && preOp.extra.spanClose) finish1(reci);
+            if (extra.spanOpen && extra.cs.length > preOp.extra.cs.length) {
+                loc.span = {
+                    start: reci,
+                    end: -1,
+                    parent: null,
+                    children: [],
+                };
+                stack.push(loc);
+            }
+            if (action === "End") {
+                while (stack.length) finish1(reci);
+            }
+        });
 
         let rowEls = rows.nodes();
         rows.select(".span").each(({loc: {span: {start, end}}}) => {
