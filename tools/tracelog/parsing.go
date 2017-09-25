@@ -225,6 +225,8 @@ func parseValue(s string) interface{} {
 		if i, j := 1, len(s)-1; i <= j && s[j] == ']' {
 			return parseSliceValues(s[i:j])
 		}
+		// case '{': TODO parseMapValues
+		// case '(': TODO :shrug: ?slice too?
 	}
 	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
 		return int(n)
