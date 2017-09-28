@@ -76,12 +76,20 @@ func (lf logfTracer) Handle(m *stackvm.Mach, err error) {
 	}
 }
 
-func (lf *logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
+func (lf *logfTracer) opExtra(ip uint32, op stackvm.Op) string {
 	extra := fmt.Sprintf("opName=%s ", op.Name())
-
-	if _, spanClose := lf.dbg.Span(ip); spanClose {
-		extra = "spanClose=true "
+	spanOpen, spanClose := lf.dbg.Span(ip)
+	if spanOpen {
+		extra += "spanOpen=true "
 	}
+	if spanClose {
+		extra += "spanClose=true "
+	}
+	return extra
+}
+
+func (lf *logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
+	extra := lf.opExtra(ip, op)
 
 	ps, cs, err := m.Stacks()
 	if err != nil {
@@ -119,18 +127,13 @@ func (lf *logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 }
 
 func (lf *logfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
-	extra := fmt.Sprintf("opName=%s ", op.Name())
-
+	extra := lf.opExtra(ip, op)
 	if lf.afterName != "" {
 		if val, err := m.Fetch(lf.afterFetch); err == nil {
 			extra += fmt.Sprintf("%s=%v ", lf.afterName, val)
 		}
 		lf.afterName = ""
 		lf.afterFetch = 0
-	}
-
-	if spanOpen, _ := lf.dbg.Span(ip); spanOpen {
-		extra += "spanOpen=true "
 	}
 
 	ps, cs, err := m.Stacks()
