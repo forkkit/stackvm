@@ -734,7 +734,13 @@ LogTable.locIPFmt = ({ip}) => fmt.hex(ip);
 
 LogTable.locLabelFmt = (rec) => {
     let addr = LogTable.locIPFmt(rec);
-    if (rec.label) addr = `<div title="@${addr}" class="label">${rec.label}:</div>`;
+    if (rec.label) {
+        if (rec.label[0] === ".") {
+            addr = `<div title="${rec.label}:" class="label">${addr}</div>`;
+        } else {
+            addr = `<div title="@${addr}" class="label">${rec.label}:</div>`;
+        }
+    }
     return addr;
 };
 
