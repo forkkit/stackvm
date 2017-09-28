@@ -187,6 +187,12 @@ type DebugInfo interface {
 	// close (both are possible!). A semantic span represents some structure
 	// like a function call.
 	Span(addr uint32) (open, close bool)
+
+	// LabeledAddrs returns a slice of all addresses that have defined labels.
+	LabeledAddrs() []uint32
+
+	// SpanAddrs returns a slice of all addresses that have span mark(s).
+	SpanAddrs() []uint32
 }
 
 // WithDebugInfo calls the given function with any defined debug info; if no
@@ -532,6 +538,22 @@ func (dbg debugInfo) Span(addr uint32) (open, close bool) {
 
 func (dbg debugInfo) empty() bool {
 	return len(dbg.labels) == 0 && len(dbg.annos) == 0
+}
+
+func (dbg debugInfo) LabeledAddrs() []uint32 {
+	addrs := make([]uint32, 0, len(dbg.labels))
+	for addr := range dbg.labels {
+		addrs = append(addrs, addr)
+	}
+	return addrs
+}
+
+func (dbg debugInfo) SpanAddrs() []uint32 {
+	addrs := make([]uint32, 0, len(dbg.annos))
+	for addr := range dbg.annos {
+		addrs = append(addrs, addr)
+	}
+	return addrs
 }
 
 func (dbg *debugInfo) addLabel(addr uint32, label string) {
