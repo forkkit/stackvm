@@ -141,7 +141,11 @@ func (tok token) String() string {
 		}
 		return s
 	case opTK:
-		return tok.Op.String()
+		s := tok.Op.String()
+		if tok.str != "" {
+			s = fmt.Sprintf("%s (:%s)", s, tok.str)
+		}
+		return s
 	case dataTK:
 		return fmt.Sprintf(".data %d", tok.Arg)
 	case allocTK:
@@ -890,7 +894,9 @@ func (sc *scanner) expectRefOp(arg uint32, have bool, name string) (token, error
 	if !op.AcceptsRef() {
 		return token{}, fmt.Errorf("%v does not accept ref %q", op, name)
 	}
-	return opToken(op), nil
+	tok := opToken(op)
+	tok.str = name
+	return tok, nil
 }
 
 func (sc *scanner) expectOp(arg uint32, have bool) (token, error) {
