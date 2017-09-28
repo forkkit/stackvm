@@ -130,10 +130,16 @@ func (tok token) Name() string {
 func (tok token) String() string {
 	switch tok.kind {
 	case optTK:
+		var s string
 		if tok.Have {
-			return fmt.Sprintf(".%s %v", stackvm.NameOption(tok.Code), tok.Arg)
+			s = fmt.Sprintf(".%s %v", stackvm.NameOption(tok.Code), tok.Arg)
+		} else {
+			s = fmt.Sprintf(".%s", stackvm.NameOption(tok.Code))
 		}
-		return fmt.Sprintf(".%s", stackvm.NameOption(tok.Code))
+		if tok.str != "" {
+			s = fmt.Sprintf("%s (:%s)", s, tok.str)
+		}
+		return s
 	case opTK:
 		return tok.Op.String()
 	case dataTK:
@@ -436,7 +442,9 @@ func (asm *assembler) addOpt(name string, arg uint32, have bool) {
 }
 
 func (asm *assembler) addRefOpt(name string, targetName string, off int) {
-	asm.opts.addRef(optToken(name, 0, true), targetName, off)
+	tok := optToken(name, 0, true)
+	tok.str = targetName
+	asm.opts.addRef(tok, targetName, off)
 }
 
 func (asm *assembler) genProgLabel(name string) string {
