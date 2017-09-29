@@ -719,13 +719,17 @@ class LogTable {
             let {loc, action, preOp} = rec;
             if (preOp && preOp.extra.spanClose) finishAny(preOp.extra.labels, reci);
             if (preOp && preOp.extra.spanOpen) {
-                loc.span = {
-                    start: reci,
-                    end: -1,
-                    parent: null,
-                    children: [],
-                };
-                stack.push(loc);
+                let open = new Set(preOp.extra.labels);
+                let last = stack.length > 0 ? stack[stack.length-1] : null;
+                if (!last || !last.label || !open.has(last.label)) {
+                    loc.span = {
+                        start: reci,
+                        end: -1,
+                        parent: null,
+                        children: [],
+                    };
+                    stack.push(loc);
+                }
             }
             if (action === "End") {
                 while (stack.length) finish(stack.pop(), reci);
