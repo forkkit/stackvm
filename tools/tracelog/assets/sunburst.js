@@ -710,9 +710,8 @@ class LogTable {
                         break;
                     }
                 }
-                if (!match) break;
-                stack.pop();
-                finish(callLoc, reci);
+                if (match) finish(stack.pop(), reci);
+                else break;
             }
         };
 
