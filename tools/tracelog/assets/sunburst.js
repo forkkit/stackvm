@@ -158,9 +158,8 @@ class SunburstModel extends EventEmitter {
                 }
             }
             d.records = d.records.map((record) => {
-                let {ip, extra} = record;
+                let {ip} = record;
                 let loc = {ip, label: null};
-                if (extra.labels) loc.label = extra.labels[0];
                 record.loc = loc;
                 return record;
             });
@@ -495,6 +494,9 @@ class RecordAssembler extends RawRecordAssembler {
 
             case "postOp":
                 rec = Object.assign({preOp}, rec);
+                if (preOp && preOp.extra.labels) {
+                    rec.loc.label = preOp.extra.labels[0];
+                }
                 preOp = null;
                 if (copy) {
                     rec.extra = Object.assign({}, copy.extra, rec.extra);
