@@ -757,6 +757,13 @@ class LogTable {
                 }
                 return;
             }
+            if (!children.length) {
+                for (let i = start+1; i < end; i++) {
+                    rowEls[i].style.display = "";
+                }
+                return;
+            }
+
             let j = 0;
             for (let i = start+1; i < end; i++) {
                 if (j < children.length) {
