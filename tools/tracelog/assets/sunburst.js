@@ -739,7 +739,7 @@ class LogTable {
         let rowEls = rows.nodes();
         rows.select(".span").each(({loc: {span: {start, end}}}) => {
             if (end < start) return;
-            for (let i = start+1; i < end; i++) rowEls[i].style.display = "none";
+            for (let i = start+1; i <= end; i++) rowEls[i].style.display = "none";
         });
         rows.select(".span").on("click", ({loc: {span: {start, end, children}}}, i, x) => {
             const sel = d3Select(x[i]);
@@ -747,7 +747,7 @@ class LogTable {
             sel.classed("open", open);
             if (end < start) return;
             if (!open) {
-                for (let i = start+1; i < end; i++) {
+                for (let i = start+1; i <= end; i++) {
                     rowEls[i].style.display = "none";
                     let openSpan = rowEls[i].querySelector(".span.open");
                     if (openSpan) openSpan.className = openSpan.className
@@ -758,7 +758,7 @@ class LogTable {
                 return;
             }
             if (!children.length) {
-                for (let i = start+1; i < end; i++) {
+                for (let i = start+1; i <= end; i++) {
                     rowEls[i].style.display = "";
                 }
                 return;
@@ -766,9 +766,9 @@ class LogTable {
 
             let j = 0;
             let childSpan = children[j].span;
-            for (let i = start+1; i < end; i++) {
+            for (let i = start+1; i <= end; i++) {
                 if (childSpan) {
-                    if (i >= childSpan.end) {
+                    if (i > childSpan.end) {
                         j++;
                         childSpan = j < children.length ? children[j].span : null;
                     } else if (i > childSpan.start) {
