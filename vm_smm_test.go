@@ -123,7 +123,8 @@ var smmTest = TestCase{
 		".spanOpen", "col___m:",
 		".spanOpen", "check_m:",
 		4 * 7, ":values", "fetch", // carry $m
-		".spanClose", ".spanClose", "eq", 3, "hz",
+		"eq",
+		".spanClose", ".spanClose", 3, "hz",
 
 		//// Done
 		0, "halt",
