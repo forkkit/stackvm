@@ -716,9 +716,9 @@ class LogTable {
         };
 
         let rows = this.updateCells((rec, reci) => {
-            let {loc, action, extra, preOp} = rec;
+            let {loc, action, preOp} = rec;
             if (preOp && preOp.extra.spanClose) finishAny(preOp.extra.labels, reci);
-            if (extra.spanOpen) {
+            if (preOp && preOp.extra.spanOpen) {
                 loc.span = {
                     start: reci,
                     end: -1,
