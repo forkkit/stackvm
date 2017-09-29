@@ -765,11 +765,15 @@ class LogTable {
             }
 
             let j = 0;
+            let childSpan = children[j].span;
             for (let i = start+1; i < end; i++) {
-                if (j < children.length) {
-                    let childSpan = children[j].span;
-                    if (i >= childSpan.end) j++;
-                    else if (i > childSpan.start) continue;
+                if (childSpan) {
+                    if (i >= childSpan.end) {
+                        j++;
+                        childSpan = j < children.length ? children[j].span : null;
+                    } else if (i > childSpan.start) {
+                        continue;
+                    }
                 }
                 rowEls[i].style.display = "";
             }
