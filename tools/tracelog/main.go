@@ -639,6 +639,7 @@ func (wd webDumper) Close() error {
 		args = []string{"xdg-open"}
 	}
 	args = append(args, wd.temp.Name())
+	log.Printf("running %q", args)
 	return exec.Command(args[0], args[1:]...).Start()
 }
 
@@ -726,12 +727,14 @@ func main() {
 		return os.Stdin, nil
 	}(flag.Args())
 	if err == nil {
+		log.Printf("parsing sessions from %q", inFile.Name())
 		sessions, err = parseSessions(inFile)
 	}
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	log.Printf("building machine id list")
 	mids := make([]machID, 0, len(sessions))
 	for mid, sess := range sessions {
 		if match := haltPat.FindStringSubmatch(sess.err); match != nil {
@@ -748,6 +751,7 @@ func main() {
 			mids[i][2] < mids[j][2]
 	})
 
+	log.Printf("writing %v sessions", len(mids))
 	if err := func() (err error) {
 		for _, mid := range mids {
 			if err = sw.WriteSession(sessions, mid); err != nil {
