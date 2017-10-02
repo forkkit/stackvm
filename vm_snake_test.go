@@ -274,21 +274,13 @@ func Test_snakeCube(t *testing.T) {
 			//// choose starting position
 			// TODO: prune using some symmetry (probably we can get away with
 			// only one boundary-inclusive oct of the cube)
-
 			".entry", "chooseStart:",
 			0, "push", N - 1, "push", ":forall", "call", // xi :
 			0, "push", N - 1, "push", ":forall", "call", // xi yi :
 			0, "push", N - 1, "push", ":forall", "call", // xi yi zi :
-
-			//// compute starting index
-
-			3, "mul", // xi yi 3*zi :
-			"add",    // xi yi+3*zi :
-			3, "mul", // xi 3*(yi+3*zi) :
-			"add", // xi+3*(yi+3*zi) :   -- i=...
+			":xyz2i", "call", // i :  -- compute starting index
 
 			//// choose initial direction: at first all of them are possible
-
 			"choose_0:",
 			0, "push", 5, "push", ":forall", "call", // i vi :
 			"dup",               // i vi vi :
