@@ -718,7 +718,16 @@ func main() {
 		sw = sessionWriterFunc(printSession)
 	}
 
-	sessions, err := parseSessions(os.Stdin)
+	var sessions sessions
+	inFile, err := func(args []string) (*os.File, error) {
+		if len(args) > 0 {
+			return os.Open(args[0])
+		}
+		return os.Stdin, nil
+	}(flag.Args())
+	if err == nil {
+		sessions, err = parseSessions(inFile)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
