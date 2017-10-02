@@ -274,18 +274,18 @@ func Test_snakeCube(t *testing.T) {
 			//// choose starting position
 			// TODO: prune using some symmetry (probably we can get away with
 			// only one boundary-inclusive oct of the cube)
-			".entry", "chooseStart:",
+			".entry", ".spanOpen", "chooseStart:",
 			0, "push", N - 1, "push", ":forall", "call", // xi :
 			0, "push", N - 1, "push", ":forall", "call", // xi yi :
 			0, "push", N - 1, "push", ":forall", "call", // xi yi zi :
-			":xyz2i", "call", // i :  -- compute starting index
+			".spanClose", ":xyz2i", "call", // i :  -- compute starting index
 
 			//// choose initial direction: at first all of them are possible
-			"choose_0:",
+			".spanOpen", "choose_0:",
 			0, "push", 5, "push", ":forall", "call", // i vi :
 			"dup",               // i vi vi :
 			":start", "storeTo", // i vi :   -- start=vi
-			"swap", // vi i :
+			".spanClose", "swap", // vi i :
 		}
 
 		for i := 1; i < M; i++ {
@@ -294,7 +294,7 @@ func Test_snakeCube(t *testing.T) {
 			case cl&(rowHead|colHead) != fixedCell:
 				// choose next orientation
 				code = append(code,
-					fmt.Sprintf("choice_%d:", i), // vi i :
+					".spanOpen", fmt.Sprintf("choice_%d:", i), // vi i :
 					"swap",                                  // i lastVi=vi :
 					0, "push", 5, "push", ":forall", "call", // i lastVi vi :
 					"dup",     // i lastVi vi vi :
@@ -306,7 +306,7 @@ func Test_snakeCube(t *testing.T) {
 					1, "hnz", // i vi :  -- halt if ...
 					"dup",                      // i vi vi :
 					4*i, ":choices", "storeTo", // i vi :   -- choices[i]=vi
-					"swap", // vi i :
+					".spanClose", "swap", // vi i :
 				)
 
 				// TODO: micro perf faster to avoid forking, rather than
@@ -324,8 +324,8 @@ func Test_snakeCube(t *testing.T) {
 			}
 
 			code = append(code,
-				fmt.Sprintf("advance_%d:", i), // vi i :
-				":i2xyz", "call",              // vi x y z :
+				".spanOpen", fmt.Sprintf("advance_%d:", i), // vi i :
+				":i2xyz", "call", // vi x y z :
 				4, "dup", 3, "mul", // vi x y z 3*vi :
 				4, "mul", ":vectors", "add", // vi x y z &vectors[3*vi] :
 				":vec3addptr", "call", // vi x y z :   -- x,y,z now incremented by the vector
@@ -336,16 +336,16 @@ func Test_snakeCube(t *testing.T) {
 				2, "hnz", // vi i :   -- halt if ...
 				"dup",                  // vi i i :
 				":occupied", "bitseta", // vi i !occupied[i] :   -- set occupied[i] if it wasn't
-				3, "hz", // vi i :   -- halt if unable to set bit
+				".spanClose", 3, "hz", // vi i :   -- halt if unable to set bit
 			)
 		}
 
 		code = append(code,
-			"done:",  // i v :
+			".spanOpen", "done:", // i v :
 			2, "pop", // :
 			":start", "cpush", ":choices", "cpush", // : &start &choices
 			":choices", "cpush", 4*M, ":choices", "cpush", // : &start &choices &choices[0] &choices[M]
-			"halt", // : &start &choices &choices[0] &choices[M]
+			".spanClose", "halt", // : &start &choices &choices[0] &choices[M]
 		)
 
 		// dumpCode(code)
