@@ -71,7 +71,7 @@ var snakeSupportLib = []interface{}{
 	"ret",   // x+dx y+dy z+dz :
 }
 
-func Test_snake_forAll(t *testing.T) {
+func Test_snakeLib_forAll(t *testing.T) {
 	prog := MustAssemble(
 		".data",
 		".in", "range:", 0, 0,
@@ -112,7 +112,7 @@ func Test_snake_forAll(t *testing.T) {
 	}.Run(t)
 }
 
-func Test_snake_i2xyz(t *testing.T) {
+func Test_snakeLib_i2xyz(t *testing.T) {
 	prog := MustAssemble(
 		".data",
 		".in", "i:", 0,
@@ -148,7 +148,7 @@ func Test_snake_i2xyz(t *testing.T) {
 	tcs.Run(t)
 }
 
-func Test_snake_xyz2i(t *testing.T) {
+func Test_snakeLib_xyz2i(t *testing.T) {
 	prog := MustAssemble(
 		".data",
 		".out", "i:", 0,
@@ -184,7 +184,7 @@ func Test_snake_xyz2i(t *testing.T) {
 	tcs.Run(t)
 }
 
-func Test_snake_vec3addptr(t *testing.T) {
+func Test_snakeLib_vec3addptr(t *testing.T) {
 	var tcs TestCases
 
 	vectors := [][3]int{
