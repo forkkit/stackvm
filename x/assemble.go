@@ -252,8 +252,6 @@ type assembler struct {
 	pendIn, pendOut string
 
 	adls, opts, prog section
-	opens            map[string]struct{}
-	unkRets          map[string]*unkRet
 
 	stackSize *token
 	queueSize *token
@@ -540,12 +538,14 @@ type scanner struct {
 }
 
 type scannerState struct {
-	i      int
-	in     []interface{}
-	state  assemblerState
-	label  string
-	open   []string
-	labels []string
+	i       int
+	in      []interface{}
+	state   assemblerState
+	label   string
+	open    []string
+	labels  []string
+	opens   map[string]struct{}
+	unkRets map[string]*unkRet
 }
 
 func (sc *scanner) scan(in []interface{}) error {
