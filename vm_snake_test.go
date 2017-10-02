@@ -9,23 +9,7 @@ import (
 	. "github.com/jcorbin/stackvm/x"
 )
 
-var snakeSupportLib = []interface{}{
-	".data",
-
-	// unit vectors in x,y,z space. Strategically laid out such that a
-	// direction and its opposite are congruent index-mod-9. The index-mod-9
-	// property lets us quickly check for 'not same or opposite direction'
-	// later on.
-	"vectors:",
-	1, 0, 0,
-	0, 1, 0,
-	0, 0, 1,
-	-1, 0, 0,
-	0, -1, 0,
-	0, 0, -1,
-
-	".text",
-
+var forallLib = []interface{}{
 	// forall returns N times for ever lo <= n <= hi
 	"forall:",             // lo hi : retIp
 	"swap",                // hi v=lo : retIp
@@ -38,7 +22,9 @@ var snakeSupportLib = []interface{}{
 	":forallNext", "fnz", // hi v : retIp   -- fork next if v < hi
 	"swap", "pop", // v : retIp
 	"ret", // v :
+}
 
+var ixLib = []interface{}{
 	// TODO: parameterize N=3
 	"i2xyz:",        // i : retIp
 	"dup", 3, "mod", // i x=i%3 : retIp
@@ -54,7 +40,25 @@ var snakeSupportLib = []interface{}{
 	3, "mul", // x 3*(y+3*z) : retIp
 	"add", // i=x+3*(y+3*z) : retIp
 	"ret", // i : retIp
+}
 
+var snakeVectorsLib = []interface{}{
+	".data",
+
+	// unit vectors in x,y,z space. Strategically laid out such that a
+	// direction and its opposite are congruent index-mod-9. The index-mod-9
+	// property lets us quickly check for 'not same or opposite direction'
+	// later on.
+	"vectors:",
+	1, 0, 0,
+	0, 1, 0,
+	0, 0, 1,
+	-1, 0, 0,
+	0, -1, 0,
+	0, 0, -1,
+}
+
+var vec3Lib = []interface{}{
 	"vec3addptr:", // x y z p=*[3]uint32 : retIp
 	3, "swap",     // p y z x : retIp
 	4, "dup", "fetch", // p y z x dx=*p : retIp
@@ -69,6 +73,13 @@ var snakeSupportLib = []interface{}{
 	"fetch", // x+dx y+dy z dz=*p : retIp
 	"add",   // x+dx y+dy z+dz : retIp
 	"ret",   // x+dx y+dy z+dz :
+}
+
+var snakeSupportLib = []interface{}{
+	".include", snakeVectorsLib,
+	".include", forallLib,
+	".include", ixLib,
+	".include", vec3Lib,
 }
 
 func Test_snakeLib_forAll(t *testing.T) {
