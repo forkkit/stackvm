@@ -697,6 +697,7 @@ class LogTable {
 
         let finishAny = (labels, reci) => {
             let labSet = new Set(labels);
+            let closed = new Set();
             while (stack.length) {
                 let callLoc = stack[stack.length-1];
                 let match = false;
@@ -713,8 +714,11 @@ class LogTable {
                         break;
                     }
                 }
-                if (match) finish(stack.pop(), reci);
-                else break;
+                if (match) {
+                    let loc = stack.pop();
+                    closed.add(loc.label);
+                    finish(loc, reci);
+                } else return closed;
             }
         };
 
