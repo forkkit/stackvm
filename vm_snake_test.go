@@ -292,7 +292,7 @@ func Test_snakeCube(t *testing.T) {
 			".spanClose", ":xyz2i", "call", // i :  -- compute starting index
 
 			//// choose initial direction: at first all of them are possible
-			".spanOpen", "choose_0:",
+			".spanOpen", "choice_0:",
 			0, "push", 5, "push", ":forall", "call", // i vi :
 			"dup",               // i vi vi :
 			":start", "storeTo", // i vi :   -- start=vi
