@@ -32,7 +32,10 @@ class EventEmitter {
 
 let fmt = {};
 
-fmt.id = (x) => x;
+fmt.id = (x) => {
+    if (typeof x === "string") return x;
+    return JSON.stringify(x);
+};
 
 fmt.escapeHTML = (unsafe) => ("" + unsafe)
     .replace(/&/g, "&amp;")
