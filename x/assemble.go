@@ -581,6 +581,9 @@ func (sc *scanner) popState() bool {
 	if i < 0 {
 		return false
 	}
+	if len(sc.open) > 0 {
+		panic(fmt.Sprintf("unclosed spans: %q", sc.open))
+	}
 	sc.scannerState, sc.prior = sc.prior[i], sc.prior[:i]
 	sc.i++
 	return true
