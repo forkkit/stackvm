@@ -535,17 +535,17 @@ type scanner struct {
 	*assembler
 	prior []scannerState
 	scannerState
+	unkRets map[string]*unkRet
 }
 
 type scannerState struct {
-	i       int
-	in      []interface{}
-	state   assemblerState
-	label   string
-	open    []string
-	labels  []string
-	opens   map[string]struct{}
-	unkRets map[string]*unkRet
+	i      int
+	in     []interface{}
+	state  assemblerState
+	label  string
+	open   []string
+	labels []string
+	opens  map[string]struct{}
 }
 
 func (sc *scanner) scan(in []interface{}) error {
