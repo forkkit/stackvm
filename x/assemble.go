@@ -601,6 +601,14 @@ func (sc *scanner) popState() bool {
 	if len(sc.open) > 0 {
 		panic(fmt.Sprintf("unclosed spans: %q", sc.open))
 	}
+
+	// XXX needed?
+	// for i := len(sc.open) - 1; i >= 0; i-- {
+	// 	name := sc.genProgLabel(fmt.Sprintf(".eof.%s", sc.open[i]))
+	// 	sc.prog.labels[name]--
+	// 	sc.addRefOpt("spanClose", name, 0)
+	// }
+
 	sc.scannerState, sc.prior = sc.prior[i], sc.prior[:i]
 	sc.i++
 	return true
