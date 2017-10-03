@@ -11,7 +11,7 @@ import (
 
 var forallLib = []interface{}{
 	// forall returns N times for ever lo <= n <= hi
-	"forall:",             // lo hi : retIp
+	".spanOpen", "forall:", // lo hi : retIp
 	"swap",                // hi v=lo : retIp
 	":forallLoop", "jump", // hi v : retIp
 	"forallNext:", // hi v : retIp
@@ -26,7 +26,7 @@ var forallLib = []interface{}{
 
 var ixLib = []interface{}{
 	// TODO: parameterize N=3
-	"i2xyz:",        // i : retIp
+	".spanOpen", "i2xyz:", // i : retIp
 	"dup", 3, "mod", // i x=i%3 : retIp
 	"swap", 3, "div", // x i/3 : retIp
 	"dup", 3, "mod", // x i/3 y=i/3%3 : retIp
@@ -34,7 +34,7 @@ var ixLib = []interface{}{
 	"ret", // x y z :
 
 	// TODO: parameterize N=3
-	"xyz2i:", // x y z : retIp
+	".spanOpen", "xyz2i:", // x y z : retIp
 	3, "mul", // x y 3*z : retIp
 	"add",    // x y+3*z : retIp
 	3, "mul", // x 3*(y+3*z) : retIp
@@ -59,8 +59,8 @@ var snakeVectorsLib = []interface{}{
 }
 
 var vec3Lib = []interface{}{
-	"vec3addptr:", // x y z p=*[3]uint32 : retIp
-	3, "swap",     // p y z x : retIp
+	".spanOpen", "vec3addptr:", // x y z p=*[3]uint32 : retIp
+	3, "swap", // p y z x : retIp
 	4, "dup", "fetch", // p y z x dx=*p : retIp
 	"add",     // p y z x+dx : retIp
 	3, "swap", // x+dx y z p : retIp
