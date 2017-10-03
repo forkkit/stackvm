@@ -561,13 +561,29 @@ func (sc *scanner) scan(in []interface{}) error {
 				return err
 			}
 		}
-		if i := len(sc.prior) - 1; i >= 0 {
-			sc.scannerState, sc.prior = sc.prior[i], sc.prior[:i]
-			sc.i++
+		if sc.popState() {
 			continue
 		}
 		return nil
 	}
+}
+
+func (sc *scanner) pushState() {
+	sc.prior, sc.scannerState = append(sc.prior, sc.scannerState), scannerState{
+		i:     -1, // TODO: because of how the loop in sc.scan works, bit regrettable
+		in:    subProg,
+		state: assemblerText,
+	}
+}
+
+func (sc *scanner) popState() bool {
+	i := len(sc.prior) - 1
+	if i < 0 {
+		return false
+	}
+	sc.scannerState, sc.prior = sc.prior[i], sc.prior[:i]
+	sc.i++
+	return true
 }
 
 func (sc *scanner) handle(val interface{}) error {
@@ -748,11 +764,7 @@ func (sc *scanner) handleInclude() error {
 	if !ok {
 		return fmt.Errorf("invalid token %T(%v); expected []interface{}", val, val)
 	}
-	sc.prior, sc.scannerState = append(sc.prior, sc.scannerState), scannerState{
-		i:     -1, // TODO: because of how the loop in sc.scan works, bit regrettable
-		in:    subProg,
-		state: assemblerText,
-	}
+	sc.pushState()
 	return nil
 }
 
